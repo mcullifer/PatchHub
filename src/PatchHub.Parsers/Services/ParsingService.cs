@@ -15,7 +15,7 @@ public sealed class ParsingService
 		{
 			sb.Clear();
 			sb.Append(line);
-			
+
 			sb.Replace(BBCodeModel.ItalicOpen, MarkdownModel.Italic)
 				.Replace(BBCodeModel.ItalicClose, MarkdownModel.Italic)
 				.Replace(BBCodeModel.BoldOpen, MarkdownModel.Bold)
@@ -24,6 +24,8 @@ public sealed class ParsingService
 				.Replace(BBCodeModel.UnderlineClose, MarkdownModel.Empty)
 				.Replace(BBCodeModel.ListOpen, MarkdownModel.Empty)
 				.Replace(BBCodeModel.ListClose, MarkdownModel.Empty)
+				.Replace(BBCodeModel.OrderedListOpen, MarkdownModel.Empty)
+				.Replace(BBCodeModel.OrderedListClose, MarkdownModel.Empty)
 				.Replace(BBCodeModel.BulletItem, MarkdownModel.List)
 				.Replace(BBCodeModel.Header1Open, MarkdownModel.Header1)
 				.Replace(BBCodeModel.Header1Close, MarkdownModel.Empty)
@@ -39,10 +41,10 @@ public sealed class ParsingService
 				sb.Replace(BBCodeModel.ImageOpen + "{STEAM_CLAN_IMAGE}", MarkdownModel.ImageOpen + "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/clans//")
 					.Replace(BBCodeModel.ImageClose, MarkdownModel.ImageClose);
 			}
-			
+
 			parsed[parsed.IndexOf(line)] = sb.ToString();
 		}
-		
+
 		var finalMarkdownString = string.Join(Environment.NewLine, parsed);
 		return finalMarkdownString;
 	}
