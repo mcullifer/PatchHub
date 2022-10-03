@@ -1,7 +1,6 @@
 using MudBlazor.Services;
 using PatchHub.Infrastructure;
 using PatchHub.Parsers;
-using PatchHub.UI.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
-builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddInfrastructureServices();
 builder.Services.AddParsingServices();
 
