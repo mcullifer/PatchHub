@@ -1,0 +1,71 @@
+﻿@inherits LayoutComponentBase
+
+<PageTitle>PatchHub</PageTitle>
+
+<MudThemeProvider @bind-IsDarkMode="@_darkMode" Theme="_currentTheme"/>
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0">
+        <MudButton Color="Color.Inherit" OnClick="@((e) => DrawerToggle())">
+            <MudText Typo="Typo.h4">PatchHub</MudText>
+        </MudButton>
+        <MudSpacer />
+        <MudToggleIconButton
+                Icon="@Icons.Filled.WbSunny"
+                Title="Switch To Light Mode"
+                ToggledIcon="@Icons.Outlined.DarkMode"
+                ToggledTitle="Switch To Dark Mode"
+                ToggledChanged="ChangeTheme"/>
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="0">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _darkMode { get; set; }
+    private static MudTheme _darkTheme = new MudTheme();
+    private static MudTheme _lightTheme = new MudTheme()
+    {
+        Palette = new Palette
+        {
+            AppbarBackground = Colors.Shades.White,
+            AppbarText = Colors.Grey.Darken3
+        }
+    };
+    private MudTheme? _currentTheme { get; set; }
+
+    bool _drawerOpen = true;
+
+    protected override void OnInitialized()
+    {
+        _currentTheme = _darkTheme;
+        _darkMode = true;
+    }
+
+    void ChangeTheme()
+    {
+        if(_currentTheme == _darkTheme)
+        {
+            _currentTheme = _lightTheme;
+            _darkMode = false;
+        }
+        else
+        {
+            _currentTheme = _darkTheme;
+            _darkMode = true;
+        }
+    }
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

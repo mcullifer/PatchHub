@@ -1,0 +1,36 @@
+﻿@using PatchHub.Infrastructure.Contracts.Responses
+@using PatchHub.UI.Components
+@page "/"
+
+<PageTitle>PatchHub - Home</PageTitle>
+
+<MudGrid Spacing="4">
+    <MudItem xs="12">
+        <MudText Typo="Typo.h6" Align="Align.Center">
+            Welcome to PatchHub! Here you can view patch notes from various popular games.
+        </MudText>
+    </MudItem>
+    
+    <MudItem xs="4">
+        <MudAutocomplete T="SteamAppResponse" Label="Search For A Game"
+                         Variant="Variant.Outlined"
+                         @bind-Value="SelectedGame"
+                         SearchFunc="SearchGames"
+                         ToStringFunc="@(e => e == null ? null : e.AppName)"
+                         ResetValueOnEmptyText="true"
+                         CoerceText="false"
+                         CoerceValue="true"
+                         AdornmentIcon="@Icons.Material.Filled.Games"
+                         AdornmentColor="Color.Info"
+                         ShowProgressIndicator="true"
+                         ProgressIndicatorColor="Color.Info"
+                         MaxItems="20"/>
+    </MudItem>
+    
+    @if (SelectedGame != null) 
+    {
+        <MudItem xs="12">
+            <PatchNotesComponent SteamApp="SelectedGame" NewsItem="SteamApi.GetNewsForAppAsync(SelectedGame.AppID, 6)"/>
+        </MudItem>
+    }
+</MudGrid>

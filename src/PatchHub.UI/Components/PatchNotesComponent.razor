@@ -1,0 +1,31 @@
+﻿@using PatchHub.Infrastructure.Contracts.Responses
+@using PatchHub.Infrastructure.Models
+
+<MudGrid Spacing="2">
+    @if (_newsItems.Count() != 0) 
+    {
+        foreach(var newsItem in _newsItems) 
+        {
+            <MudItem xs="12">
+                <PatchNoteComponent newsItem="@newsItem" SteamApp="@SteamApp" />
+            </MudItem>
+        }
+    }
+    @*Loading can be added here*@
+</MudGrid>
+
+@code {
+    [Parameter]
+    public Task<IEnumerable<NewsItem>> NewsItem { get; set; }
+
+    [Parameter]
+    public SteamAppResponse SteamApp { get; set; }
+    
+    private IEnumerable<NewsItem> _newsItems = Enumerable.Empty<NewsItem>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _newsItems = await NewsItem;
+    }
+}
