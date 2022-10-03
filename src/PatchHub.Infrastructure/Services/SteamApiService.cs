@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using PatchHub.Infrastructure.Contracts.Responses;
 using PatchHub.Infrastructure.Models;
 
 namespace PatchHub.Infrastructure.Services;
@@ -19,9 +20,9 @@ public class SteamApiService
 		SteamApiClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 	}
 
-	public async Task<IEnumerable<NewsItem>> GetNewsForAppAsync(int appId, int count)
+	public async Task<IEnumerable<NewsItem>> GetNewsForAppAsync(SteamAppResponse app)
 	{
-		var url = _baseSteamApiUrl + _steamNewsRoute + $"?appid={appId}&count={count}";
+		var url = _baseSteamApiUrl + _steamNewsRoute + $"?appid={app.AppID}&count=6";
 		using HttpResponseMessage reponse = await SteamApiClient.GetAsync(url);
 		if (reponse.IsSuccessStatusCode)
 		{

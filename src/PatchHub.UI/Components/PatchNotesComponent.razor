@@ -1,8 +1,9 @@
 ﻿@using PatchHub.Infrastructure.Contracts.Responses
 @using PatchHub.Infrastructure.Models
+@using PatchHub.Infrastructure.Services
 
-<MudGrid Spacing="2">
-    @if (_newsItems.Count() != 0) 
+<MudGrid Spacing="4">
+    @if (_newsItems != null) 
     {
         foreach(var newsItem in _newsItems) 
         {
@@ -15,17 +16,24 @@
 </MudGrid>
 
 @code {
-    [Parameter]
-    public Task<IEnumerable<NewsItem>> NewsItem { get; set; }
+    [Inject]
+    protected SteamApiService SteamApi { get; set; }
 
     [Parameter]
     public SteamAppResponse SteamApp { get; set; }
-    
-    private IEnumerable<NewsItem> _newsItems = Enumerable.Empty<NewsItem>();
+
+    private IEnumerable<NewsItem>? _newsItems;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        _newsItems = await NewsItem;
+        _newsItems = null;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        base.OnParametersSet();
+        _newsItems = await SteamApi.GetNewsForAppAsync(SteamApp);
+        StateHasChanged();
     }
 }

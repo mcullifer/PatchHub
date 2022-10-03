@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using PatchHub.Infrastructure.Contracts.Responses;
+using PatchHub.Infrastructure.Models;
 using PatchHub.Infrastructure.Repositories;
 using PatchHub.Infrastructure.Services;
 
@@ -17,12 +18,15 @@ public partial class Index
 
 	public List<DateOnly> ThisWeek { get; set; } = new();
 
-	public SteamAppResponse? SelectedGame { get; set; }
+	public SteamAppResponse SelectedGame { get; set; }
+
+	public IEnumerable<NewsItem> NewsItems { get; set; }
 
 	public DateOnly SubtractFromCurrentDate(int days)
 	{
 		return CurrentDate.AddDays(days);
 	}
+
 
 	protected override void OnInitialized()
 	{
@@ -35,7 +39,7 @@ public partial class Index
 
 	public async Task<IEnumerable<SteamAppResponse>> SearchGames(string value)
 	{
-		if (value != null)
+		if (value != null && value != string.Empty)
 		{
 			return await SteamAppRepo.GetSteamAppsAsync(value);
 		}

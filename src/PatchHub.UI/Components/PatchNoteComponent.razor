@@ -3,7 +3,7 @@
 @using PatchHub.Parsers.Services
 @inject ParsingService ParsingService
 
-<MudPaper Elevation="4" Class="pa-8 rounded-xl container">
+<MudPaper Elevation="6" Class="py-8 px-4 rounded-xl container">
     <MudContainer Fixed="true" Class="@(_expansionClass)">
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
@@ -25,7 +25,7 @@
                         <MudText Typo="Typo.h6">@newsItem.title</MudText>
                     </MudLink>
                 </MudStack>
-                <MudContainer Fixed="true" Style="overflow:auto;">
+            <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
                     <MudMarkdown Value="@ParsingService.ParseBBCode(newsItem.contents, true)" 
                         CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
                         OverrideHeaderTypo="@(e => Typo.h5)" />
@@ -53,7 +53,10 @@
         overflow: hidden;
     }
     img {
-        max-width:100%;
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: 100%;
     }
 </style>
 
