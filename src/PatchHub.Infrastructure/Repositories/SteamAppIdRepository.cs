@@ -22,7 +22,8 @@ public class SteamAppIdRepository
 	{
 		await _jsonService.CreateSteamAppIdModelAsync();
 		var response = _jsonService.SteamAppIds.Select(x => x.ToSteamAppResponse())
-			.Where(x => x.AppName.Contains(searchInput, StringComparison.OrdinalIgnoreCase));
+			.Where(x => x.AppName.StartsWith(searchInput, StringComparison.OrdinalIgnoreCase))
+			.OrderBy(x => x.AppName.Length);
 		return response;
 	}
 }
