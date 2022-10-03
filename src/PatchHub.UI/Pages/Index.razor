@@ -20,13 +20,16 @@
                          ResetValueOnEmptyText="true"
                          CoerceText="true"
                          CoerceValue="false"
-                         AdornmentIcon="@Icons.Material.Filled.Games"
+                         AdornmentIcon="@Icons.Material.Filled.VideogameAsset"
+                         IconSize="Size.Large"
                          AdornmentColor="Color.Info"
                          ShowProgressIndicator="true"
-                         ProgressIndicatorColor="Color.Info"
                          MaxItems="20"
                          SelectValueOnTab="true"
                          SelectOnClick="true">
+            <ProgressIndicatorInPopoverTemplate>
+                <MudProgressLinear Size="Size.Large" Indeterminate="true" Color="Color.Primary" />
+            </ProgressIndicatorInPopoverTemplate>
             <NoItemsTemplate>
                 <MudText Typo="Typo.body1">
                     ☝️Search for a game to explore patch notes!
