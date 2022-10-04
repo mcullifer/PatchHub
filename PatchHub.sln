@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PatchHub.UI", "src\PatchHub
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PatchHub.Infrastructure", "src\PatchHub.Infrastructure\PatchHub.Infrastructure.csproj", "{43376C43-C858-4441-B487-A6B1C79B1451}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatchHub.Parsers", "src\PatchHub.Parsers\PatchHub.Parsers.csproj", "{D611A662-225C-40DD-9D67-80BBFE115CF1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PatchHub.Parsers", "src\PatchHub.Parsers\PatchHub.Parsers.csproj", "{D611A662-225C-40DD-9D67-80BBFE115CF1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
