@@ -27,7 +27,6 @@ public partial class Index
 		return CurrentDate.AddDays(days);
 	}
 
-
 	protected override void OnInitialized()
 	{
 		var today = DateTime.Now;
