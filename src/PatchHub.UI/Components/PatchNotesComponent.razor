@@ -14,7 +14,8 @@
                     <PatchNoteListItemComponent 
                         newsItem="newsItem" 
                         SteamApp="SteamApp" 
-                        OnSelectedNewsItemChanged="newsItem => SetSelectedNewsItem(newsItem)" />
+                        OnSelectedNewsItemChanged="newsItem => SetSelectedNewsItem(newsItem)"
+                        IsCurrentlySelected=@(newsItem == _selectedNewsItem ? true : false)/>
                 }
             </MudContainer>
         </MudItem>

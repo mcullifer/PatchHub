@@ -4,22 +4,27 @@
 
 <a @onclick="@(e => SelectNewsItem(newsItem))" id="@newsItem.gid">
     <MudContainer>
-        <MudPaper Elevation="@_currentElevation" Class="my-4 py-8 px-4 rounded-xl container cursor-pointer"
-                  @onmouseenter="@(e => {_currentElevation = _hoverElevation; StateHasChanged();})"
-                  @onmouseleave="@(e => {this._currentElevation = _defaultElevation; StateHasChanged();} )">
+        <MudPaper Elevation="@(IsCurrentlySelected ? _selectedElevation : _currentElevation)" 
+            Class="my-4 py-8 px-4 rounded-lg container cursor-pointer"
+            @onmouseenter="@(e => {_currentElevation = _hoverElevation; StateHasChanged();})"
+            @onmouseleave="@(e => {this._currentElevation = _defaultElevation; StateHasChanged();} )">
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
                     <MudStack Row="true">
-                        <MudText Typo="Typo.h5">@SteamApp.AppName</MudText>
+                        <MudText Typo="Typo.h5" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">@SteamApp.AppName</MudText>
                         <MudSpacer />
-                        <MudText Typo="Typo.h6" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
+                        <MudText Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
                     </MudStack>
-                    <MudText Typo="Typo.caption">
-                        @newsItem.author
-                    </MudText>
+                    <MudStack Row="true">
+                        <MudText Typo="Typo.caption" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">
+                            @newsItem.author
+                        </MudText>
+                        <MudSpacer />
+                        <MudRating SelectedValue="0" />
+                    </MudStack>
                 </MudStack>
                 <MudStack Spacing="4">
-                    <MudText Typo="Typo.h6">@newsItem.title</MudText>
+                    <MudText Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">@newsItem.title</MudText>
                 </MudStack>
             </MudStack>
         </MudPaper>
@@ -36,9 +41,14 @@
     [Parameter]
     public EventCallback<NewsItem> OnSelectedNewsItemChanged { get; set; }
 
+    [Parameter]
+    public bool IsCurrentlySelected { get; set; }
+
     private int _defaultElevation = 4;
 
-    private int _hoverElevation = 10;
+    private int _selectedElevation = 12;
+
+    private int _hoverElevation = 8;
 
     private int _currentElevation = 4;
 
