@@ -3,55 +3,39 @@
 @using PatchHub.Parsers.Services
 @inject ParsingService ParsingService
 
-<MudPaper Elevation="6" Class="py-8 px-4 rounded-xl container">
-    <MudContainer Fixed="true" Class="@(_expansionClass)">
-            <MudStack Spacing="6">
-                <MudStack Spacing="0">
-                    <MudStack Row="true">
-                        <MudText Typo="Typo.h5">@SteamApp.AppName</MudText>
-                        @if(FirstItem)
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.FiberNew" Color="Color.Warning" Size="Size.Large"></MudIcon>
-                        }
-                        <MudSpacer />
-                        <MudText Typo="Typo.h6" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
+@if(newsItem != null) 
+{
+    <MudContainer Class="pb-8 overflow-y-scroll" Style="max-height:75vh;">
+        <MudPaper Elevation="6" Class="py-8 px-4 rounded-lg container" MaxHeight="fit-content">
+            <MudContainer Fixed="true" Style="max-height: fit-content;">
+                <MudStack Spacing="6">
+                    <MudStack Spacing="0">
+                        <MudStack Row="true">
+                            <MudText Typo="Typo.h5">@SteamApp.AppName</MudText>
+                            <MudSpacer />
+                            <MudText Typo="Typo.h6" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.caption">
+                            @newsItem.author
+                        </MudText>
                     </MudStack>
-                    <MudText Typo="Typo.caption">
-                        @newsItem.author
-                    </MudText>
+                    <MudStack Row="true" Spacing="4">
+                        <MudLink Href="@newsItem.url">
+                            <MudText Typo="Typo.h6">@newsItem.title</MudText>
+                        </MudLink>
+                    </MudStack>
+                    <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
+                            <MudMarkdown Value="@ParsingService.ParseBBCode(newsItem.contents, true)" 
+                                CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
+                                OverrideHeaderTypo="@(e => Typo.h5)" />
+                    </MudContainer>
                 </MudStack>
-                <MudStack Row="true" Spacing="4">
-                    <MudLink Href="@newsItem.url">
-                        <MudText Typo="Typo.h6">@newsItem.title</MudText>
-                    </MudLink>
-                </MudStack>
-            <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
-                    <MudMarkdown Value="@ParsingService.ParseBBCode(newsItem.contents, true)" 
-                        CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
-                        OverrideHeaderTypo="@(e => Typo.h5)" />
-                </MudContainer>
-            </MudStack>
+            </MudContainer>
+        </MudPaper>
     </MudContainer>
-    
-    <MudContainer Class="mt-4" Style="text-align:center;">
-        @if(_expanded)
-        {
-            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.ExpandLess" OnClick="ExpandPanel"></MudFab>
-        }
-        else 
-        {
-            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.ExpandMore" OnClick="ExpandPanel"></MudFab>
-        }
-    </MudContainer>
-</MudPaper>
+}
+
 <style>
-    .container .expanded {
-        max-height: fit-content;
-    }
-    .container .collapsed {
-        max-height: 500px;
-        overflow: hidden;
-    }
     img {
         display: block;
         width: auto;
@@ -67,29 +51,19 @@
     [Parameter]
     public SteamAppResponse SteamApp { get; set; }
 
-    [Parameter]
-    public bool FirstItem { get; set; } = false;
+    public bool Expanded { get; set; } = false;
 
     private string _expansionClass = "collapsed";
 
-    private bool _expanded = false;
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        StateHasChanged();
+    }
 
     private DateTime CreateDateTime(int unixTimeStamp)
     {
         var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         return dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-    }
-
-    private void ExpandPanel() 
-    {
-        if (_expanded) 
-        {
-            _expansionClass = "collapsed";
-        }
-        else 
-        {
-            _expansionClass = "expanded";
-        }
-        _expanded = !_expanded;
     }
 }

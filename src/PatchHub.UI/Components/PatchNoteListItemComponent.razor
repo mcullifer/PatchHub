@@ -1,0 +1,55 @@
+﻿@using PatchHub.Infrastructure.Contracts.Responses
+@using PatchHub.Infrastructure.Models
+@using PatchHub.Parsers.Services
+
+<a @onclick="@(e => SelectNewsItem(newsItem))" id="@newsItem.gid">
+    <MudContainer>
+        <MudPaper Elevation="@_currentElevation" Class="my-4 py-8 px-4 rounded-xl container cursor-pointer"
+                  @onmouseenter="@(e => {_currentElevation = _hoverElevation; StateHasChanged();})"
+                  @onmouseleave="@(e => {this._currentElevation = _defaultElevation; StateHasChanged();} )">
+            <MudStack Spacing="6">
+                <MudStack Spacing="0">
+                    <MudStack Row="true">
+                        <MudText Typo="Typo.h5">@SteamApp.AppName</MudText>
+                        <MudSpacer />
+                        <MudText Typo="Typo.h6" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.caption">
+                        @newsItem.author
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="4">
+                    <MudText Typo="Typo.h6">@newsItem.title</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudContainer>
+</a>
+
+@code {
+    [Parameter]
+    public NewsItem newsItem { get; set; }
+
+    [Parameter]
+    public SteamAppResponse SteamApp { get; set; }
+
+    [Parameter]
+    public EventCallback<NewsItem> OnSelectedNewsItemChanged { get; set; }
+
+    private int _defaultElevation = 4;
+
+    private int _hoverElevation = 10;
+
+    private int _currentElevation = 4;
+
+    private async void SelectNewsItem(NewsItem thisNewsItem)
+    {
+        await OnSelectedNewsItemChanged.InvokeAsync(thisNewsItem);
+    }
+
+    private DateTime CreateDateTime(int unixTimeStamp)
+    {
+        var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        return dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
+    }
+}
