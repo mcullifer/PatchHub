@@ -30,7 +30,4 @@ app.UseRouting();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-//var steamAppRepository = app.Services.GetRequiredService<SteamAppIdRepository>();
-//await steamAppRepository.InitializeAsync();
-
 app.Run();
