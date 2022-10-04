@@ -1,16 +1,27 @@
 ﻿@using PatchHub.Infrastructure.Contracts.Responses
 @using PatchHub.Infrastructure.Models
 @using PatchHub.Infrastructure.Services
+@using Microsoft.JSInterop
+@inject IJSRuntime JsRuntime
 
 <MudGrid Spacing="4">
     @if (_newsItems != null) 
     {
-        foreach(var newsItem in _newsItems) 
-        {
-            <MudItem xs="12">
-                <PatchNoteComponent newsItem="@newsItem" SteamApp="@SteamApp" />
-            </MudItem>
-        }
+        <MudItem md="4">
+            <MudContainer id="PatchNoteListComponent" Class="overflow-y-scroll" Style="max-height:75vh;" Fixed="true">
+                @foreach (var newsItem in _newsItems)
+                {
+                    <PatchNoteListItemComponent 
+                        newsItem="newsItem" 
+                        SteamApp="SteamApp" 
+                        OnSelectedNewsItemChanged="newsItem => SetSelectedNewsItem(newsItem)" />
+                }
+            </MudContainer>
+        </MudItem>
+        <MudDivider Vertical="true" FlexItem="true" />
+        <MudItem xs="12" md="7">
+            <PatchNoteComponent newsItem="@_selectedNewsItem" SteamApp="@SteamApp" />
+        </MudItem>
     }
 </MudGrid>
 
@@ -23,6 +34,8 @@
 
     private IEnumerable<NewsItem>? _newsItems;
 
+    private NewsItem? _selectedNewsItem { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -31,8 +44,15 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        base.OnParametersSet();
+        await base.OnParametersSetAsync();
         _newsItems = await SteamApi.GetNewsForAppAsync(SteamApp);
+        await JsRuntime.InvokeVoidAsync("OnScrollEvent", "PatchNoteListComponent");
+        _selectedNewsItem = _newsItems.FirstOrDefault();
+    }
+
+    private void SetSelectedNewsItem(NewsItem selectedNewsItem) 
+    {
+        _selectedNewsItem = selectedNewsItem;
         StateHasChanged();
     }
 }

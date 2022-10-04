@@ -30,5 +30,13 @@
     <script src="_framework/blazor.server.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="_content/MudBlazor.Markdown/MudBlazor.Markdown.min.js"></script>
+    <script>
+        function OnScrollEvent(elementId) {
+            var component = document.getElementById(elementId);
+            if (component != null) {
+                component.scrollTop = 0;
+            }
+        }
+    </script>
 </body>
 </html>
