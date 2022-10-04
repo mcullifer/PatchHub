@@ -17,7 +17,7 @@
                          @bind-Value="SelectedGame"
                          SearchFunc="SearchGames"
                          ToStringFunc="@(e => e == null ? null : e.AppName)"
-                         ResetValueOnEmptyText="true"
+                         ResetValueOnEmptyText="false"
                          CoerceText="true"
                          CoerceValue="false"
                          AdornmentIcon="@Icons.Material.Filled.VideogameAsset"
@@ -42,7 +42,7 @@
     @if (SelectedGame != null) 
     {
         <MudItem xs="12">
-            <PatchNotesComponent SteamApp="SelectedGame" />
+            <PatchNotesComponent SteamApp="SelectedGame"/>
         </MudItem>
     }
 </MudGrid>
