@@ -1,19 +1,18 @@
 ﻿using Microsoft.AspNetCore.Components;
-using PatchHub.Infrastructure.Contracts.Responses;
-using PatchHub.Infrastructure.Models;
+using PatchHub.Infrastructure.Domain;
 
 namespace PatchHub.UI.Components;
 
 public partial class PatchNoteListItemComponent
 {
 	[Parameter]
-	public NewsItem newsItem { get; set; }
+	public SteamAppNews? NewsContent { get; set; }
 
 	[Parameter]
-	public SteamAppResponse SteamApp { get; set; }
+	public SteamApp? SteamApplication { get; set; }
 
 	[Parameter]
-	public EventCallback<NewsItem> OnSelectedNewsItemChanged { get; set; }
+	public EventCallback<SteamAppNews> OnSelectedNewsItemChanged { get; set; }
 
 	[Parameter]
 	public bool IsCurrentlySelected { get; set; }
@@ -26,14 +25,8 @@ public partial class PatchNoteListItemComponent
 
 	private int _currentElevation = 4;
 
-	private async void SelectNewsItem(NewsItem thisNewsItem)
+	private async void SelectNewsItem(SteamAppNews thisNewsItem)
 	{
 		await OnSelectedNewsItemChanged.InvokeAsync(thisNewsItem);
-	}
-
-	private DateTime CreateDateTime(int unixTimeStamp)
-	{
-		var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-		return dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
 	}
 }

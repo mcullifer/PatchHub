@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using PatchHub.Infrastructure.Contracts.Responses;
-using PatchHub.Infrastructure.Models;
+using PatchHub.Infrastructure.Domain;
 using PatchHub.Infrastructure.Services;
 
 namespace PatchHub.UI.Components;
@@ -9,14 +8,17 @@ namespace PatchHub.UI.Components;
 public partial class PatchNotesComponent
 {
 	[Inject]
-	protected SteamApiService SteamApi { get; set; }
+	protected IJSRuntime JsRuntime { get; set; } = null!;
+
+	[Inject]
+	protected SteamApiService? SteamApi { get; set; }
 
 	[Parameter]
-	public SteamAppResponse SteamApp { get; set; }
+	public SteamApp? SteamApplication { get; set; }
 
-	private IEnumerable<NewsItem>? _newsItems;
+	private IEnumerable<SteamAppNews>? _newsItems;
 
-	private NewsItem? _selectedNewsItem { get; set; }
+	private SteamAppNews? _selectedNewsItem;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -27,12 +29,15 @@ public partial class PatchNotesComponent
 	protected override async Task OnParametersSetAsync()
 	{
 		await base.OnParametersSetAsync();
-		_newsItems = await SteamApi.GetNewsForAppAsync(SteamApp);
+		if (SteamApplication != null && SteamApi != null)
+		{
+			_newsItems = await SteamApi.GetNewsForAppAsync(SteamApplication);
+			_selectedNewsItem = _newsItems.FirstOrDefault();
+		}
 		await JsRuntime.InvokeVoidAsync("OnScrollEvent", "PatchNoteListComponent");
-		_selectedNewsItem = _newsItems.FirstOrDefault();
 	}
 
-	private void SetSelectedNewsItem(NewsItem selectedNewsItem)
+	private void SetSelectedNewsItem(SteamAppNews selectedNewsItem)
 	{
 		_selectedNewsItem = selectedNewsItem;
 		StateHasChanged();

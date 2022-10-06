@@ -1,6 +1,5 @@
 using MudBlazor.Services;
 using PatchHub.Infrastructure;
-using PatchHub.Parsers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +8,6 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 builder.Services.AddInfrastructureServices();
-builder.Services.AddParsingServices();
 
 var app = builder.Build();
 

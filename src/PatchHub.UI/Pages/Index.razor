@@ -1,5 +1,4 @@
-﻿@using PatchHub.Infrastructure.Contracts.Responses
-@using PatchHub.UI.Components
+﻿@using PatchHub.UI.Components
 @page "/"
 
 <PageTitle>PatchHub - Home</PageTitle>
@@ -12,7 +11,7 @@
     </MudItem>
     <MudItem xs="0" md="3"/>
     <MudItem xs="12" md="6">
-        <MudAutocomplete T="SteamAppResponse" Label="Search For A Game"
+        <MudAutocomplete T="SteamApp" Label="Search For A Game"
                          Variant="Variant.Filled"
                          @bind-Value="SelectedGame"
                          SearchFunc="SearchGames"
@@ -42,7 +41,7 @@
     @if (SelectedGame != null) 
     {
         <MudItem xs="12">
-            <PatchNotesComponent SteamApp="SelectedGame"/>
+            <PatchNotesComponent SteamApplication="SelectedGame" />
         </MudItem>
     }
 </MudGrid>

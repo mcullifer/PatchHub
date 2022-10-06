@@ -1,4 +1,4 @@
-﻿using PatchHub.Infrastructure.Contracts.Responses;
+﻿using PatchHub.Infrastructure.Domain;
 using PatchHub.Infrastructure.Mapping;
 using PatchHub.Infrastructure.Services;
 
@@ -18,12 +18,13 @@ public class SteamAppIdRepository
 		await _jsonService.CreateSteamAppIdModelAsync();
 	}
 
-	public async Task<IEnumerable<SteamAppResponse>> GetSteamAppsAsync(string searchInput)
+	public async Task<SteamApps> GetSteamAppsAsync(string searchInput)
 	{
 		await _jsonService.CreateSteamAppIdModelAsync();
-		var response = _jsonService.SteamAppIds.Select(x => x.ToSteamAppResponse())
-			.Where(x => x.AppName.StartsWith(searchInput, StringComparison.OrdinalIgnoreCase))
-			.OrderBy(x => x.AppName.Length);
+		var response = _jsonService.SteamAppIds
+			.Where(x => x.name.StartsWith(searchInput, StringComparison.OrdinalIgnoreCase))
+			.OrderBy(x => x.name.Length)
+			.ToSteamApps();
 		return response;
 	}
 }

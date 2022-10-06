@@ -13,7 +13,6 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\PatchHub.Infrastructure\PatchHub.Infrastructure.csproj" />
-	  <ProjectReference Include="..\PatchHub.Parsers\PatchHub.Parsers.csproj" />
 	</ItemGroup>
 
 	<Target Name="CollectMudBlazorStaticAssets" DependsOnTargets="ResolveStaticWebAssetsInputs" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">

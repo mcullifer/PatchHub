@@ -1,10 +1,4 @@
-﻿@using PatchHub.Infrastructure.Contracts.Responses
-@using PatchHub.Infrastructure.Models
-@using PatchHub.Infrastructure.Services
-@using Microsoft.JSInterop
-@inject IJSRuntime JsRuntime
-
-<MudGrid Spacing="4">
+﻿<MudGrid Spacing="4">
     @if (_newsItems != null) 
     {
         <MudItem md="4">
@@ -12,15 +6,15 @@
                 @foreach (var newsItem in _newsItems)
                 {
                     <PatchNoteListItemComponent 
-                        newsItem="newsItem" 
-                        SteamApp="SteamApp" 
+                        NewsContent="newsItem" 
+                        SteamApplication="SteamApplication" 
                         OnSelectedNewsItemChanged="newsItem => SetSelectedNewsItem(newsItem)"
                         IsCurrentlySelected=@(newsItem == _selectedNewsItem ? true : false)/>
                 }
             </MudContainer>
         </MudItem>
         <MudItem xs="12" md="8">
-            <PatchNoteComponent newsItem="@_selectedNewsItem" SteamApp="@SteamApp" />
+            <PatchNoteComponent News="@_selectedNewsItem" SteamApplication="@SteamApplication" />
         </MudItem>
     }
 </MudGrid>

@@ -1,32 +1,35 @@
-﻿@using PatchHub.Infrastructure.Contracts.Responses
+﻿@using PatchHub.Infrastructure.Domain
 @using PatchHub.Infrastructure.Models
 @using PatchHub.Parsers.Services
 
-<a @onclick="@(e => SelectNewsItem(newsItem))" id="@newsItem.gid">
-    <MudContainer>
-        <MudPaper Elevation="@(IsCurrentlySelected ? _selectedElevation : _currentElevation)" 
-            Class="my-4 py-8 px-4 rounded-lg container cursor-pointer"
-            @onmouseenter="@(e => {_currentElevation = _hoverElevation; StateHasChanged();})"
-            @onmouseleave="@(e => {this._currentElevation = _defaultElevation; StateHasChanged();} )">
-            <MudStack Spacing="6">
-                <MudStack Spacing="0">
-                    <MudStack Row="true">
-                        <MudText Typo="Typo.h5" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">@SteamApp.AppName</MudText>
-                        <MudSpacer />
-                        <MudText Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
+@if (NewsContent != null && SteamApplication != null) 
+{
+    <a @onclick="@(e => SelectNewsItem(NewsContent))" id="@NewsContent.PostId">
+        <MudContainer>
+            <MudPaper Elevation="@(IsCurrentlySelected ? _selectedElevation : _currentElevation)" 
+                Class="my-4 py-8 px-4 rounded-lg container cursor-pointer"
+                @onmouseenter="@(e => {_currentElevation = _hoverElevation; StateHasChanged();})"
+                @onmouseleave="@(e => {this._currentElevation = _defaultElevation; StateHasChanged();} )">
+                <MudStack Spacing="6">
+                    <MudStack Spacing="0">
+                        <MudStack Row="true">
+                            <MudText Typo="Typo.h5" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">@SteamApplication.AppName</MudText>
+                            <MudSpacer />
+                            <MudText Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)" Align="Align.End">@NewsContent.Date</MudText>
+                        </MudStack>
+                        <MudStack Row="true">
+                            <MudText Typo="Typo.caption" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">
+                                @NewsContent.Author
+                            </MudText>
+                            <MudSpacer />
+                            <MudRating SelectedValue="0" />
+                        </MudStack>
                     </MudStack>
-                    <MudStack Row="true">
-                        <MudText Typo="Typo.caption" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">
-                            @newsItem.author
-                        </MudText>
-                        <MudSpacer />
-                        <MudRating SelectedValue="0" />
+                    <MudStack Spacing="4">
+                        <MudText Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">@NewsContent.Title</MudText>
                     </MudStack>
                 </MudStack>
-                <MudStack Spacing="4">
-                    <MudText Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Default)">@newsItem.title</MudText>
-                </MudStack>
-            </MudStack>
-        </MudPaper>
-    </MudContainer>
-</a>
+            </MudPaper>
+        </MudContainer>
+    </a>
+}

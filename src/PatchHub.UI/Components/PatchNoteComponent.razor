@@ -1,11 +1,4 @@
-﻿@using PatchHub.Infrastructure.Contracts.Responses
-@using PatchHub.Infrastructure.Models
-@using PatchHub.Parsers.Services
-@using Microsoft.JSInterop
-@inject ParsingService ParsingService
-@inject IJSRuntime JsRuntime
-
-@if(newsItem != null) 
+﻿@if(News != null && SteamApplication != null) 
 {
     <MudPaper 
         id="PatchNoteComponent" 
@@ -16,21 +9,21 @@
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
                     <MudStack Row="true">
-                        <MudText Typo="Typo.h5">@SteamApp.AppName</MudText>
+                        <MudText Typo="Typo.h5">@SteamApplication.AppName</MudText>
                         <MudSpacer />
-                        <MudText Typo="Typo.h6" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
+                        <MudText Typo="Typo.h6" Align="Align.End">@News.Date</MudText>
                     </MudStack>
                     <MudText Typo="Typo.caption">
-                        @newsItem.author
+                        @News.Author
                     </MudText>
                 </MudStack>
                 <MudStack Row="true" Spacing="4">
-                    <MudLink Href="@newsItem.url">
-                        <MudText Typo="Typo.h6">@newsItem.title</MudText>
+                    <MudLink Href="@News.Url">
+                        <MudText Typo="Typo.h6">@News.Title</MudText>
                     </MudLink>
                 </MudStack>
                 <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
-                        <MudMarkdown Value="@ParsingService.ParseBBCode(newsItem.contents, true)" 
+                        <MudMarkdown Value="@News.Contents" 
                             CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
                             OverrideHeaderTypo="@(e => Typo.h5)" />
                 </MudContainer>

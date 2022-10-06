@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
-using PatchHub.Infrastructure.Contracts.Responses;
+using PatchHub.Infrastructure.Domain;
 using PatchHub.Infrastructure.Models;
 using PatchHub.Infrastructure.Repositories;
 using PatchHub.Infrastructure.Services;
@@ -9,18 +9,18 @@ namespace PatchHub.UI.Pages;
 public partial class Index
 {
 	[Inject]
-	protected SteamAppIdRepository SteamAppRepo { get; set; }
+	protected SteamAppIdRepository? SteamAppRepo { get; set; }
 
 	[Inject]
-	protected SteamApiService SteamApi { get; set; }
+	protected SteamApiService? SteamApi { get; set; }
+
+	public SteamApp? SelectedGame { get; set; }
+
+	public IEnumerable<NewsItem>? NewsItems { get; set; }
 
 	public DateOnly CurrentDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
 
 	public List<DateOnly> ThisWeek { get; set; } = new();
-
-	public SteamAppResponse SelectedGame { get; set; }
-
-	public IEnumerable<NewsItem> NewsItems { get; set; }
 
 	public DateOnly SubtractFromCurrentDate(int days)
 	{
@@ -36,12 +36,13 @@ public partial class Index
 		}
 	}
 
-	public async Task<IEnumerable<SteamAppResponse>> SearchGames(string value)
+	public async Task<IEnumerable<SteamApp>> SearchGames(string value)
 	{
 		if (value != null && value != string.Empty)
 		{
-			return await SteamAppRepo.GetSteamAppsAsync(value);
+			var apps = await SteamAppRepo!.GetSteamAppsAsync(value);
+			return apps.Apps;
 		}
-		return Enumerable.Empty<SteamAppResponse>();
+		return Enumerable.Empty<SteamApp>();
 	}
 }
