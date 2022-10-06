@@ -7,34 +7,36 @@
 
 @if(newsItem != null) 
 {
-    <MudContainer id="PatchNoteComponent" Class="pb-8 overflow-y-scroll" Style="max-height:75vh;">
-        <MudPaper Elevation="6" Class="py-8 px-4 rounded-lg container" MaxHeight="fit-content">
-            <MudContainer Fixed="true" Style="max-height: fit-content;">
-                <MudStack Spacing="6">
-                    <MudStack Spacing="0">
-                        <MudStack Row="true">
-                            <MudText Typo="Typo.h5">@SteamApp.AppName</MudText>
-                            <MudSpacer />
-                            <MudText Typo="Typo.h6" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
-                        </MudStack>
-                        <MudText Typo="Typo.caption">
-                            @newsItem.author
-                        </MudText>
+    <MudPaper 
+        id="PatchNoteComponent" 
+        Elevation="6" 
+        Class="py-8 px-4 overflow-y-scroll rounded-lg news-container" 
+        Style="height:calc(100vh - 275px);">
+        <MudContainer Fixed="true" Style="max-height: fit-content;">
+            <MudStack Spacing="6">
+                <MudStack Spacing="0">
+                    <MudStack Row="true">
+                        <MudText Typo="Typo.h5">@SteamApp.AppName</MudText>
+                        <MudSpacer />
+                        <MudText Typo="Typo.h6" Align="Align.End">@CreateDateTime(newsItem.date).ToString("MM/dd/yyyy")</MudText>
                     </MudStack>
-                    <MudStack Row="true" Spacing="4">
-                        <MudLink Href="@newsItem.url">
-                            <MudText Typo="Typo.h6">@newsItem.title</MudText>
-                        </MudLink>
-                    </MudStack>
-                    <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
-                            <MudMarkdown Value="@ParsingService.ParseBBCode(newsItem.contents, true)" 
-                                CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
-                                OverrideHeaderTypo="@(e => Typo.h5)" />
-                    </MudContainer>
+                    <MudText Typo="Typo.caption">
+                        @newsItem.author
+                    </MudText>
                 </MudStack>
-            </MudContainer>
-        </MudPaper>
-    </MudContainer>
+                <MudStack Row="true" Spacing="4">
+                    <MudLink Href="@newsItem.url">
+                        <MudText Typo="Typo.h6">@newsItem.title</MudText>
+                    </MudLink>
+                </MudStack>
+                <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
+                        <MudMarkdown Value="@ParsingService.ParseBBCode(newsItem.contents, true)" 
+                            CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
+                            OverrideHeaderTypo="@(e => Typo.h5)" />
+                </MudContainer>
+            </MudStack>
+        </MudContainer>
+    </MudPaper>
 }
 
 <style>
@@ -44,29 +46,7 @@
         height: auto;
         max-width: 100%;
     }
+    .news-container {
+        background-color: @Colors.Grey.Darken4;
+    }
 </style>
-
-@code {
-    [Parameter]
-    public NewsItem newsItem { get; set; }
-
-    [Parameter]
-    public SteamAppResponse SteamApp { get; set; }
-
-    public bool Expanded { get; set; } = false;
-
-    private string _expansionClass = "collapsed";
-
-    protected override async Task OnParametersSetAsync()
-    {
-        await base.OnParametersSetAsync();
-        await JsRuntime.InvokeVoidAsync("OnScrollEvent", "PatchNoteComponent");
-        StateHasChanged();
-    }
-
-    private DateTime CreateDateTime(int unixTimeStamp)
-    {
-        var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        return dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-    }
-}

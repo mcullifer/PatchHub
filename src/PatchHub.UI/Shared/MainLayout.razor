@@ -6,7 +6,7 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
+<MudLayout Style="height:100vh;">
     <MudAppBar Elevation="0">
         <MudButton Color="Color.Inherit" OnClick="@((e) => DrawerToggle())">
             <MudText Typo="Typo.h4">PatchHub</MudText>
@@ -23,7 +23,7 @@
         <NavMenu />
     </MudDrawer>
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="ma-0">
             @Body
         </MudContainer>
     </MudMainContent>
@@ -31,13 +31,17 @@
 
 @code {
     private bool _darkMode { get; set; }
+
     private static MudTheme _darkTheme = new MudTheme();
+    
     private static MudTheme _lightTheme = new MudTheme()
     {
         Palette = new Palette
         {
-            AppbarBackground = Colors.Shades.White,
-            AppbarText = Colors.Grey.Darken3
+            AppbarBackground = Colors.Grey.Lighten3,
+            AppbarText = Colors.Grey.Darken3,
+            Background = Colors.Grey.Lighten3,
+            DrawerBackground = Colors.Grey.Lighten3
         }
     };
     private MudTheme? _currentTheme { get; set; }

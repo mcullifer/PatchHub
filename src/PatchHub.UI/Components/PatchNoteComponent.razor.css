@@ -1,8 +1,0 @@
-﻿.expanded {
-    max-height: fit-content;
-}
-.collapsed {
-    transition: max-height 1s ease-in-out;
-    max-height: 500px !important;
-    overflow: hidden;
-}
