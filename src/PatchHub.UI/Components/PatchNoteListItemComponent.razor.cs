@@ -17,13 +17,15 @@ public partial class PatchNoteListItemComponent
 	[Parameter]
 	public bool IsCurrentlySelected { get; set; }
 
-	private int _defaultElevation = 4;
+	private readonly string _textStyle = "transition: color 300ms cubic-bezier(.4, 0, .2, 1) 0ms;";
 
-	private int _selectedElevation = 12;
+	private readonly int _defaultElevation = 4;
 
-	private int _hoverElevation = 8;
+	private readonly int _selectedElevation = 8;
 
-	private int _currentElevation = 4;
+	private readonly int _hoverElevation = 8;
+
+	private int CurrentElevation = 4;
 
 	private async void SelectNewsItem(SteamAppNews thisNewsItem)
 	{

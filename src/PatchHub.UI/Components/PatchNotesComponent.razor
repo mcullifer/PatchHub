@@ -2,19 +2,21 @@
     @if (_newsItems != null) 
     {
         <MudItem md="4">
-            <MudContainer id="PatchNoteListComponent" Class="overflow-y-scroll list-container rounded-lg mud-elevation-6 px-0 py-2" Style="height:calc(100vh - 275px);" Fixed="true" >
+            <MudContainer id="PatchNoteListComponent" Class="overflow-y-scroll rounded-lg px-0 pb-2" Style="height:calc(100vh - 275px);" Fixed="true" >
                 @foreach (var newsItem in _newsItems)
                 {
                     <PatchNoteListItemComponent 
                         NewsContent="newsItem" 
                         SteamApplication="SteamApplication" 
-                        OnSelectedNewsItemChanged="newsItem => SetSelectedNewsItem(newsItem)"
-                        IsCurrentlySelected=@(newsItem == _selectedNewsItem ? true : false)/>
+                        OnSelectedNewsItemChanged="(newsItem => { SetSelectedNewsItem(newsItem); StateHasChanged(); })"
+                        IsCurrentlySelected=@(newsItem.PostId == SelectedNewsItem!.PostId ? true : false)/>
                 }
             </MudContainer>
         </MudItem>
         <MudItem xs="12" md="8">
-            <PatchNoteComponent News="@_selectedNewsItem" SteamApplication="@SteamApplication" />
+            <CascadingValue Name="CurrentNewsItem" Value="@SelectedNewsItem">
+                <PatchNoteComponent News="@SelectedNewsItem" SteamApplication="@SteamApplication" />
+            </CascadingValue>
         </MudItem>
     }
 </MudGrid>

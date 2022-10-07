@@ -1,10 +1,9 @@
 ﻿@if(News != null && SteamApplication != null) 
 {
-    <MudPaper 
-        id="PatchNoteComponent" 
-        Elevation="6" 
-        Class="py-8 px-4 overflow-y-scroll rounded-lg news-container" 
-        Style="height:calc(100vh - 275px);">
+    <MudPaper id=@("News" + _componentName)
+        Elevation="6"
+        Class=@("py-8 px-4 overflow-y-scroll rounded-lg news-container News" + _componentName)
+        Style="@("height:calc(100vh - 275px);")">
         <MudContainer Fixed="true" Style="max-height: fit-content;">
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
@@ -23,9 +22,10 @@
                     </MudLink>
                 </MudStack>
                 <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
-                        <MudMarkdown Value="@News.Contents" 
-                            CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
-                            OverrideHeaderTypo="@(e => Typo.h5)" />
+                    <MudMarkdown 
+                        Value="@News.Contents" 
+                        CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
+                        OverrideHeaderTypo="@(e => Typo.h5)" />
                 </MudContainer>
             </MudStack>
         </MudContainer>
@@ -39,7 +39,22 @@
         height: auto;
         max-width: 100%;
     }
+
     .news-container {
         background-color: @Colors.Grey.Darken4;
+    }
+
+    .News@(_componentName) {
+        animation: fade-animation cubic-bezier(.4, 0, .2, 1) 0.8s;
+    }
+    
+    @@keyframes fade-animation {
+        0% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+            @_opacity = 1;
+        }
     }
 </style>
