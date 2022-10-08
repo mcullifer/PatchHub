@@ -9,7 +9,8 @@
 <MudLayout Style="height:100vh;">
     <MudAppBar Elevation="0">
         <MudButton Color="Color.Inherit" OnClick="@((e) => DrawerToggle())">
-            <MudText Typo="Typo.h4">PatchHub</MudText>
+            <MudText Typo="Typo.h4" Color="Color.Surface" Inline="true">Patch</MudText>
+            <MudText Typo="Typo.h4" Color="Color.Info" Inline="true">Hub</MudText>
         </MudButton>
         <MudSpacer />
         <MudToggleIconButton
@@ -19,9 +20,9 @@
                 ToggledTitle="Switch To Dark Mode"
                 ToggledChanged="ChangeTheme"/>
     </MudAppBar>
-    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="0">
+    @*<MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="0">
         <NavMenu />
-    </MudDrawer>
+    </MudDrawer>*@
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="ma-0">
             @Body

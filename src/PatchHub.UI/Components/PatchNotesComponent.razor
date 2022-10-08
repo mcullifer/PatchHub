@@ -1,22 +1,25 @@
-﻿<MudGrid Spacing="4">
+﻿<MudGrid Spacing="4" Class="overflow-x-hidden">
     @if (_newsItems != null) 
     {
         <MudItem md="4">
+            <MudContainer Class="d-flex justify-center mb-4">
+                <MudPagination Color="Color.Secondary" Variant="Variant.Filled" Count="4" @bind-Selected="@SelectedPage">
+
+                </MudPagination>
+            </MudContainer>
             <MudContainer id="PatchNoteListComponent" Class="overflow-y-scroll rounded-lg px-0 pb-2" Style="height:calc(100vh - 275px);" Fixed="true" >
                 @foreach (var newsItem in _newsItems)
                 {
                     <PatchNoteListItemComponent 
                         NewsContent="newsItem" 
-                        SteamApplication="SteamApplication" 
-                        OnSelectedNewsItemChanged="(newsItem => { SetSelectedNewsItem(newsItem); StateHasChanged(); })"
-                        IsCurrentlySelected=@(newsItem.PostId == SelectedNewsItem!.PostId ? true : false)/>
+                        SteamApplication="SteamApplication"
+                        OnSelectedNewsItemChanged="@(newsItem => { SetSelectedNewsItem(newsItem); ThisPatchNote!.ResetNewsComponent(); })"
+                        IsCurrentlySelected=@(newsItem.PostId == SelectedNewsItem!.PostId ? true : false) />
                 }
             </MudContainer>
         </MudItem>
-        <MudItem xs="12" md="8">
-            <CascadingValue Name="CurrentNewsItem" Value="@SelectedNewsItem">
-                <PatchNoteComponent News="@SelectedNewsItem" SteamApplication="@SteamApplication" />
-            </CascadingValue>
+        <MudItem xs="12" md="8" Class="mt-12">
+            <PatchNoteComponent @ref="ThisPatchNote" News="@SelectedNewsItem" SteamApplication="@SteamApplication" Class="hidden-news" OnClassChanged="StateHasChanged" />
         </MudItem>
     }
 </MudGrid>

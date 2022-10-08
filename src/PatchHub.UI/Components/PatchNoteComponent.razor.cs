@@ -10,23 +10,33 @@ public partial class PatchNoteComponent
 	protected IJSRuntime JsRuntime { get; set; } = null!;
 
 	[Parameter]
-	public SteamAppNews? News { get; set; }
+	public SteamAppNews? News { get; set; } = null!;
 
 	[Parameter]
-	public SteamApp? SteamApplication { get; set; }
+	public SteamApp? SteamApplication { get; set; } = null!;
 
-	[CascadingParameter]
-	protected SteamAppNews? CurrentNewsItem { get; set; }
+	[Parameter]
+	public string Class { get; set; } = string.Empty;
 
-	private string _componentName;
+	[Parameter]
+	public EventCallback<string> OnClassChanged { get; set; }
 
-	private int _opacity = 0;
+	private string _componentName = string.Empty;
 
-	protected override async Task OnParametersSetAsync()
+	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		_componentName = News.PostId;
-		StateHasChanged();
+		Class = "visible-news";
 		await JsRuntime.InvokeVoidAsync("OnScrollEvent", _componentName);
-		await base.OnParametersSetAsync();
+		this.StateHasChanged();
+	}
+
+	public void ResetNewsComponent()
+	{
+		this.News = null;
+		this.SteamApplication = null;
+		this.Class = "hidden-news";
+		this._componentName = string.Empty;
+		this.StateHasChanged();
 	}
 }

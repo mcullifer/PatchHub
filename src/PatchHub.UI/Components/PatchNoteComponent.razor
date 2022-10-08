@@ -2,8 +2,7 @@
 {
     <MudPaper id=@("News" + _componentName)
         Elevation="6"
-        Class=@("py-8 px-4 overflow-y-scroll rounded-lg news-container News" + _componentName)
-        Style="@("height:calc(100vh - 275px);")">
+        Class=@("py-8 px-4 overflow-y-scroll rounded-lg news-container " + Class) >
         <MudContainer Fixed="true" Style="max-height: fit-content;">
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
@@ -16,12 +15,13 @@
                         @News.Author
                     </MudText>
                 </MudStack>
-                <MudStack Row="true" Spacing="4">
-                    <MudLink Href="@News.Url">
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudButton Href="@News.Url" target="_blank" rel="noopener noreferrer" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Link" Color="Color.Info">
                         <MudText Typo="Typo.h6">@News.Title</MudText>
-                    </MudLink>
+                    </MudButton>
                 </MudStack>
-                <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
+                <MudDivider DividerType="DividerType.Middle" Class="my-2" />
+                <MudContainer Fixed="true" Class=@("px-0 news-container" + Class) Style="overflow:auto;word-wrap: break-word;">
                     <MudMarkdown 
                         Value="@News.Contents" 
                         CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
@@ -31,7 +31,6 @@
         </MudContainer>
     </MudPaper>
 }
-
 <style>
     img {
         display: block;
@@ -42,19 +41,15 @@
 
     .news-container {
         background-color: @Colors.Grey.Darken4;
+        transition: opacity cubic-bezier(.4, 0, .2, 1) 0.35s;
+        max-height: calc(100vh - 275px);
     }
 
-    .News@(_componentName) {
-        animation: fade-animation cubic-bezier(.4, 0, .2, 1) 0.8s;
+    .visible-news {
+        opacity: 1;
     }
-    
-    @@keyframes fade-animation {
-        0% {
-            opacity: 0;
-        }
-        100% {
-            opacity: 1;
-            @_opacity = 1;
-        }
+
+    .hidden-news {
+        opacity: 0;
     }
 </style>

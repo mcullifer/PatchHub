@@ -18,23 +18,7 @@ public partial class Index
 
 	public IEnumerable<NewsItem>? NewsItems { get; set; }
 
-	public DateOnly CurrentDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
-
-	public List<DateOnly> ThisWeek { get; set; } = new();
-
-	public DateOnly SubtractFromCurrentDate(int days)
-	{
-		return CurrentDate.AddDays(days);
-	}
-
-	protected override void OnInitialized()
-	{
-		var today = DateTime.Now;
-		for (var i = 0; i < 8; i++)
-		{
-			ThisWeek.Add(DateOnly.FromDateTime(today.AddDays(-1 * i)));
-		}
-	}
+	private bool ShowContent = false;
 
 	public async Task<IEnumerable<SteamApp>> SearchGames(string value)
 	{
@@ -44,5 +28,15 @@ public partial class Index
 			return apps.Apps;
 		}
 		return Enumerable.Empty<SteamApp>();
+	}
+
+	public void SearchValueChanged(SteamApp selected)
+	{
+		if (selected != null)
+		{
+			SelectedGame = selected;
+			ShowContent = true;
+		}
+		this.StateHasChanged();
 	}
 }

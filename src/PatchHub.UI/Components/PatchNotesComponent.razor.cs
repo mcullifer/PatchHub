@@ -20,6 +20,10 @@ public partial class PatchNotesComponent
 
 	public SteamAppNews? SelectedNewsItem { get; set; }
 
+	PatchNoteComponent? ThisPatchNote;
+
+	private int SelectedPage = 1;
+
 	protected override async Task OnInitializedAsync()
 	{
 		_newsItems = null;
@@ -38,6 +42,7 @@ public partial class PatchNotesComponent
 	private void SetSelectedNewsItem(SteamAppNews selectedNewsItem)
 	{
 		SelectedNewsItem = selectedNewsItem;
+		SelectedPage = 1;
 		StateHasChanged();
 	}
 }

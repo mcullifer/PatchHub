@@ -1,24 +1,20 @@
-﻿@using PatchHub.Infrastructure.Domain
-@using PatchHub.Infrastructure.Models
-@using PatchHub.Parsers.Services
-
-@if (NewsContent != null && SteamApplication != null)
+﻿@if (NewsContent != null && SteamApplication != null)
 {
     <a @onclick="@(e => {IsCurrentlySelected = true; SelectNewsItem(NewsContent); StateHasChanged();})" id="@NewsContent.PostId">
-        <MudContainer>
-            <MudPaper Class="mb-4 mx-4 py-8 px-4 rounded-lg cursor-pointer"
+        <MudContainer>      
+            <MudPaper Class="mb-4 mx-4 py-8 px-4 rounded-lg news-list-item cursor-pointer"
                 Elevation="@(IsCurrentlySelected ? _selectedElevation : CurrentElevation)"
                 @onmouseenter="@(e => {CurrentElevation = _hoverElevation; StateHasChanged();})"
                 @onmouseleave="@(e => {CurrentElevation = _defaultElevation; StateHasChanged();} )">
                 <MudStack Spacing="6">
                     <MudStack Spacing="0">
                         <MudStack Row="true">
-                            <MudText Style="@_textStyle" Typo="Typo.h5" Color="@(IsCurrentlySelected ? Color.Primary : Color.Default)">@SteamApplication.AppName</MudText>
+                            <MudText Style="@_textStyle" Typo="Typo.h5" Color="@(IsCurrentlySelected ? Color.Info : Color.Surface)">@SteamApplication.AppName</MudText>
                             <MudSpacer />
-                            <MudText Style="@_textStyle" Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Primary : Color.Default)" Align="Align.End">@NewsContent.Date</MudText>
+                            <MudText Style="@_textStyle" Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Surface)" Align="Align.End">@NewsContent.Date</MudText>
                         </MudStack>
                         <MudStack Row="true">
-                            <MudText Style="@_textStyle" Typo="Typo.caption" Color="@(IsCurrentlySelected ? Color.Primary : Color.Default)">
+                            <MudText Style="@_textStyle" Typo="Typo.caption" Color="@(IsCurrentlySelected ? Color.Info : Color.Surface)">
                                 @NewsContent.Author
                             </MudText>
                             <MudSpacer />
@@ -26,7 +22,7 @@
                         </MudStack>
                     </MudStack>
                     <MudStack Spacing="4">
-                        <MudText Style="@_textStyle" Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Primary : Color.Default)">@NewsContent.Title</MudText>
+                        <MudText Style="@_textStyle" Typo="Typo.h6" Color="@(IsCurrentlySelected ? Color.Info : Color.Surface)">@NewsContent.Title</MudText>
                     </MudStack>
                 </MudStack>
             </MudPaper>
@@ -36,6 +32,6 @@
 
 <style>
     .news-list-item {
-        background-color: @Colors.BlueGrey.Darken4;
+        background-color: @Colors.Grey.Darken4;
     }
 </style>
