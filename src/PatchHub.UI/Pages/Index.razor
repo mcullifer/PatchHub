@@ -7,7 +7,7 @@
     <MudContainer Class="d-flex justify-start ma-8">
         <MudItem xs="12" md="5" >
             <MudAutocomplete T="SteamApp" Label="Search For A Game"
-                             Variant="Variant.Filled"
+                             Variant="Variant.Outlined"
                              ValueChanged="SearchValueChanged"
                              SearchFunc="SearchGames"
                              ToStringFunc="@(e => e == null ? null : e.AppName)"

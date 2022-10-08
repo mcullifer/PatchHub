@@ -2,25 +2,26 @@
 {
     <MudPaper id=@("News" + _componentName)
         Elevation="6"
-        Class=@("py-8 px-4 overflow-y-scroll rounded-lg news-container " + Class) >
+          Class=@("py-8 px-4 overflow-y-scroll rounded-lg news-container animate__animated animate__slideInRight " + Class)>
         <MudContainer Fixed="true" Style="max-height: fit-content;">
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
                     <MudStack Row="true">
                         <MudText Typo="Typo.h5">@SteamApplication.AppName</MudText>
                         <MudSpacer />
-                        <MudText Typo="Typo.h6" Align="Align.End">@News.Date</MudText>
+                        <MudButton Href="@News.Url" target="_blank" rel="noopener noreferrer" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.OpenInNew" Color="Color.Info">
+                            <MudText Typo="Typo.body1">Open original</MudText>
+                        </MudButton>
                     </MudStack>
-                    <MudText Typo="Typo.caption">
+                    <MudText Typo="Typo.body1">
                         @News.Author
                     </MudText>
+                    <MudText Typo="Typo.body1">@News.Date</MudText>
                 </MudStack>
+                <MudDivider DividerType="DividerType.FullWidth" Class="my-2" />
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
-                    <MudButton Href="@News.Url" target="_blank" rel="noopener noreferrer" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Link" Color="Color.Info">
-                        <MudText Typo="Typo.h6">@News.Title</MudText>
-                    </MudButton>
+                    <MudText Typo="Typo.h4" Align="Align.Center">@News.Title</MudText>
                 </MudStack>
-                <MudDivider DividerType="DividerType.Middle" Class="my-2" />
                 <MudContainer Fixed="true" Class=@("px-0 news-container" + Class) Style="overflow:auto;word-wrap: break-word;">
                     <MudMarkdown 
                         Value="@News.Contents" 
@@ -40,7 +41,6 @@
     }
 
     .news-container {
-        background-color: @Colors.Grey.Darken4;
         transition: opacity cubic-bezier(.4, 0, .2, 1) 0.35s;
         max-height: calc(100vh - 275px);
     }
@@ -51,5 +51,9 @@
 
     .hidden-news {
         opacity: 0;
+    }
+
+    .animate__animated.animate__slideInRight {
+        --animate-duration: 0.35s
     }
 </style>

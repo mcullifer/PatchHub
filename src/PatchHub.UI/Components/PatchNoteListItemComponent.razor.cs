@@ -21,14 +21,30 @@ public partial class PatchNoteListItemComponent
 
 	private readonly int _defaultElevation = 4;
 
-	private readonly int _selectedElevation = 8;
+	private readonly int _selectedElevation = 12;
 
 	private readonly int _hoverElevation = 8;
 
 	private int CurrentElevation = 4;
 
+	private readonly string _anim_classes = "news-list-item animate__animated animate__pulse";
+
+	private readonly string _default_classes = "mb-4 mx-4 py-8 px-4 rounded-lg news-list-item cursor-pointer";
+
 	private async void SelectNewsItem(SteamAppNews thisNewsItem)
 	{
+		IsCurrentlySelected = false;
+		StateHasChanged();
 		await OnSelectedNewsItemChanged.InvokeAsync(thisNewsItem);
+
+	}
+
+	protected override void OnAfterRender(bool firstRender)
+	{
+		if (firstRender)
+		{
+			StateHasChanged();
+			base.OnAfterRender(firstRender);
+		}
 	}
 }

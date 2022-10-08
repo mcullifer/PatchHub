@@ -1,8 +1,8 @@
 ﻿@if (NewsContent != null && SteamApplication != null)
 {
-    <a @onclick="@(e => {IsCurrentlySelected = true; SelectNewsItem(NewsContent); StateHasChanged();})" id="@NewsContent.PostId">
-        <MudContainer>      
-            <MudPaper Class="mb-4 mx-4 py-8 px-4 rounded-lg news-list-item cursor-pointer"
+    <a @onclick="@(e => {IsCurrentlySelected = true; SelectNewsItem(NewsContent); StateHasChanged();})">
+        <MudContainer Class="@(IsCurrentlySelected ? _anim_classes : "")">
+            <MudPaper Class="@_default_classes"
                 Elevation="@(IsCurrentlySelected ? _selectedElevation : CurrentElevation)"
                 @onmouseenter="@(e => {CurrentElevation = _hoverElevation; StateHasChanged();})"
                 @onmouseleave="@(e => {CurrentElevation = _defaultElevation; StateHasChanged();} )">
@@ -32,6 +32,6 @@
 
 <style>
     .news-list-item {
-        background-color: @Colors.Grey.Darken4;
+        --animate-duration: 0.25s;
     }
 </style>

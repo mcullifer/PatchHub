@@ -9,6 +9,7 @@
 <MudLayout Style="height:100vh;">
     <MudAppBar Elevation="0">
         <MudButton Color="Color.Inherit" OnClick="@((e) => DrawerToggle())">
+            <MudIcon Icon="@Icons.Material.Rounded.ListAlt" Size="Size.Large"></MudIcon>
             <MudText Typo="Typo.h4" Color="Color.Surface" Inline="true">Patch</MudText>
             <MudText Typo="Typo.h4" Color="Color.Info" Inline="true">Hub</MudText>
         </MudButton>
@@ -34,7 +35,7 @@
     private bool _darkMode { get; set; }
 
     private static MudTheme _darkTheme = new MudTheme();
-    
+
     private static MudTheme _lightTheme = new MudTheme()
     {
         Palette = new Palette
@@ -57,7 +58,7 @@
 
     void ChangeTheme()
     {
-        if(_currentTheme == _darkTheme)
+        if(_darkMode)
         {
             _currentTheme = _lightTheme;
             _darkMode = false;
@@ -67,6 +68,7 @@
             _currentTheme = _darkTheme;
             _darkMode = true;
         }
+        StateHasChanged();
     }
 
     void DrawerToggle()
