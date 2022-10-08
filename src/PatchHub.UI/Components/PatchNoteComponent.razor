@@ -2,7 +2,7 @@
 {
     <MudPaper id=@("News" + _componentName)
         Elevation="6"
-          Class=@("py-8 px-4 overflow-y-scroll rounded-lg news-container animate__animated animate__slideInRight " + Class)>
+        Class=@DefaultContainerClasses>
         <MudContainer Fixed="true" Style="max-height: fit-content;">
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
@@ -41,19 +41,7 @@
     }
 
     .news-container {
-        transition: opacity cubic-bezier(.4, 0, .2, 1) 0.35s;
         max-height: calc(100vh - 275px);
-    }
-
-    .visible-news {
-        opacity: 1;
-    }
-
-    .hidden-news {
-        opacity: 0;
-    }
-
-    .animate__animated.animate__slideInRight {
-        --animate-duration: 0.35s
+        --animate-duration: 0.35s;
     }
 </style>

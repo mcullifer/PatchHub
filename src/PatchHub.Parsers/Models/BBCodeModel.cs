@@ -42,7 +42,7 @@ public static class BBCodeModel
 
 	public static readonly string HorizontalRuleClose = "[/hr]";
 
-	public static readonly string UrlOpen = "[url]";
+	public static readonly string UrlOpen = "[url=";
 
 	public static readonly string UrlClose = "[/url]";
 

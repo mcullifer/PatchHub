@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using PatchHub.Parsers.Models;
 
 namespace PatchHub.Parsers.Services;
@@ -14,16 +15,16 @@ public sealed class ParsingService
 		foreach (var line in lines)
 		{
 			sb.Clear();
-			sb.Append(line);
+			sb.Append(ParseUrls(line));
 
 			sb.Replace(BBCodeModel.ItalicOpen, MarkdownModel.Italic)
 				.Replace(BBCodeModel.ItalicClose, MarkdownModel.Italic)
+				.Replace(BBCodeModel.ListOpen, MarkdownModel.Empty)
+				.Replace(BBCodeModel.ListClose, MarkdownModel.Empty)
 				.Replace(BBCodeModel.BoldOpen, MarkdownModel.Bold)
 				.Replace(BBCodeModel.BoldClose, MarkdownModel.Bold)
 				.Replace(BBCodeModel.UnderlineOpen, MarkdownModel.Empty)
 				.Replace(BBCodeModel.UnderlineClose, MarkdownModel.Empty)
-				.Replace(BBCodeModel.ListOpen, MarkdownModel.Empty)
-				.Replace(BBCodeModel.ListClose, MarkdownModel.Empty)
 				.Replace(BBCodeModel.OrderedListOpen, MarkdownModel.Empty)
 				.Replace(BBCodeModel.OrderedListClose, MarkdownModel.Empty)
 				.Replace(BBCodeModel.BulletItem, MarkdownModel.List)
@@ -34,8 +35,8 @@ public sealed class ParsingService
 				.Replace(BBCodeModel.Header3Open, MarkdownModel.Header3)
 				.Replace(BBCodeModel.Header3Close, MarkdownModel.Empty)
 				.Replace(BBCodeModel.SpoilerOpen, MarkdownModel.Empty)
-				.Replace(BBCodeModel.SpoilerClose, MarkdownModel.Empty);
-
+				.Replace(BBCodeModel.SpoilerClose, MarkdownModel.Empty)
+				.Replace("**", "");
 			if (steamContent)
 			{
 				sb.Replace(BBCodeModel.ImageOpen + "{STEAM_CLAN_IMAGE}", MarkdownModel.ImageOpen + "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/clans//")
@@ -47,5 +48,23 @@ public sealed class ParsingService
 
 		var finalMarkdownString = string.Join(Environment.NewLine, parsed);
 		return finalMarkdownString;
+	}
+
+	private static string ParseUrls(string line)
+	{
+		var sb = new StringBuilder().Append(line);
+		if (line.Contains(BBCodeModel.UrlOpen))
+		{
+			var matchCollection = Regex.Matches(line, "\\[url=(.+?)\\]((?:.|\\n)+?)\\[\\/url\\]").AsEnumerable();
+			matchCollection.ToList().ForEach(match =>
+			{
+				var original = match.Groups[0].Value;
+				var url = match.Groups[1].Value;
+				var urlText = match.Groups[2].Value;
+				sb.Replace(original, "[" + urlText + "](" + url + ")");
+			});
+			return sb.ToString();
+		}
+		return line;
 	}
 }

@@ -23,20 +23,39 @@ public partial class PatchNoteComponent
 
 	private string _componentName = string.Empty;
 
+	private readonly string _anim_classes = "py-8 px-4 overflow-y-scroll rounded-lg news-container animate__animated animate__slideInRight";
+
+	private string DefaultContainerClasses = "py-8 px-4 overflow-y-scroll rounded-lg news-container";
+
+	protected override void OnParametersSet()
+	{
+		base.OnParametersSet();
+		DefaultContainerClasses = _anim_classes;
+	}
+
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
-		_componentName = News.PostId;
-		Class = "visible-news";
-		await JsRuntime.InvokeVoidAsync("OnScrollEvent", _componentName);
-		this.StateHasChanged();
+		if (News != null)
+		{
+			_componentName = News.PostId;
+		}
+		if (_componentName != string.Empty)
+		{
+			await JsRuntime.InvokeVoidAsync("OnScrollEvent", _componentName);
+		}
+		DefaultContainerClasses = _anim_classes;
+		if (firstRender)
+		{
+			base.OnAfterRender(firstRender);
+		}
 	}
 
 	public void ResetNewsComponent()
 	{
-		this.News = null;
-		this.SteamApplication = null;
-		this.Class = "hidden-news";
-		this._componentName = string.Empty;
-		this.StateHasChanged();
+		News = null;
+		SteamApplication = null;
+		_componentName = string.Empty;
+		DefaultContainerClasses = "py-8 px-4 overflow-y-scroll rounded-lg news-container";
+		StateHasChanged();
 	}
 }

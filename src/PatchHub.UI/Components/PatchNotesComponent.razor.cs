@@ -26,13 +26,12 @@ public partial class PatchNotesComponent
 
 	protected override async Task OnInitializedAsync()
 	{
-		_newsItems = null;
-		SelectedNewsItem = null;
 		await base.OnInitializedAsync();
 	}
 
 	protected override async Task OnParametersSetAsync()
 	{
+		ResetNewsItems();
 		_newsItems = await SteamApi.GetNewsForAppAsync(SteamApplication!);
 		await JsRuntime.InvokeVoidAsync("OnScrollEvent", "PatchNoteListComponent");
 		SelectedNewsItem = _newsItems.FirstOrDefault();
@@ -43,6 +42,13 @@ public partial class PatchNotesComponent
 	{
 		SelectedNewsItem = selectedNewsItem;
 		SelectedPage = 1;
+		StateHasChanged();
+	}
+
+	private void ResetNewsItems()
+	{
+		_newsItems = null;
+		SelectedNewsItem = null;
 		StateHasChanged();
 	}
 }

@@ -32,6 +32,9 @@
 </MudLayout>
 
 @code {
+    [Inject]
+    protected NavigationManager? NavigationManager { get; set; }
+
     private bool _darkMode { get; set; }
 
     private static MudTheme _darkTheme = new MudTheme();
@@ -46,6 +49,7 @@
             DrawerBackground = Colors.Grey.Lighten3
         }
     };
+
     private MudTheme? _currentTheme { get; set; }
 
     bool _drawerOpen = true;
@@ -74,5 +78,6 @@
     void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
+        NavigationManager!.NavigateTo("/");
     }
 }

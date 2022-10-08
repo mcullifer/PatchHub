@@ -1,7 +1,7 @@
 ﻿@using PatchHub.UI.Components
 @page "/"
-
-<PageTitle>PatchHub - Home</PageTitle>
+@page "/{GameName}"
+<PageTitle>PatchHub - @(GameName ?? "Home")</PageTitle>
 
 <MudGrid Spacing="4" Class="py-0 my-0 overflow-auto">
     <MudContainer Class="d-flex justify-start ma-8">
@@ -20,7 +20,8 @@
                              ShowProgressIndicator="true"
                              MaxItems="20"
                              SelectValueOnTab="true"
-                             SelectOnClick="true" >
+                             SelectOnClick="true" 
+                             @ref="SearchBar">
                 <ProgressIndicatorInPopoverTemplate>
                     <MudProgressLinear Size="Size.Large" Indeterminate="true" Color="Color.Primary" />
                 </ProgressIndicatorInPopoverTemplate>
