@@ -29,6 +29,8 @@ public partial class PatchNotesComponent
 
 	private string ComponentHeight = "";
 
+	private string MobileNewsClasses = "mt-10 mobile-news";
+
 	protected override async Task OnInitializedAsync()
 	{
 		await base.OnInitializedAsync();
@@ -40,6 +42,7 @@ public partial class PatchNotesComponent
 		_newsItems = await SteamApi.GetNewsForAppAsync(SteamApplication!);
 		await JsRuntime.InvokeVoidAsync("OnScrollEvent", "PatchNoteListComponent");
 		ComponentHeight = await JsRuntime.InvokeAsync<string>("GetViewPortHeight") + "px";
+		MobileNewsClasses = "mt-0 mobile-news";
 		SelectedNewsItem = _newsItems.FirstOrDefault();
 		await base.OnParametersSetAsync();
 	}
@@ -53,6 +56,8 @@ public partial class PatchNotesComponent
 
 	private void SelectNextNewsItemMobile(SwipeDirection swipeDirection)
 	{
+		ThisPatchNote!.ResetNewsComponent();
+		StateHasChanged();
 		switch (swipeDirection)
 		{
 			case SwipeDirection.RightToLeft:
@@ -64,6 +69,7 @@ public partial class PatchNotesComponent
 				{
 					SelectedNewsItemIndex = 0;
 				}
+				MobileNewsClasses = "mt-0 mobile-news animate__animated animate__slideInRight";
 				ThisPatchNote!.ResetNewsComponent();
 				break;
 			case SwipeDirection.LeftToRight:
@@ -75,6 +81,7 @@ public partial class PatchNotesComponent
 				{
 					SelectedNewsItemIndex = _newsItems!.Count() - 1;
 				}
+				MobileNewsClasses = "mt-0 mobile-news animate__animated animate__slideInLeft";
 				ThisPatchNote!.ResetNewsComponent();
 				break;
 		};

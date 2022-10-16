@@ -25,11 +25,17 @@
                 </MudItem>
             </MudHidden>
             <MudHidden Breakpoint="Breakpoint.SmAndUp">
-                <MudSwipeArea OnSwipe="@((d) => SelectNextNewsItemMobile(d))">
-                    <MudItem xs="12" md="8" Class="mt-0" Style=@("max-height: " + ComponentHeight + "overflow-y:hidden;")>
-                        <PatchNoteComponent @ref="ThisPatchNote" News="@SelectedNewsItem" SteamApplication="@SteamApplication" Class="hidden-news" OnClassChanged="StateHasChanged" IsMobile="true" />
-                    </MudItem>
-                </MudSwipeArea>
+                <MudCarousel ShowArrows="false" ShowBullets="true" BulletsPosition="Position.Top" AutoCycle="false" EnableSwipeGesture="true" Class="mud-width-full py-0 my-0" Style="@("height: " + ComponentHeight)" TData="object">
+                        @foreach (var newsItem in _newsItems)
+                        {
+                            <MudCarouselItem Transition="Transition.Slide">
+                                <MudContainer Fixed="true" Class="mb-15 mt-0 py-0" />
+                                <MudItem xs="12" md="8" Class=@MobileNewsClasses Style=@("max-height: " + ComponentHeight)>
+                                    <PatchNoteComponent @ref="ThisPatchNote" News="@newsItem" SteamApplication="@SteamApplication" Class="hidden-news" OnClassChanged="StateHasChanged" IsMobile="true" />
+                                </MudItem>
+                            </MudCarouselItem>
+                        }
+                </MudCarousel>
             </MudHidden>
         }
         else
@@ -55,3 +61,9 @@
         }
     </MudBreakpointProvider>
 </MudGrid>
+
+<style>
+    .mobile-news {
+        --animate-duration: 0.35s;
+    }
+</style>

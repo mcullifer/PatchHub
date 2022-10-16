@@ -4,7 +4,7 @@
         Elevation="6"
         Class=@DefaultContainerClasses
         Style="@(IsMobile ? "max-height: inherit;" : "")">
-        <MudContainer Fixed="true" Style="max-height: fit-content;">
+        <MudContainer Fixed="true" Style="overflow:auto;word-wrap: break-word;">
             <MudStack Spacing="6">
                 <MudStack Spacing="0">
                     <MudHidden Breakpoint="Breakpoint.SmAndUp">
@@ -43,7 +43,7 @@
 <style>
     img {
         display: block;
-        width: auto;
+        width: 100%;
         height: auto;
         max-width: 100%;
     }
