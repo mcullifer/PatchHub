@@ -21,6 +21,9 @@ public partial class PatchNoteComponent
 	[Parameter]
 	public EventCallback<string> OnClassChanged { get; set; }
 
+	[Parameter]
+	public bool IsMobile { get; set; }
+
 	private string _componentName = string.Empty;
 
 	private readonly string _anim_classes = "py-8 px-4 overflow-y-scroll rounded-lg news-container animate__animated animate__slideInRight";
@@ -30,7 +33,14 @@ public partial class PatchNoteComponent
 	protected override void OnParametersSet()
 	{
 		base.OnParametersSet();
-		DefaultContainerClasses = _anim_classes;
+		if (IsMobile)
+		{
+			DefaultContainerClasses = "pb-15 px-2 mx-4 overflow-y-scroll rounded-lg news-container-mobile";
+		}
+		else
+		{
+			DefaultContainerClasses = _anim_classes;
+		}
 	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -56,6 +66,7 @@ public partial class PatchNoteComponent
 		SteamApplication = null;
 		_componentName = string.Empty;
 		DefaultContainerClasses = "py-8 px-4 overflow-y-scroll rounded-lg news-container";
+		JsRuntime.InvokeVoidAsync("OnScrollEvent", "News" + _componentName);
 		StateHasChanged();
 	}
 }
