@@ -9,62 +9,40 @@ public sealed class ParsingService
 	public string ParseBBCode(string input, bool steamContent = false)
 	{
 		var sb = new StringBuilder();
+		var regexCleanedLine = ConvertBBCodeToMarkdown(input);
+		sb.Append(regexCleanedLine)
+			.Replace(BBCodeModel.Header1Open, MarkdownModel.Header1)
+			.Replace(BBCodeModel.Header1Close, MarkdownModel.Empty)
+			.Replace(BBCodeModel.Header2Open, MarkdownModel.Header2)
+			.Replace(BBCodeModel.Header2Close, MarkdownModel.Empty)
+			.Replace(BBCodeModel.Header3Open, MarkdownModel.Header3)
+			.Replace(BBCodeModel.Header3Close, MarkdownModel.Empty)
+			.Replace(BBCodeModel.SpoilerOpen, MarkdownModel.Empty)
+			.Replace(BBCodeModel.SpoilerClose, MarkdownModel.Empty)
+			.Replace(BBCodeModel.ListOpen, MarkdownModel.Empty)
+			.Replace(BBCodeModel.ListClose, MarkdownModel.Empty)
+			.Replace(BBCodeModel.BoldOpen, MarkdownModel.Empty)
+			.Replace(BBCodeModel.BoldClose, MarkdownModel.Empty)
+			.Replace(BBCodeModel.ItalicOpen, MarkdownModel.Empty)
+			.Replace(BBCodeModel.ItalicClose, MarkdownModel.Empty)
+			.Replace("[/]", MarkdownModel.Empty)
+			.Replace("[/*]", MarkdownModel.Empty);
 
-		var lines = input.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-		var parsed = lines.ToList();
-		foreach (var line in lines)
+		if (steamContent)
 		{
-			sb.Clear();
-			sb.Append(ParseUrls(line));
-
-			sb.Replace(BBCodeModel.ItalicOpen, MarkdownModel.Italic)
-				.Replace(BBCodeModel.ItalicClose, MarkdownModel.Italic)
-				.Replace(BBCodeModel.ListOpen, MarkdownModel.Empty)
-				.Replace(BBCodeModel.ListClose, MarkdownModel.Empty)
-				.Replace(BBCodeModel.BoldOpen, MarkdownModel.Bold)
-				.Replace(BBCodeModel.BoldClose, MarkdownModel.Bold)
-				.Replace(BBCodeModel.UnderlineOpen, MarkdownModel.Empty)
-				.Replace(BBCodeModel.UnderlineClose, MarkdownModel.Empty)
-				.Replace(BBCodeModel.OrderedListOpen, MarkdownModel.Empty)
-				.Replace(BBCodeModel.OrderedListClose, MarkdownModel.Empty)
-				.Replace(BBCodeModel.BulletItem, MarkdownModel.List)
-				.Replace(BBCodeModel.Header1Open, MarkdownModel.Header1)
-				.Replace(BBCodeModel.Header1Close, MarkdownModel.Empty)
-				.Replace(BBCodeModel.Header2Open, MarkdownModel.Header2)
-				.Replace(BBCodeModel.Header2Close, MarkdownModel.Empty)
-				.Replace(BBCodeModel.Header3Open, MarkdownModel.Header3)
-				.Replace(BBCodeModel.Header3Close, MarkdownModel.Empty)
-				.Replace(BBCodeModel.SpoilerOpen, MarkdownModel.Empty)
-				.Replace(BBCodeModel.SpoilerClose, MarkdownModel.Empty)
-				.Replace("**", "");
-			if (steamContent)
-			{
-				sb.Replace(BBCodeModel.ImageOpen + "{STEAM_CLAN_IMAGE}", MarkdownModel.ImageOpen + "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/clans//")
-					.Replace(BBCodeModel.ImageClose, MarkdownModel.ImageClose);
-			}
-
-			parsed[parsed.IndexOf(line)] = sb.ToString();
+			sb.Replace(BBCodeModel.ImageOpen + "{STEAM_CLAN_IMAGE}", MarkdownModel.ImageOpen + "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/clans//")
+				.Replace(BBCodeModel.ImageClose, MarkdownModel.ImageClose);
 		}
-
-		var finalMarkdownString = string.Join(Environment.NewLine, parsed);
-		return finalMarkdownString;
+		var parsedString = sb.ToString();
+		return parsedString;
 	}
 
-	private static string ParseUrls(string line)
+	public string ConvertBBCodeToMarkdown(string input)
 	{
-		var sb = new StringBuilder().Append(line);
-		if (line.Contains(BBCodeModel.UrlOpen))
+		foreach (var pattern in BBCodeRegexPatterns.Patterns.Keys)
 		{
-			var matchCollection = Regex.Matches(line, "\\[url=(.+?)\\]((?:.|\\n)+?)\\[\\/url\\]").AsEnumerable();
-			matchCollection.ToList().ForEach(match =>
-			{
-				var original = match.Groups[0].Value;
-				var url = match.Groups[1].Value;
-				var urlText = match.Groups[2].Value;
-				sb.Replace(original, "[" + urlText + "](" + url + ")");
-			});
-			return sb.ToString();
+			input = Regex.Replace(input, pattern, BBCodeRegexPatterns.Patterns[pattern], RegexOptions.Multiline);
 		}
-		return line;
+		return input;
 	}
 }

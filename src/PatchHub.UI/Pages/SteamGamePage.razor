@@ -1,0 +1,25 @@
+﻿@using PatchHub.UI.Components
+
+@page "/{GameName}/{GameId}"
+
+<PageTitle>PatchHub - @GameName</PageTitle>
+
+<MudGrid Spacing="4" Class="mud-height-full">
+    <MudItem xs="12" Style="height:fit-content;">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Class="pl-4">
+            <MudText Typo="Typo.h4">@SteamApplication.AppName</MudText>
+            <MudTooltip Text="Add to favorites" Color="Color.Secondary">
+                <MudToggleIconButton @bind-Toggled="@IsFavorited"
+                                        Icon="@Icons.Material.Filled.FavoriteBorder"
+                                        ToggledSize="Size.Medium"
+                                        ToggledColor="Color.Secondary"
+                                        ToggledIcon="@Icons.Material.Filled.Favorite"
+                                        Size="Size.Medium"
+                                        Color="Color.Secondary" Title="Favorite" ToggledTitle="Remove from favorites" />
+            </MudTooltip>
+        </MudStack>
+    </MudItem>
+    <MudItem xs="12" Class="overflow-x-hidden overflow-y-hidden">
+        <PatchNotes SteamApplication="@SteamApplication" />
+    </MudItem>
+</MudGrid>

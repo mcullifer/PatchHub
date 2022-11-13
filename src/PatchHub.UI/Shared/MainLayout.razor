@@ -1,58 +1,148 @@
 ﻿@inherits LayoutComponentBase
+@using System.Text.RegularExpressions
+@using PatchHub.Infrastructure.Domain
+@using PatchHub.Infrastructure.Models
+@using PatchHub.Infrastructure.Repositories
+@using PatchHub.Infrastructure.Services
+@inject NavigationManager NavigationManager
+@inject SteamAppIdRepository SteamAppRepo
+@inject SteamApiService? SteamApi
 
 <PageTitle>PatchHub</PageTitle>
 
-<MudThemeProvider @bind-IsDarkMode="@_darkMode" Theme="_currentTheme"/>
+<MudThemeProvider @bind-IsDarkMode="@_darkMode" Theme="_currentTheme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout Style="height:100vh;">
-    <MudAppBar Elevation="0">
-        <MudButton Color="Color.Inherit" OnClick="@((e) => DrawerToggle())">
-            <MudIcon Icon="@Icons.Material.Rounded.ListAlt" Size="Size.Large"></MudIcon>
-            <MudText Typo="Typo.h4" Color="Color.Surface" Inline="true">Patch</MudText>
-            <MudText Typo="Typo.h4" Color="Color.Info" Inline="true">Hub</MudText>
-        </MudButton>
+    <MudAppBar Elevation="4">
+        <MudItem xs="4">
+            <MudButton Color="Color.Inherit" OnClick="@((e) => DrawerToggle())">
+                <MudIcon Icon="@Icons.Material.Rounded.ListAlt" Size="Size.Large"></MudIcon>
+                <MudText Typo="Typo.h4" Color="Color.Surface" Inline="true">Patch</MudText>
+                <MudText Typo="Typo.h4" Color="Color.Info" Inline="true">Hub</MudText>
+            </MudButton>
+        </MudItem>
         <MudSpacer />
-        <MudToggleIconButton
-                Icon="@Icons.Filled.WbSunny"
-                Title="Switch To Light Mode"
-                ToggledIcon="@Icons.Outlined.DarkMode"
-                ToggledTitle="Switch To Dark Mode"
-                ToggledChanged="ChangeTheme"/>
+        <MudItem xs="6" sm="5" md="4">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.FlexEnd">
+                <MudBreakpointProvider>
+                    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                        <MudAutocomplete T="SteamApp"
+                                         Variant="Variant.Outlined"
+                                         DisableUnderLine="true"
+                                         ValueChanged="SearchValueChanged"
+                                         SearchFunc="SearchGames"
+                                         ToStringFunc="@(e => e == null ? null : e.AppName)"
+                                         ResetValueOnEmptyText="true"
+                                         CoerceText="true"
+                                         CoerceValue="false"
+                                         AdornmentIcon="@Icons.Material.Filled.Search"
+                                         IconSize="Size.Medium"
+                                         AdornmentColor="Color.Info"
+                                         ShowProgressIndicator="true"
+                                         MaxItems="20"
+                                         SelectValueOnTab="true"
+                                         SelectOnClick="true"
+                                         Placeholder="Search For A Game"
+                                         FullWidth="true"
+                                         Class="ma-0"
+                                         @ref="_searchBar">
+                            <ProgressIndicatorInPopoverTemplate>
+                                <MudProgressLinear Size="Size.Large" Indeterminate="true" Color="Color.Primary" />
+                            </ProgressIndicatorInPopoverTemplate>
+                            <NoItemsTemplate>
+                                <MudText Typo="Typo.body1">
+                                    ☝️Search for a game to explore patch notes!
+                                </MudText>
+                            </NoItemsTemplate>
+                        </MudAutocomplete>
+                    </MudHidden>
+                    <MudHidden Breakpoint="Breakpoint.SmAndUp">
+                        <MudIconButton Class="mr-0" Icon="@Icons.Material.Filled.Search" Size="Size.Medium" Color="Color.Inherit" Edge="Edge.End" OnClick="@(() => OpenSearchDialog())" />
+                        <MudDialog @bind-IsVisible="_searchDialogOpen" Options="_dialogOptions" Class="mx-2 my-10 mud-width-full">
+                            <DialogContent>
+                                <MudAutocomplete T="SteamApp"
+                                                    Variant="Variant.Outlined"
+                                                    DisableUnderLine="true"
+                                                    ValueChanged="SearchValueChanged"
+                                                    SearchFunc="SearchGames"
+                                                    ToStringFunc="@(e => e == null ? null : e.AppName)"
+                                                    ResetValueOnEmptyText="true"
+                                                    CoerceText="true"
+                                                    CoerceValue="false"
+                                                    AdornmentIcon="@Icons.Material.Filled.Search"
+                                                    IconSize="Size.Medium"
+                                                    AdornmentColor="Color.Info"
+                                                    ShowProgressIndicator="true"
+                                                    MaxItems="20"
+                                                    SelectValueOnTab="true"
+                                                    SelectOnClick="true"
+                                                    Placeholder="Search For A Game"
+                                                    FullWidth="true"
+                                                    Class="ma-0"
+                                                    AutoFocus="true"
+                                                    @ref="_searchBar">
+                                    <ProgressIndicatorInPopoverTemplate>
+                                        <MudProgressLinear Size="Size.Large" Indeterminate="true" Color="Color.Primary" />
+                                    </ProgressIndicatorInPopoverTemplate>
+                                    <NoItemsTemplate>
+                                        <MudText Typo="Typo.body1">
+                                            ☝️Search for a game to explore patch notes!
+                                        </MudText>
+                                    </NoItemsTemplate>
+                                </MudAutocomplete>
+                            </DialogContent>
+                        </MudDialog>
+                    </MudHidden>
+                </MudBreakpointProvider>
+                <MudToggleIconButton Icon="@Icons.Filled.WbSunny"
+                                     Title="Switch To Light Mode"
+                                     ToggledIcon="@Icons.Outlined.DarkMode"
+                                     ToggledTitle="Switch To Dark Mode"
+                                     ToggledChanged="ChangeTheme" />
+            </MudStack>
+        </MudItem>
     </MudAppBar>
-    @*<MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="0">
-        <NavMenu />
-    </MudDrawer>*@
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="ma-0">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
-@code {
-    [Inject]
-    protected NavigationManager? NavigationManager { get; set; }
+<style>
+    input {
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+    }
+</style>
 
+@code {
     private bool _darkMode { get; set; }
+
+    private bool _searchDialogOpen;
+    
+    private DialogOptions _dialogOptions = new() { Position = DialogPosition.TopCenter, NoHeader = true };
 
     private static MudTheme _darkTheme = new MudTheme();
 
     private static MudTheme _lightTheme = new MudTheme()
-    {
-        Palette = new Palette
         {
-            AppbarBackground = Colors.Grey.Lighten3,
-            AppbarText = Colors.Grey.Darken3,
-            Background = Colors.Grey.Lighten3,
-            DrawerBackground = Colors.Grey.Lighten3
-        }
-    };
+            Palette = new Palette
+            {
+                AppbarBackground = Colors.Grey.Lighten3,
+                AppbarText = Colors.Grey.Darken3,
+                Background = Colors.Grey.Lighten3,
+                DrawerBackground = Colors.Grey.Lighten3
+            }
+        };
 
     private MudTheme? _currentTheme { get; set; }
 
     bool _drawerOpen = true;
+
+    MudAutocomplete<SteamApp>? _searchBar;
 
     protected override void OnInitialized()
     {
@@ -60,9 +150,11 @@
         _darkMode = true;
     }
 
+    private void OpenSearchDialog() => _searchDialogOpen = true;
+
     void ChangeTheme()
     {
-        if(_darkMode)
+        if (_darkMode)
         {
             _currentTheme = _lightTheme;
             _darkMode = false;
@@ -79,5 +171,30 @@
     {
         _drawerOpen = !_drawerOpen;
         NavigationManager!.NavigateTo("/");
+    }
+
+    public void SearchValueChanged(SteamApp selected)
+    {
+        if (selected != null)
+        {
+            NavigationManager!.NavigateTo("/" + CleanGameName(selected.AppName) + "/" + selected.AppID);
+            _searchBar!.Clear();
+        }
+    }
+
+    public async Task<IEnumerable<SteamApp>> SearchGames(string value)
+    {
+        if (value != null && value != string.Empty)
+        {
+            var apps = await SteamAppRepo!.GetSteamAppsAsync(value);
+            return apps.Apps;
+        }
+        return Enumerable.Empty<SteamApp>();
+    }
+
+    private string CleanGameName(string gameName)
+    {
+        gameName = Regex.Replace(gameName, "[^A-Za-z0-9 ]", "").Replace(' ', '-');
+        return gameName;
     }
 }

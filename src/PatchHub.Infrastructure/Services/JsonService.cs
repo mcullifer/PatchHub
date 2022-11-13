@@ -18,6 +18,6 @@ public class JsonService
 	{
 		using FileStream stream = File.OpenRead(_steamAppIdJsonPath);
 		AppNameIDJsonModel? steamAppIdModel = await JsonSerializer.DeserializeAsync<AppNameIDJsonModel>(stream);
-		SteamAppIds = steamAppIdModel!.applist.apps;
+		SteamAppIds = steamAppIdModel!.response.apps;
 	}
 }

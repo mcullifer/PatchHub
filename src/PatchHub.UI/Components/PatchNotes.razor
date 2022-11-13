@@ -1,0 +1,53 @@
+﻿<MudBreakpointProvider>
+    @if (_newsItems != null)
+    {
+        <MudHidden Breakpoint="Breakpoint.MdAndUp" Invert="true">
+            <MudStack Row="true">
+                <MudItem md="5" lg="4">
+                    <MudStack id="PatchNoteList" Spacing="4" Justify="Justify.FlexStart" Class="overflow-y-scroll px-4 pb-4" Style="max-height:calc(100vh - 275px);">
+                        @foreach (var newsItem in _newsItems)
+                        {
+                            <PatchNoteListItem NewsContent="newsItem"
+                                                SteamApplication="SteamApplication"
+                                                OnSelectedNewsItemChanged="@(newsItem => { SetSelectedNewsItem(newsItem); ResetNews(); })"
+                                                IsCurrentlySelected=@(newsItem.PostId == SelectedNewsItem!.PostId ? true : false) IsMobile="false" />
+                        }
+                    </MudStack>
+                </MudItem>
+                <MudItem md="7" lg="8">
+                    <PatchNote @ref="ThisPatchNote" News="@SelectedNewsItem" SteamApplication="@SteamApplication" Class="hidden-news" OnClassChanged="StateHasChanged" IsMobile="false" />
+                </MudItem>
+            </MudStack>
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.MdAndUp">
+            <MudStack>
+                @foreach (var newsItem in _newsItems)
+                {
+                    <PatchNoteListItem NewsContent="newsItem"
+                                        SteamApplication="SteamApplication"
+                                        OnSelectedNewsItemChanged="@(newsItem => { SetSelectedNewsItem(newsItem); ResetNews(); OpenNewsDialog(); })"
+                                        IsCurrentlySelected=@(newsItem.PostId == SelectedNewsItem!.PostId ? true : false) IsMobile="true" />
+                }
+            </MudStack>
+            <MudDialog @bind-IsVisible="_newsDialogOpen" Options="_dialogOptions" 
+                Class="mobile-news animate__animated animate__slideInUp pt-4" 
+                DisableSidePadding="true">
+                <DialogContent>
+                    <MudContainer Class="overflow-y-scroll" Style="@("max-height: " + screenHeight + "px;" + "max-width: " + screenWidth + "px;")">
+                        <PatchNote @ref="ThisPatchNote" News="@SelectedNewsItem" SteamApplication="@SteamApplication" Class="hidden-news" OnClassChanged="StateHasChanged" IsMobile="true" />
+                    </MudContainer>
+                </DialogContent>
+            </MudDialog>
+        </MudHidden>
+    }
+    else
+    {
+        <PatchNotesSkeleton />
+    }
+</MudBreakpointProvider>
+
+<style>
+    .mobile-news {
+        --animate-duration: 0.35s;
+    }
+</style>

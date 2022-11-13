@@ -1,43 +1,66 @@
-﻿@using PatchHub.UI.Components
-@page "/"
-@page "/{GameName}"
-<PageTitle>PatchHub - @(GameName ?? "Home")</PageTitle>
+﻿@page "/"
 
-<MudGrid Spacing="4" Class="py-0 my-0 overflow-auto">
-    <MudContainer Class="d-flex justify-start ma-8">
-        <MudItem xs="12" md="5" >
-            <MudAutocomplete T="SteamApp" Label="Search For A Game"
-                             Variant="Variant.Outlined"
-                             ValueChanged="SearchValueChanged"
-                             SearchFunc="SearchGames"
-                             ToStringFunc="@(e => e == null ? null : e.AppName)"
-                             ResetValueOnEmptyText="true"
-                             CoerceText="true"
-                             CoerceValue="false"
-                             AdornmentIcon="@Icons.Material.Filled.VideogameAsset"
-                             IconSize="Size.Large"
-                             AdornmentColor="Color.Info"
-                             ShowProgressIndicator="true"
-                             MaxItems="20"
-                             SelectValueOnTab="true"
-                             SelectOnClick="true" 
-                             @ref="SearchBar">
-                <ProgressIndicatorInPopoverTemplate>
-                    <MudProgressLinear Size="Size.Large" Indeterminate="true" Color="Color.Primary" />
-                </ProgressIndicatorInPopoverTemplate>
-                <NoItemsTemplate>
-                    <MudText Typo="Typo.body1">
-                        ☝️Search for a game to explore patch notes!
-                    </MudText>
-                </NoItemsTemplate>
-            </MudAutocomplete>
-        </MudItem>
-    </MudContainer>
+<PageTitle>PatchHub - Home</PageTitle>
 
-    @if (ShowContent) 
-    {
-        <MudItem xs="12" Style="max-width:100%;">
-            <PatchNotesComponent SteamApplication="SelectedGame" />
-        </MudItem>
-    }
+<MudGrid Spacing="4">
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-8" Height="400px" Elevation="2">
+            <MudGrid Spacing="0">
+                <MudItem xs="12" Style="height:fit-content;">
+                    <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Top Games</MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error"></MudIcon>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudPaper Elevation="0">
+                        <MudList Clickable="true" @bind-SelectedItem="@selectedTopGamesItem" Color="Color.Info">
+                            <MudListItem Text="List Item"  Value="1" />
+                            <MudListItem Text="List Item" Value="2"/>
+                            <MudListItem Text="List Item" Value="3"/>
+                        </MudList>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-8" Height="400px" Elevation="2">
+            <MudGrid Spacing="0">
+                <MudItem xs="12">
+                    <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Recent</MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.NewReleases" Color="Color.Warning"></MudIcon>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudPaper Elevation="0">
+                        <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
+                            <MudListItem Text="List Item" Value="1" />
+                            <MudListItem Text="List Item" Value="2" />
+                            <MudListItem Text="List Item" Value="3" />
+                        </MudList>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MudPaper Class="pa-8" Height="400px" Elevation="2">
+            <MudGrid Spacing="0">
+                <MudItem xs="12" Style="height:fit-content;">
+                    <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Favorited</MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Secondary"></MudIcon>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudPaper Elevation="0">
+                        <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
+                            <MudListItem Text="List Item" Value="1" />
+                            <MudListItem Text="List Item" Value="2" />
+                            <MudListItem Text="List Item" Value="3" />
+                        </MudList>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="8">
+        <MudPaper Class="pa-8" Height="400px" Elevation="2"></MudPaper>
+    </MudItem>
 </MudGrid>

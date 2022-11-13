@@ -1,0 +1,18 @@
+﻿<MudItem md="4">
+    <MudContainer Class="d-flex justify-center mb-4">
+        <MudSkeleton Height="80px" Width="300px" />
+    </MudContainer>
+    <MudContainer Class="overflow-y-scroll overflow-x-hidden rounded-lg px-0 pb-2" Style="height:calc(100vh - 275px);" Fixed="true">
+        @for (var i = 0; i < 7; i++)
+        {
+            <MudPaper Class="mb-4 mx-4 py-8 px-4 rounded-lg">
+                <MudSkeleton Height="100px" SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" />
+            </MudPaper>
+        }
+    </MudContainer>
+</MudItem>
+<MudItem xs="12" md="8" Class="mt-12">
+    <MudPaper Class="py-8 px-4 overflow-y-scroll rounded-lg" Height="calc(100vh - 275px);">
+        <MudSkeleton Height="100%" SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" />
+    </MudPaper>
+</MudItem>

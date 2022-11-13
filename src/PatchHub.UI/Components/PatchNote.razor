@@ -1,0 +1,64 @@
+﻿@if(News != null && SteamApplication != null) 
+{
+    <MudPaper id=@("News" + _componentName)
+        Elevation="IsMobile ? 0 : 4"
+        Class=@DefaultContainerClasses>
+        <MudContainer Fixed="true" Style="overflow:auto;word-wrap: break-word;">
+            <MudStack Spacing="6">
+                <MudStack Spacing="0">
+                    <MudHidden Breakpoint="Breakpoint.SmAndUp">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="0">
+                            <MudButton Class="my-4" Href="@News.Url" target="_blank" rel="noopener noreferrer" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.OpenInNew" Color="Color.Info">
+                                <MudText Typo="Typo.body1">Open original</MudText>
+                            </MudButton>
+                            <MudRating SelectedValue="0" />
+                        </MudStack>
+                    </MudHidden>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h5">@SteamApplication.AppName</MudText>
+                        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                            <MudTooltip Text="Rate this patch!" Color="Color.Primary">
+                                <MudRating SelectedValue="0" />
+                            </MudTooltip>
+                            <MudButton Href="@News.Url" target="_blank" rel="noopener noreferrer" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.OpenInNew" Color="Color.Info">
+                                <MudText Typo="Typo.body1">Open original</MudText>
+                            </MudButton>
+                        </MudHidden>
+                    </MudStack>
+                    <MudText Typo="Typo.body1">
+                        @News.Author
+                    </MudText>
+                    <MudText Typo="Typo.body1">@News.Date</MudText>
+                </MudStack>
+                <MudDivider DividerType="DividerType.FullWidth" Class="@(IsMobile ? "my-0" : "my-2")" />
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudText Typo="@(IsMobile ? Typo.h5 : Typo.h4)" Align="Align.Center">@News.Title</MudText>
+                </MudStack>
+                <MudContainer Fixed="true" Class="px-0" Style="overflow:auto;word-wrap: break-word;">
+                    <MudMarkdown 
+                        Value="@News.Contents" 
+                        CodeBlockTheme="CodeBlockTheme.AtomOneDarkReasonable"
+                        OverrideHeaderTypo="@(e => IsMobile ? Typo.h6 : Typo.h5)" />
+                </MudContainer>
+            </MudStack>
+        </MudContainer>
+    </MudPaper>
+}
+<style>
+    img {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-width: 100%;
+    }
+
+    .news-container {
+        max-height: calc(100vh - 275px);
+        --animate-duration: 0.35s;
+    }
+
+    .news-container-mobile {
+        max-height: calc(100vh - 10px);
+        --animate-duration: 0.35s;
+    }
+</style>

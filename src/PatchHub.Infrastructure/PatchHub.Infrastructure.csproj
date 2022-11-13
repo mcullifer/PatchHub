@@ -8,10 +8,14 @@
 
   <ItemGroup>
     <None Remove="steam-app-ids.json" />
+    <None Remove="steam-games-list.json" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="steam-app-ids.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="steam-games-list.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

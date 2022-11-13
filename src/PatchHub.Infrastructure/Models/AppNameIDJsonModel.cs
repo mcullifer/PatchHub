@@ -2,7 +2,7 @@
 
 public class AppNameIDJsonModel
 {
-	public AppList applist { get; init; } = default!;
+	public AppList response { get; init; } = default!;
 }
 
 public class AppList

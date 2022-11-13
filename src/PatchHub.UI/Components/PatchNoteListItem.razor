@@ -1,0 +1,24 @@
+﻿@if (NewsContent != null && SteamApplication != null)
+{
+    <MudCard Class="@DefaultClasses"
+        @onclick="@(e => {IsCurrentlySelected = true; SelectNewsItem(NewsContent); StateHasChanged();})"
+        Elevation="@(IsCurrentlySelected ? _selectedElevation : CurrentElevation)"
+        @onmouseenter="@(e => {CurrentElevation = _hoverElevation; StateHasChanged();})"
+        @onmouseleave="@(e => {CurrentElevation = _defaultElevation; StateHasChanged();} )">
+        <MudCardHeader>
+            <MudText Style="@_textStyle" Typo="Typo.h5" Color="@(IsCurrentlySelected ? Color.Info : Color.Surface)">@NewsContent.Title</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Style="@_textStyle" Typo="Typo.body1" Color="@(IsCurrentlySelected ? Color.Info : Color.Surface)">@NewsContent.Date</MudText>
+            <MudText Style="@_textStyle" Typo="Typo.body1" Color="@(IsCurrentlySelected ? Color.Info : Color.Surface)">
+                @NewsContent.Author
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+}
+
+<style>
+    .news-list-item {
+        --animate-duration: 0.25s;
+    }
+</style>
