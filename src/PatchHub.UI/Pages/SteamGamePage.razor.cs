@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
+using MudBlazor;
 using PatchHub.Infrastructure.Domain;
+using PatchHub.Infrastructure.Repositories;
 
 namespace PatchHub.UI.Pages;
 
@@ -7,6 +9,9 @@ public partial class SteamGamePage
 {
 	[Inject]
 	protected NavigationManager NavigationManager { get; set; }
+
+	[Inject]
+	protected SteamAppIdRepository SteamAppIdRepository { get; set; }
 
 	[Parameter]
 	public string? GameName { get; set; } = null;
@@ -16,20 +21,20 @@ public partial class SteamGamePage
 
 	private SteamApp SteamApplication = new();
 
-	public bool IsFavorited { get; set; }
+	private bool IsFavorited = false;
 
-	protected override void OnParametersSet()
+	private string favoriteIcon = Icons.Material.Filled.FavoriteBorder;
+
+
+	protected override async Task OnParametersSetAsync()
 	{
 		if (GameId != null)
 		{
 			var success = int.TryParse(GameId, out int parsedAppId);
 			if (success)
 			{
-				SteamApplication = new()
-				{
-					AppID = parsedAppId,
-					AppName = GameName!.Replace('-', ' ')
-				};
+				var steamApp = await SteamAppIdRepository.GetSteamAppFromIdAsync(parsedAppId);
+				SteamApplication = steamApp;
 			}
 			else
 			{
@@ -37,5 +42,12 @@ public partial class SteamGamePage
 			}
 		}
 		base.OnParametersSet();
+	}
+
+	private void ToggleFavorite()
+	{
+		IsFavorited = !IsFavorited;
+		favoriteIcon = IsFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Filled.FavoriteBorder;
+		StateHasChanged();
 	}
 }

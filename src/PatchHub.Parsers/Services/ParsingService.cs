@@ -21,17 +21,12 @@ public sealed class ParsingService
 			.Replace(BBCodeModel.SpoilerClose, MarkdownModel.Empty)
 			.Replace(BBCodeModel.ListOpen, MarkdownModel.Empty)
 			.Replace(BBCodeModel.ListClose, MarkdownModel.Empty)
-			.Replace(BBCodeModel.BoldOpen, MarkdownModel.Empty)
-			.Replace(BBCodeModel.BoldClose, MarkdownModel.Empty)
-			.Replace(BBCodeModel.ItalicOpen, MarkdownModel.Empty)
-			.Replace(BBCodeModel.ItalicClose, MarkdownModel.Empty)
 			.Replace("[/]", MarkdownModel.Empty)
 			.Replace("[/*]", MarkdownModel.Empty);
 
 		if (steamContent)
 		{
-			sb.Replace(BBCodeModel.ImageOpen + "{STEAM_CLAN_IMAGE}", MarkdownModel.ImageOpen + "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/clans//")
-				.Replace(BBCodeModel.ImageClose, MarkdownModel.ImageClose);
+			sb.Replace("{STEAM_CLAN_IMAGE}", "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/clans/");
 		}
 		var parsedString = sb.ToString();
 		return parsedString;
@@ -41,7 +36,7 @@ public sealed class ParsingService
 	{
 		foreach (var pattern in BBCodeRegexPatterns.Patterns.Keys)
 		{
-			input = Regex.Replace(input, pattern, BBCodeRegexPatterns.Patterns[pattern], RegexOptions.Multiline);
+			input = Regex.Replace(input, pattern, BBCodeRegexPatterns.Patterns[pattern], RegexOptions.IgnoreCase | RegexOptions.Multiline);
 		}
 		return input;
 	}

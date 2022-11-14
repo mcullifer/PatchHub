@@ -14,18 +14,24 @@ public partial class Index
     [Inject]
     NavigationManager NavigationManager { get; set; }
 
-    private IEnumerable<SteamAppPopular> _popularApps = Enumerable.Empty<SteamAppPopular>();
+    private IEnumerable<SteamAppPopular> _popularApps;
 
     private MudListItem selectedTopGamesItem;
 
     private MudListItem selectedRecentItem;
 
-    protected override async Task OnParametersSetAsync()
-    {
-        _popularApps = await SteamApi.GetMostPopularAsync();
-        await base.OnParametersSetAsync();
-    }
+    private bool isLoaded = false;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (firstRender)
+        {
+            _popularApps = await SteamApi.GetMostPopularAsync();
+            isLoaded = true;
+            StateHasChanged();
+        }
+    }
     private void NavigateToGame(int gameId, string gameName)
     {
         NavigationManager!.NavigateTo("/" + CleanGameName(gameName) + "/" + gameId.ToString());

@@ -33,7 +33,7 @@ public class SteamApiService
 
     public async Task<IEnumerable<SteamAppNews>> GetNewsForAppAsync(SteamApp app)
     {
-        var url = _baseSteamApiUrl + _steamNewsRoute + $"?appid={app.AppID}&count=6";
+        var url = _baseSteamApiUrl + _steamNewsRoute + $"?appid={app.AppID}&count=6&feeds=steam_community_announcements";
         using HttpResponseMessage reponse = await SteamApiClient.GetAsync(url);
         if (reponse.IsSuccessStatusCode)
         {

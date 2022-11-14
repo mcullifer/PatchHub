@@ -5,23 +5,43 @@
 
 <PageTitle>PatchHub - @GameName</PageTitle>
 
-<MudGrid Spacing="4" Class="mud-height-full">
-    <MudItem xs="12" Style="height:fit-content;">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Class="pl-4">
-            <MudText Typo="Typo.h4">@SteamApplication.AppName</MudText>
-            <MudChip Icon="@Icons.Custom.Brands.Steam" Color="Color.Primary">Steam</MudChip>
-            <MudTooltip Text="Add to favorites" Color="Color.Secondary">
-                <MudToggleIconButton @bind-Toggled="@IsFavorited"
-                                        Icon="@Icons.Material.Filled.FavoriteBorder"
-                                        ToggledSize="Size.Medium"
-                                        ToggledColor="Color.Secondary"
-                                        ToggledIcon="@Icons.Material.Filled.Favorite"
-                                        Size="Size.Medium"
-                                        Color="Color.Secondary" Title="Favorite" ToggledTitle="Remove from favorites" />
-            </MudTooltip>
-        </MudStack>
-    </MudItem>
-    <MudItem xs="12" Class="overflow-x-hidden overflow-y-hidden">
-        <PatchNotes SteamApplication="@SteamApplication" />
-    </MudItem>
-</MudGrid>
+<MudBreakpointProvider>
+    <MudGrid Spacing="4" Class="mud-height-full">
+        <MudItem xs="12" Style="height:fit-content;">
+            <MudHidden Breakpoint="Breakpoint.SmAndUp" Invert="true">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Class="pl-4">
+                    <MudText Typo="Typo.h4">@SteamApplication.AppName</MudText>
+                    <MudChip Icon="@Icons.Custom.Brands.Steam" Color="Color.Primary">Steam</MudChip>
+                    <MudTooltip Text="@(IsFavorited ? "Remove from favorites" : "Favorite")" Color="Color.Secondary">
+                        <MudFab StartIcon="@favoriteIcon"
+                                OnClick="ToggleFavorite"
+                                Size="Size.Small"
+                                Color="Color.Secondary"/>
+                    </MudTooltip>
+                </MudStack>
+            </MudHidden>
+            <MudHidden Breakpoint="Breakpoint.SmAndUp">
+                <MudText Typo="Typo.h5" Align="Align.Start">@SteamApplication.AppName</MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+                    <MudChip Icon="@Icons.Custom.Brands.Steam" Color="Color.Primary">Steam</MudChip>
+                    <MudTooltip Text="Add to favorites" Color="Color.Secondary">
+                        <MudToggleIconButton @bind-Toggled="@IsFavorited"
+                                             Variant="Variant.Outlined"
+                                             Icon="@Icons.Material.Filled.FavoriteBorder"
+                                             ToggledSize="Size.Medium"
+                                             ToggledColor="Color.Secondary"
+                                             ToggledIcon="@Icons.Material.Filled.Favorite"
+                                             Size="Size.Medium"
+                                             Color="Color.Secondary" Title="Favorite" ToggledTitle="Remove from favorites" />
+                    </MudTooltip>
+                </MudStack>
+            </MudHidden>
+        </MudItem>
+        @if (SteamApplication.AppName != null)
+        {
+            <MudItem xs="12" Class="overflow-x-hidden overflow-y-hidden">
+                <PatchNotes SteamApplication="@SteamApplication" />
+            </MudItem>
+        }
+    </MudGrid>
+</MudBreakpointProvider>
