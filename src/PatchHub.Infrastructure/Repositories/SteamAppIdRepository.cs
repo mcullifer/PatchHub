@@ -26,4 +26,15 @@ public class SteamAppIdRepository
 			.ToSteamApps();
 		return response;
 	}
+
+	public async Task<SteamApp> GetSteamAppFromIdAsync(int appId)
+	{
+		await _jsonService.CreateSteamAppIdModelAsync();
+		var match = _jsonService.SteamAppIds.FirstOrDefault(x => x.appid == appId);
+		if (match == null)
+		{
+			return new SteamApp();
+		}
+		return match.ToSteamApp();
+	}
 }

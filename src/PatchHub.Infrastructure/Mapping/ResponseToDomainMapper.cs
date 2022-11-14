@@ -1,6 +1,7 @@
 ﻿using PatchHub.Infrastructure.Domain;
 using PatchHub.Infrastructure.Mapping.Utils;
 using PatchHub.Infrastructure.Models;
+using PatchHub.Infrastructure.Repositories;
 using PatchHub.Parsers.Services;
 
 namespace PatchHub.Infrastructure.Mapping;
@@ -41,5 +42,21 @@ public static class ResponseToDomainMapper
 	public static IEnumerable<SteamAppNews> ToSteamAppsNews(this IEnumerable<NewsItem> newsItems, ParsingService parsingService)
 	{
 		return newsItems.Select(x => x.ToSteamAppNews(parsingService));
+	}
+
+	public static async Task<IEnumerable<SteamAppPopular>> ToSteamAppPopularAsync(this SteamMostPopularResponseModel mostPlayed, SteamAppIdRepository steamAppIdRepository)
+	{
+		var popularApps = mostPlayed.response.ranks.Take(10).Select(async x =>
+		{
+			var app = await steamAppIdRepository.GetSteamAppFromIdAsync(x.appid);
+			return new SteamAppPopular()
+			{
+				AppID = app.AppID,
+				AppName = app.AppName,
+				CurrentCount = x.concurrent_in_game,
+				PeakCount = x.peak_in_game
+			};
+		});
+		return await Task.WhenAll(popularApps);
 	}
 }

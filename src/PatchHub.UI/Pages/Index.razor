@@ -4,21 +4,33 @@
 
 <MudGrid Spacing="4">
     <MudItem xs="12" md="6">
-        <MudPaper Class="pa-8" Height="400px" Elevation="2">
-            <MudGrid Spacing="0">
+        <MudPaper Class="pa-8 overflow-y-scroll" Height="800px" Elevation="2">
+            <MudGrid Spacing="2">
                 <MudItem xs="12" Style="height:fit-content;">
                     <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Top Games</MudText>
                     <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error"></MudIcon>
                 </MudItem>
-                <MudItem xs="12">
-                    <MudPaper Elevation="0">
-                        <MudList Clickable="true" @bind-SelectedItem="@selectedTopGamesItem" Color="Color.Info">
-                            <MudListItem Text="List Item"  Value="1" />
-                            <MudListItem Text="List Item" Value="2"/>
-                            <MudListItem Text="List Item" Value="3"/>
-                        </MudList>
-                    </MudPaper>
-                </MudItem>
+                @foreach (var popularApp in _popularApps) 
+                {
+                    <MudItem xs="12" md="6">
+                        <MudCard Elevation="4">
+                            <MudCardMedia @onclick="@(_ => NavigateToGame(popularApp.AppID, popularApp.AppName))" Class="popular-game-image cursor-pointer" Image="@($"https://cdn.akamai.steamstatic.com/steam/apps/{popularApp.AppID}/header.jpg")"></MudCardMedia>
+                            <MudCardContent>
+                                <MudLink Typo="Typo.h6" Class="cursor-pointer" @onclick="@(_ => NavigateToGame(popularApp.AppID, popularApp.AppName))">
+                                    @popularApp.AppName
+                                </MudLink>
+                                <MudText Typo="Typo.body1">
+                                    <strong>Current Player Count: </strong>
+                                    @string.Format("{0:n0}", popularApp.CurrentCount)
+                                </MudText>
+                                <MudText Typo="Typo.body1">
+                                    <strong>Peak Player Count: </strong>
+                                    @string.Format("{0:n0}", popularApp.PeakCount)
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
             </MudGrid>
         </MudPaper>
     </MudItem>
@@ -64,3 +76,14 @@
         <MudPaper Class="pa-8" Height="400px" Elevation="2"></MudPaper>
     </MudItem>
 </MudGrid>
+
+<style>
+    .popular-game-image  {
+        background-size: 175%;
+        transition: all 1s ease;
+    }
+
+    .popular-game-image:hover {
+        background-size: 200%;
+    }
+</style>

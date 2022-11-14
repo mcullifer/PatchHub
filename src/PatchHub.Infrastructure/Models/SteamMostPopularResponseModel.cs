@@ -2,13 +2,13 @@
 
 public class SteamMostPopularResponseModel
 {
-    public int last_update { get; init; } = default!;
-
-    public Ranks ranks { get; init; } = default!;
+    public Response response { get; init; } = default!;
 }
 
-public class Ranks
+public class Response
 {
+    public int last_update { get; init; } = default!;
+
     public List<Result> ranks { get; init; } = default!;
 }
 
