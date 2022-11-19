@@ -44,19 +44,22 @@ public static class ResponseToDomainMapper
 		return newsItems.Select(x => x.ToSteamAppNews(parsingService));
 	}
 
-	public static async Task<IEnumerable<SteamAppPopular>> ToSteamAppPopularAsync(this SteamMostPopularResponseModel mostPlayed, SteamAppIdRepository steamAppIdRepository)
+	public static async IAsyncEnumerable<SteamAppPopular> ToSteamAppPopularAsync(this SteamMostPopularResponseModel mostPlayed, SteamAppIdRepository steamAppIdRepository)
 	{
-		var popularApps = mostPlayed.response.ranks.Take(10).Select(async x =>
+		var popularApps = mostPlayed.response.ranks.Take(15).Select(x =>
 		{
-			var app = await steamAppIdRepository.GetSteamAppFromIdAsync(x.appid);
 			return new SteamAppPopular()
 			{
-				AppID = app.AppID,
-				AppName = app.AppName,
 				CurrentCount = x.concurrent_in_game,
-				PeakCount = x.peak_in_game
+				PeakCount = x.peak_in_game,
+				AppId = x.appid
 			};
 		});
-		return await Task.WhenAll(popularApps);
+		foreach (var app in popularApps)
+		{
+			var matched = await steamAppIdRepository.GetSteamAppFromIdAsync(app.AppId);
+			app.AppName = matched.AppName;
+			yield return app;
+		}
 	}
 }

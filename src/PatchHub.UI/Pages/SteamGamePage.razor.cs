@@ -25,7 +25,6 @@ public partial class SteamGamePage
 
 	private string favoriteIcon = Icons.Material.Filled.FavoriteBorder;
 
-
 	protected override async Task OnParametersSetAsync()
 	{
 		if (GameId != null)

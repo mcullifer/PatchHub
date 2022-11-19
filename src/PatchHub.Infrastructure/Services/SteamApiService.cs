@@ -47,19 +47,21 @@ public class SteamApiService
         }
     }
 
-    public async Task<IEnumerable<SteamAppPopular>> GetMostPopularAsync()
+    public async IAsyncEnumerable<SteamAppPopular> GetMostPopularAsync()
     {
         var url = _baseSteamApiUrl + _steamMostPlayedRoute;
         using HttpResponseMessage response = await SteamApiClient.GetAsync(url);
         if (response.IsSuccessStatusCode)
         {
-            var mostPlayedResponse = await response.Content.ReadFromJsonAsync<SteamMostPopularResponseModel>();
-            var steamApps = await mostPlayedResponse!.ToSteamAppPopularAsync(_steamAppIdRepository);
-            return steamApps;
+            SteamMostPopularResponseModel? mostPlayedResponse = await response.Content.ReadFromJsonAsync<SteamMostPopularResponseModel>();
+            await foreach (var app in mostPlayedResponse!.ToSteamAppPopularAsync(_steamAppIdRepository))
+            {
+                yield return app;
+            }
         }
         else
         {
-            throw new Exception(response.ReasonPhrase);
+            yield return new SteamAppPopular();
         }
     }
 }

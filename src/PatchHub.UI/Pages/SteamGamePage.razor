@@ -13,10 +13,7 @@
                     <MudText Typo="Typo.h4">@SteamApplication.AppName</MudText>
                     <MudChip Icon="@Icons.Custom.Brands.Steam" Color="Color.Primary">Steam</MudChip>
                     <MudTooltip Text="@(IsFavorited ? "Remove from favorites" : "Favorite")" Color="Color.Secondary">
-                        <MudFab StartIcon="@favoriteIcon"
-                                OnClick="ToggleFavorite"
-                                Size="Size.Small"
-                                Color="Color.Secondary"/>
+                        <MudFab StartIcon="@favoriteIcon" OnClick="ToggleFavorite" Size="Size.Small" Color="Color.Secondary"/>
                     </MudTooltip>
                 </MudStack>
             </MudHidden>
@@ -26,10 +23,7 @@
                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
                         <MudChip Icon="@Icons.Custom.Brands.Steam" Color="Color.Primary">Steam</MudChip>
                         <MudTooltip Text="@(IsFavorited ? "Remove from favorites" : "Favorite")" Color="Color.Secondary">
-                            <MudFab StartIcon="@favoriteIcon"
-                                    OnClick="ToggleFavorite"
-                                    Size="Size.Small"
-                                    Color="Color.Secondary" />
+                            <MudFab StartIcon="@favoriteIcon" OnClick="ToggleFavorite" Size="Size.Small" Color="Color.Secondary" />
                         </MudTooltip>
                     </MudStack>
                 </MudStack>

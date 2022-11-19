@@ -12,36 +12,27 @@
                         <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error"></MudIcon>
                     </MudStack>
                 </MudItem>
-                @if (isLoaded)
+                @foreach (var popularApp in _popularApps) 
                 {
-                    @foreach (var popularApp in _popularApps) 
-                    {
-                        <MudItem xs="12" md="12" lg="6">
-                            <MudCard Elevation="4">
-                                <MudContainer Class="d-flex overflow-hidden pa-0">
-                                    <MudImage Class="popular-game-image cursor-pointer" Src="@($"https://cdn.akamai.steamstatic.com/steam/apps/{popularApp.AppID}/header.jpg")" @onclick="@(_ => NavigateToGame(popularApp.AppID, popularApp.AppName))"></MudImage>
-                                </MudContainer>
-                                <MudCardContent>
-                                    <MudLink Typo="Typo.h6" Class="cursor-pointer" @onclick="@(_ => NavigateToGame(popularApp.AppID, popularApp.AppName))">
-                                        @popularApp.AppName
-                                    </MudLink>
-                                    <MudText Typo="Typo.body1">
-                                        <strong>Current Player Count: </strong>
-                                        @string.Format("{0:n0}", popularApp.CurrentCount)
-                                    </MudText>
-                                    <MudText Typo="Typo.body1">
-                                        <strong>Peak Player Count: </strong>
-                                        @string.Format("{0:n0}", popularApp.PeakCount)
-                                    </MudText>
-                                </MudCardContent>
-                            </MudCard>
-                        </MudItem>
-                    }
-                }
-                else
-                {
-                    <MudItem xs="12">
-                        <MudProgressLinear Color="Color.Primary" Indeterminate="true"></MudProgressLinear>
+                    <MudItem xs="12" md="12" lg="6">
+                        <MudCard Elevation="4" Class="animate__animated animate__zoomIn">
+                            <MudContainer Class="d-flex overflow-hidden pa-0">
+                                <MudImage Class="popular-game-image cursor-pointer" Src="@($"https://cdn.akamai.steamstatic.com/steam/apps/{popularApp.AppId}/header.jpg")" @onclick="@(_ => NavigateToGame(popularApp.AppId, popularApp.AppName))"></MudImage>
+                            </MudContainer>
+                            <MudCardContent>
+                                <MudLink Typo="Typo.h6" Class="cursor-pointer" @onclick="@(_ => NavigateToGame(popularApp.AppId, popularApp.AppName))">
+                                    @popularApp.AppName
+                                </MudLink>
+                                <MudText Typo="Typo.body1">
+                                    <strong>Current Player Count: </strong>
+                                    @string.Format("{0:n0}", popularApp.CurrentCount)
+                                </MudText>
+                                <MudText Typo="Typo.body1">
+                                    <strong>Peak Player Count: </strong>
+                                    @string.Format("{0:n0}", popularApp.PeakCount)
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
                     </MudItem>
                 }
             </MudGrid>
