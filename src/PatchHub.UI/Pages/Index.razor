@@ -1,13 +1,14 @@
-﻿@page "/"
+﻿@using PatchHub.UI.Components
+@page "/"
 
 <PageTitle>PatchHub - Home</PageTitle>
 
 <MudGrid Spacing="4">
     <MudItem xs="12" md="7">
-        <MudPaper Class="py-4 px-4 overflow-y-scroll" Height="800px" Elevation="2">
+        <div class="py-4 px-4">
             <MudGrid Spacing="2">
                 <MudItem xs="12">
-                    <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                    <MudStack Row="true" Justify="Justify.FlexStart" AlignItems="AlignItems.Center">
                         <MudText Inline="true" Typo="Typo.h6">Top Games</MudText>
                         <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error"></MudIcon>
                     </MudStack>
@@ -15,81 +16,48 @@
                 @foreach (var popularApp in _popularApps) 
                 {
                     <MudItem xs="12" md="12" lg="6">
-                        <MudCard Elevation="4" Class="animate__animated animate__zoomIn">
-                            <MudContainer Class="d-flex overflow-hidden pa-0">
-                                <MudImage Class="popular-game-image cursor-pointer" Src="@($"https://cdn.akamai.steamstatic.com/steam/apps/{popularApp.AppId}/header.jpg")" @onclick="@(_ => NavigateToGame(popularApp.AppId, popularApp.AppName))"></MudImage>
-                            </MudContainer>
-                            <MudCardContent>
-                                <MudLink Typo="Typo.h6" Class="cursor-pointer" @onclick="@(_ => NavigateToGame(popularApp.AppId, popularApp.AppName))">
-                                    @popularApp.AppName
-                                </MudLink>
-                                <MudText Typo="Typo.body1">
-                                    <strong>Current Player Count: </strong>
-                                    @string.Format("{0:n0}", popularApp.CurrentCount)
-                                </MudText>
-                                <MudText Typo="Typo.body1">
-                                    <strong>Peak Player Count: </strong>
-                                    @string.Format("{0:n0}", popularApp.PeakCount)
-                                </MudText>
-                            </MudCardContent>
-                        </MudCard>
+                        <PopularSteamGame PopularApp="popularApp" />
                     </MudItem>
                 }
             </MudGrid>
-        </MudPaper>
+        </div>
     </MudItem>
     <MudItem xs="12" md="5">
-        <MudPaper Class="pa-8" Height="400px" Elevation="2">
-            <MudGrid Spacing="0">
-                <MudItem xs="12">
-                    <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Recent</MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.NewReleases" Color="Color.Warning"></MudIcon>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudPaper Elevation="0">
-                        <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
-                            <MudListItem Text="List Item" Value="1" />
-                            <MudListItem Text="List Item" Value="2" />
-                            <MudListItem Text="List Item" Value="3" />
-                        </MudList>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="4">
-        <MudPaper Class="pa-8" Height="400px" Elevation="2">
-            <MudGrid Spacing="0">
-                <MudItem xs="12" Style="height:fit-content;">
-                    <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Favorited</MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Secondary"></MudIcon>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudPaper Elevation="0">
-                        <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
-                            <MudListItem Text="List Item" Value="1" />
-                            <MudListItem Text="List Item" Value="2" />
-                            <MudListItem Text="List Item" Value="3" />
-                        </MudList>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="8">
-        <MudPaper Class="pa-8" Height="400px" Elevation="2"></MudPaper>
+        <MudStack Spacing="4">
+            <MudPaper Class="pa-8" Elevation="2" Style="height:calc(50vh - 50px);">
+                <MudGrid Spacing="0">
+                    <MudItem xs="12">
+                        <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Recent</MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.NewReleases" Color="Color.Warning"></MudIcon>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0">
+                            <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
+                                <MudListItem Text="List Item" Value="1" />
+                                <MudListItem Text="List Item" Value="2" />
+                                <MudListItem Text="List Item" Value="3" />
+                            </MudList>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+            <MudPaper Class="pa-8" Elevation="2" Style="height:calc(50vh - 50px);">
+                <MudGrid Spacing="0">
+                    <MudItem xs="12" Style="height:fit-content;">
+                        <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Favorited</MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Secondary"></MudIcon>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0">
+                            <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
+                                <MudListItem Text="List Item" Value="1" />
+                                <MudListItem Text="List Item" Value="2" />
+                                <MudListItem Text="List Item" Value="3" />
+                            </MudList>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudStack>
     </MudItem>
 </MudGrid>
-
-<style>
-    .popular-game-image {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        transition: all 0.5s ease;
-    }
-
-    .popular-game-image:hover {
-        transform:scale(1.25);
-    }
-</style>

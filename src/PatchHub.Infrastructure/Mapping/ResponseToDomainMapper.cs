@@ -44,9 +44,9 @@ public static class ResponseToDomainMapper
 		return newsItems.Select(x => x.ToSteamAppNews(parsingService));
 	}
 
-	public static async IAsyncEnumerable<SteamAppPopular> ToSteamAppPopularAsync(this SteamMostPopularResponseModel mostPlayed, SteamAppIdRepository steamAppIdRepository)
+	public static async IAsyncEnumerable<SteamAppPopular> ToSteamAppPopularAsync(this SteamMostPopularResponseModel mostPlayed, SteamAppIdRepository steamAppIdRepository, int count)
 	{
-		var popularApps = mostPlayed.response.ranks.Take(15).Select(x =>
+		var popularApps = mostPlayed.response.ranks.Take(count).Select(x =>
 		{
 			return new SteamAppPopular()
 			{
@@ -58,6 +58,10 @@ public static class ResponseToDomainMapper
 		foreach (var app in popularApps)
 		{
 			var matched = await steamAppIdRepository.GetSteamAppFromIdAsync(app.AppId);
+			if (string.IsNullOrEmpty(matched.AppName))
+			{
+				continue;
+			}
 			app.AppName = matched.AppName;
 			yield return app;
 		}

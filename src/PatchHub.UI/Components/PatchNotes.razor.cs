@@ -8,20 +8,15 @@ namespace PatchHub.UI.Components;
 
 public partial class PatchNotes
 {
-	[Inject]
-	protected IJSRuntime JsRuntime { get; set; }
+	[Inject] protected IJSRuntime JsRuntime { get; set; } = default!;
 
-	[Inject]
-	protected NavigationManager NavigationManager { get; set; }
+	[Inject] protected NavigationManager NavigationManager { get; set; } = default!;
 
-	[Inject]
-	protected SteamApiService SteamApi { get; set; }
+	[Inject] protected SteamApiService SteamApi { get; set; } = default!;
 
-	[Inject]
-	private IScrollManager ScrollManager { get; set; }
+	[Inject] private IScrollManager ScrollManager { get; set; } = default!;
 
-	[Parameter]
-	public SteamApp SteamApplication { get; set; }
+	[Parameter] public SteamApp SteamApplication { get; set; } = default!;
 
 	public SteamAppNews? SelectedNewsItem { get; set; }
 
@@ -38,8 +33,6 @@ public partial class PatchNotes
 	private string screenHeight;
 
 	private string screenWidth;
-
-	private string distanceToBottom;
 
 	protected override void OnInitialized()
 	{

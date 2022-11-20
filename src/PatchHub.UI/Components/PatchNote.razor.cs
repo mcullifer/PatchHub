@@ -8,26 +8,19 @@ namespace PatchHub.UI.Components;
 
 public partial class PatchNote
 {
-	[Inject]
-	protected IJSRuntime JsRuntime { get; set; } = null!;
+	[Inject] protected IJSRuntime JsRuntime { get; set; } = default!;
 
-	[Inject]
-	private IScrollManager ScrollManager { get; set; }
+	[Inject] private IScrollManager ScrollManager { get; set; } = default!;
 
-	[Parameter]
-	public SteamAppNews? News { get; set; } = null!;
+	[Parameter] public SteamAppNews? News { get; set; } = null!;
 
-	[Parameter]
-	public SteamApp? SteamApplication { get; set; } = null!;
+	[Parameter] public SteamApp? SteamApplication { get; set; } = null!;
 
-	[Parameter]
-	public string Class { get; set; } = string.Empty;
+	[Parameter] public string Class { get; set; } = string.Empty;
 
-	[Parameter]
-	public EventCallback<string> OnClassChanged { get; set; }
+	[Parameter] public EventCallback<string> OnClassChanged { get; set; }
 
-	[Parameter]
-	public bool IsMobile { get; set; }
+	[Parameter] public bool IsMobile { get; set; }
 
 	private string _componentName = string.Empty;
 

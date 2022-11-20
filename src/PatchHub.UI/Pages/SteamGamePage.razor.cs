@@ -7,17 +7,13 @@ namespace PatchHub.UI.Pages;
 
 public partial class SteamGamePage
 {
-	[Inject]
-	protected NavigationManager NavigationManager { get; set; }
+	[Inject] protected NavigationManager NavigationManager { get; set; } = default!;
 
-	[Inject]
-	protected SteamAppIdRepository SteamAppIdRepository { get; set; }
+	[Inject] protected SteamAppIdRepository SteamAppIdRepository { get; set; } = default!;
 
-	[Parameter]
-	public string? GameName { get; set; } = null;
+	[Parameter] public string? GameName { get; set; } = null;
 
-	[Parameter]
-	public string? GameId { get; set; } = null;
+	[Parameter] public string? GameId { get; set; } = null;
 
 	private SteamApp SteamApplication = new();
 
@@ -27,6 +23,7 @@ public partial class SteamGamePage
 
 	protected override async Task OnParametersSetAsync()
 	{
+		await base.OnParametersSetAsync();
 		if (GameId != null)
 		{
 			var success = int.TryParse(GameId, out int parsedAppId);
@@ -40,7 +37,6 @@ public partial class SteamGamePage
 				NavigationManager.NavigateTo("/");
 			}
 		}
-		base.OnParametersSet();
 	}
 
 	private void ToggleFavorite()
