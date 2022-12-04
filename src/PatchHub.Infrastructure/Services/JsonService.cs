@@ -20,4 +20,9 @@ public class JsonService
 		AppNameIDJsonModel? steamAppIdModel = await JsonSerializer.DeserializeAsync<AppNameIDJsonModel>(stream);
 		SteamAppIds = steamAppIdModel!.response.apps;
 	}
+
+	public Task<IEnumerable<App>> GetSteamAppIdsAsync()
+	{
+		return Task.FromResult(SteamAppIds);
+	}
 }
