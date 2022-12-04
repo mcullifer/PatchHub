@@ -7,5 +7,5 @@ public class SteamAppPopular
 
     public int AppId { get; set; }
 
-    public string AppName { get; set; }
+    public string AppName { get; set; } = default!;
 }

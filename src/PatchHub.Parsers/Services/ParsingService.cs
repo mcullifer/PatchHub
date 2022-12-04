@@ -36,7 +36,7 @@ public sealed class ParsingService
 	{
 		foreach (var pattern in BBCodeRegexPatterns.Patterns.Keys)
 		{
-			input = Regex.Replace(input, pattern, BBCodeRegexPatterns.Patterns[pattern], RegexOptions.IgnoreCase | RegexOptions.Multiline);
+			input = Regex.Replace(input, pattern, BBCodeRegexPatterns.Patterns[pattern], RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 		}
 		return input;
 	}
