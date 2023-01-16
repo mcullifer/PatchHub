@@ -1,0 +1,69 @@
+﻿<MudBreakpointProvider>
+	<MudHidden Breakpoint="Breakpoint.SmAndUp" Invert="true">
+		<MudAutocomplete T="SteamApp"
+							Variant="Variant.Outlined"
+							DisableUnderLine="true"
+							ValueChanged="SearchValueChanged"
+							SearchFunc="SearchGames"
+							ToStringFunc="@(e => e == null ? null : e.AppName)"
+							ResetValueOnEmptyText="true"
+							CoerceText="true"
+							CoerceValue="false"
+							FullWidth="true"
+							AdornmentIcon="@Icons.Material.Filled.Search"
+							IconSize="Size.Medium"
+							AdornmentColor="Color.Info"
+							ShowProgressIndicator="true"
+							MaxItems="20"
+							SelectValueOnTab="true"
+							SelectOnClick="true"
+							Placeholder="Search For A Game"
+							@ref="_searchBar">
+			<ProgressIndicatorInPopoverTemplate>
+				<MudProgressLinear Size="Size.Large" Indeterminate="true" Color="Color.Primary" />
+			</ProgressIndicatorInPopoverTemplate>
+			<NoItemsTemplate>
+				<MudText Typo="Typo.body1">
+					☝️Search for a game to explore patch notes!
+				</MudText>
+			</NoItemsTemplate>
+		</MudAutocomplete>
+	</MudHidden>
+	<MudHidden Breakpoint="Breakpoint.SmAndUp">
+		<MudIconButton Icon="@Icons.Material.Filled.Search" Size="Size.Medium" Color="Color.Inherit" OnClick="@(() => OpenSearchDialog())" />
+		<MudDialog @bind-IsVisible="_searchDialogOpen" Options="_dialogOptions" Class="mx-2 my-10 mud-width-full">
+			<DialogContent>
+				<MudAutocomplete T="SteamApp"
+									Variant="Variant.Outlined"
+									DisableUnderLine="true"
+									ValueChanged="SearchValueChanged"
+									SearchFunc="SearchGames"
+									ToStringFunc="@(e => e == null ? null : e.AppName)"
+									ResetValueOnEmptyText="true"
+									CoerceText="true"
+									CoerceValue="false"
+									AdornmentIcon="@Icons.Material.Filled.Search"
+									IconSize="Size.Medium"
+									AdornmentColor="Color.Info"
+									ShowProgressIndicator="true"
+									MaxItems="20"
+									SelectValueOnTab="true"
+									SelectOnClick="true"
+									Placeholder="Search For A Game"
+									FullWidth="true"
+									Class="ma-0"
+									AutoFocus="true"
+									@ref="_searchBar">
+					<ProgressIndicatorInPopoverTemplate>
+						<MudProgressLinear Size="Size.Large" Indeterminate="true" Color="Color.Primary" />
+					</ProgressIndicatorInPopoverTemplate>
+					<NoItemsTemplate>
+						<MudText Typo="Typo.body1">
+							☝️Search for a game to explore patch notes!
+						</MudText>
+					</NoItemsTemplate>
+				</MudAutocomplete>
+			</DialogContent>
+		</MudDialog>
+	</MudHidden>
+</MudBreakpointProvider>
