@@ -3,61 +3,44 @@
 
 <PageTitle>PatchHub - Home</PageTitle>
 
-<MudGrid Spacing="4">
-    <MudItem xs="12" md="7">
-        <div class="py-4 px-4">
-            <MudGrid Spacing="2">
-                <MudItem xs="12">
-                    <MudStack Row="true" Justify="Justify.FlexStart" AlignItems="AlignItems.Center">
-                        <MudText Inline="true" Typo="Typo.h6">Top Games</MudText>
-                        <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error"></MudIcon>
-                    </MudStack>
-                </MudItem>
-                @foreach (var popularApp in _popularApps) 
-                {
-                    <MudItem xs="12" md="12" lg="6">
-                        <PopularSteamGame PopularApp="popularApp" />
-                    </MudItem>
-                }
-            </MudGrid>
-        </div>
-    </MudItem>
-    <MudItem xs="12" md="5">
-        <MudStack Spacing="4">
-            <MudPaper Class="pa-8" Elevation="2" Style="height:calc(50vh - 50px);">
-                <MudGrid Spacing="0">
-                    <MudItem xs="12">
-                        <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Recent</MudText>
-                        <MudIcon Icon="@Icons.Material.Filled.NewReleases" Color="Color.Warning"></MudIcon>
-                    </MudItem>
-                    <MudItem xs="12">
-                        <MudPaper Elevation="0">
-                            <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
-                                <MudListItem Text="List Item" Value="1" />
-                                <MudListItem Text="List Item" Value="2" />
-                                <MudListItem Text="List Item" Value="3" />
-                            </MudList>
-                        </MudPaper>
-                    </MudItem>
-                </MudGrid>
-            </MudPaper>
-            <MudPaper Class="pa-8" Elevation="2" Style="height:calc(50vh - 50px);">
-                <MudGrid Spacing="0">
-                    <MudItem xs="12" Style="height:fit-content;">
-                        <MudText Inline="true" Typo="Typo.h6" Style="vertical-align:text-bottom;">Favorited</MudText>
-                        <MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Secondary"></MudIcon>
-                    </MudItem>
-                    <MudItem xs="12">
-                        <MudPaper Elevation="0">
-                            <MudList Clickable="true" @bind-SelectedItem="@selectedRecentItem" Color="Color.Info">
-                                <MudListItem Text="List Item" Value="1" />
-                                <MudListItem Text="List Item" Value="2" />
-                                <MudListItem Text="List Item" Value="3" />
-                            </MudList>
-                        </MudPaper>
-                    </MudItem>
-                </MudGrid>
-            </MudPaper>
-        </MudStack>
+<MudGrid Spacing="2" Justify="Justify.Center">
+	<MudItem xs="12" md="8">
+		<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+			<MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.LocalFireDepartment" Color="@(hideTopGames ? Color.Dark : Color.Error)" Label="Top" OnClick="_ => ShowContent(ContentType.TopGames)" />
+			<MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.NewReleases" Color="@(hideRecent ? Color.Dark : Color.Warning)" Label="Recent" OnClick="_ => ShowContent(ContentType.Recent)" />
+			<MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Favorite" Color="@(hideFavorited ? Color.Dark : Color.Secondary)" Label="Favorited" OnClick="_ => ShowContent(ContentType.Favorited)"/>
+		</MudStack>
+	</MudItem>
+    <MudItem xs="12" md="8">
+		<div hidden="@hideTopGames">
+			<MudGrid Spacing="2">
+				@foreach (var popularApp in _popularApps) 
+				{
+					<MudItem xs="12" lg="6">
+						<PopularSteamGame PopularApp="popularApp" />
+					</MudItem>
+				}
+			</MudGrid>
+		</div>
+		<div hidden="@hideRecent">
+			<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="justify-center">
+				<MudText Typo="Typo.h1" Align="Align.Center">
+					<MudIcon Icon="@Icons.Material.Filled.Construction" Color="Color.Warning" Style="font-size:inherit;" />
+				</MudText>
+				<MudText Typo="Typo.h4" Align="Align.Center" Class="animate__animated animate__hinge animate__delay-2s">
+					Under construction...
+				</MudText>
+			</MudContainer>
+		</div>
+		<div hidden="@hideFavorited">
+			<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="justify-center">
+				<MudText Typo="Typo.h1" Align="Align.Center">
+					<MudIcon Icon="@Icons.Material.Filled.Construction" Color="Color.Warning" Style="font-size:inherit;" />
+				</MudText>
+				<MudText Typo="Typo.h4" Align="Align.Center" Class="animate__animated animate__hinge animate__delay-2s">
+					Under construction...
+				</MudText>
+			</MudContainer>
+		</div>
     </MudItem>
 </MudGrid>
