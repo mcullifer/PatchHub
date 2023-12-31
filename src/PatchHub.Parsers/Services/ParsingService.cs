@@ -26,7 +26,6 @@ public sealed class ParsingService
 
 		if (steamContent)
 		{
-
 			sb.Replace("{STEAM_CLAN_IMAGE}", "https://clan.akamai.steamstatic.com/images/");
 		}
 		var parsedString = sb.ToString();
