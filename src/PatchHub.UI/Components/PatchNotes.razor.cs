@@ -30,9 +30,9 @@ public partial class PatchNotes
 
 	PatchNote? ThisPatchNote;
 
-	private string screenHeight;
+	private string? screenHeight;
 
-	private string screenWidth;
+	private string? screenWidth;
 
 	protected override void OnInitialized()
 	{
