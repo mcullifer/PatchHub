@@ -12,3 +12,44 @@ html {
 *:after {
 	box-sizing: border-box;
 }
+
+/* Fix for daisyui Modal + Drawer adding scrollbar margin? */
+html {
+	scrollbar-gutter: auto !important;
+}
+
+/* https://developers.google.com/fonts/docs/material_icons#sizing */
+.icon-xs {
+	font-size: 1rem;
+	/* 16px */
+	width: 1rem;
+	/* 16px */
+}
+
+.icon-sm {
+	font-size: 1.125rem;
+	/* 18px */
+	width: 1.125rem;
+	/* 18px */
+}
+
+.icon-md {
+	font-size: 1.5rem;
+	/* 24px */
+	width: 1.5rem;
+	/* 24px */
+}
+
+.icon-lg {
+	font-size: 2.25rem;
+	/* 36px */
+	width: 2.25rem;
+	/* 36px */
+}
+
+.icon-xl {
+	font-size: 3rem;
+	/* 48px */
+	width: 3rem;
+	/* 48px */
+}
