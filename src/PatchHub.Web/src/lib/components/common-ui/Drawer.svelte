@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Label from '$lib/components/common-ui/Label.svelte';
+	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { Snippet } from 'svelte';
 
 	type drawerItem = {
@@ -10,10 +10,12 @@
 
 	let {
 		children,
+		title,
 		items,
 		class: classNames
 	}: {
 		children: Snippet;
+		title: Snippet;
 		items: drawerItem[];
 		class?: string;
 	} = $props();
@@ -25,14 +27,21 @@
 		<!-- Page content here -->
 		{@render children()}
 	</div>
-	<div class="drawer-side {classNames}">
+	<div class="drawer-side{classNames}">
 		<label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-		<ul class="menu bg-base-200 text-base-content min-h-full w-80">
+		<ul class="menu pt-0 bg-base-200 text-base-content min-h-full w-80">
+			<div class="navbar gap-2">
+				{@render title()}
+			</div>
 			{#each items as item}
 				<li>
 					{#if item.href != '' && item.href != undefined}
 						<a href={item.href}>
-							<Label class="font-medium" text={item.label} icon={item.icon} />
+							<Icon icon={item.icon} />
+							<span class="font-medium">
+								{item.label}
+							</span>
+							<!-- <Label class="font-medium" text={item.label} icon={item.icon} /> -->
 						</a>
 					{:else}
 						{item.label}
