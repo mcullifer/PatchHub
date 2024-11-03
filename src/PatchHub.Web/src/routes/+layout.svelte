@@ -7,38 +7,52 @@
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
+	import type { SteamApp } from '$lib/models/Steam';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
-	let dropdown = $state<Dropdown>();
+	let dropdown = $state<ReturnType<typeof Dropdown>>();
+	let searchInput = $state('');
+	let searchResults = $state<SteamApp[]>([]);
+
+	async function search() {
+		const searchParams = new URLSearchParams({ query: searchInput });
+		const response = await fetch('/api/games/search?' + searchParams.toString());
+		const results = await response.json();
+		searchResults = results;
+	}
 </script>
 
 {#snippet hamburgerAndTitle()}
-	<label for="my-drawer" class="drawer-button btn btn-sm btn-circle btn-ghost">
+	<label for="my-drawer" class="btn btn-circle btn-ghost drawer-button btn-sm">
 		<Icon icon="menu" />
 	</label>
-	<a class="font-bold text-xl select-none" href="/">PatchHub</a>
+	<a class="select-none text-xl font-bold" href="/">PatchHub</a>
 {/snippet}
 
-<Navbar class="bg-base-200 relative">
+<Navbar class="relative bg-base-200">
 	{#snippet start()}
 		{@render hamburgerAndTitle()}
 	{/snippet}
 	{#snippet center()}
-		<Dropdown bind:this={dropdown} class="w-full max-w-sm">
+		<Dropdown
+			bind:this={dropdown}
+			class="w-full max-w-sm"
+			dropdownClasses="overflow-y-auto max-h-96"
+		>
 			{#snippet activator()}
 				<label class="input input-bordered flex items-center gap-2">
 					<Icon icon="search" />
-					<input type="text" placeholder="Search" />
+					<input bind:value={searchInput} type="text" placeholder="Search" oninput={search} />
 				</label>
 			{/snippet}
 			{#snippet content()}
 				<Menu>
-					<MenuItem href="/">Test</MenuItem>
-					<MenuItem href="/">Test</MenuItem>
-					<MenuItem href="/">Test</MenuItem>
-					<MenuItem href="/">Test</MenuItem>
-					<MenuItem href="/">Test</MenuItem>
+					{#each searchResults as result}
+						<MenuItem href={`/${result.appid}`}>{result.name}</MenuItem>
+					{:else}
+						<MenuItem>Search for a game</MenuItem>
+					{/each}
 				</Menu>
 			{/snippet}
 		</Dropdown>

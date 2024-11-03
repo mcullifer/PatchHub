@@ -27,9 +27,9 @@
 		<!-- Page content here -->
 		{@render children()}
 	</div>
-	<div class="drawer-side{classNames}">
+	<div class="drawer-side {classNames}">
 		<label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-		<ul class="menu pt-0 bg-base-200 text-base-content min-h-full w-80">
+		<ul class="menu min-h-full w-80 bg-base-200 pt-0 text-base-content">
 			<div class="navbar gap-2">
 				{@render title()}
 			</div>
