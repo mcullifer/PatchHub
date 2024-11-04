@@ -66,11 +66,10 @@
 				const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 				return `
 				<div>
-				<a href="${videoUrl}" target="_blank">
-					<img src="${thumbnailUrl}" alt="YouTube Video Thumbnail" style="margin-left: auto;margin-right:auto;">
-				</a>
-				</div>
-			`;
+					<a href="${videoUrl}" target="_blank">
+						<img src="${thumbnailUrl}" alt="YouTube Video Thumbnail" style="margin-left: auto;margin-right:auto;">
+					</a>
+				</div>`;
 			}
 		);
 
@@ -103,16 +102,22 @@
 	{#await cleanPosts() then news}
 		<div class="flex gap-2 overflow-auto whitespace-nowrap">
 			{#each news.newsitems as newsItem}
-				<div class="max-w-96 shrink-0 whitespace-break-spaces rounded-lg bg-base-300 p-2 shadow-lg">
+				<button
+					class="flex max-w-96 shrink-0 flex-col gap-2 whitespace-break-spaces rounded-lg
+					border-2 bg-base-300 p-2 text-start shadow-lg {selected?.gid === newsItem.gid
+						? 'border-primary'
+						: 'border-transparent'}"
+					onclick={() => (selected = newsItem)}
+				>
 					<p>{new Date(newsItem.date * 1000).toLocaleDateString()}</p>
 					<h4 class="block">{newsItem.title}</h4>
-				</div>
+				</button>
 			{:else}
 				<div>No posts</div>
 			{/each}
 		</div>
 
-		<div class="prose mx-auto mt-4 w-2/3">
+		<div class="prose mx-auto max-w-3xl p-4">
 			{@html selected?.contents}
 		</div>
 	{/await}
