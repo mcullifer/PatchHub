@@ -13,6 +13,13 @@
 	async function cleanPosts() {
 		let news = await data.news;
 		if (!news) return noNews;
+
+		// I think the real strat might be to first look for all special case
+		// nodes like [url=] or [img] that have weird syntax and replace those
+		// then all the easy ones can do a straight replacement like [b] to <b>
+
+		// There is still edge cases (from incorrectly written BBCode) where
+		// they don't use a closing tag.
 		for (let i = 0; i < news.newsitems.length; i++) {
 			let newsItem = news.newsitems[i];
 			for (let bb of Object.keys(BBToHTML)) {
