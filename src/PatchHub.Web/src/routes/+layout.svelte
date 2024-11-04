@@ -7,13 +7,13 @@
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
-	import type { SteamApp } from '$lib/models/Steam';
+	import type { ISteamApp } from '$lib/models/Steam';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
 	let dropdown = $state<ReturnType<typeof Dropdown>>();
 	let searchInput = $state('');
-	let searchResults = $state<SteamApp[]>([]);
+	let searchResults = $state<ISteamApp[]>([]);
 
 	async function search() {
 		const searchParams = new URLSearchParams({ query: searchInput });
@@ -49,7 +49,7 @@
 			{#snippet content()}
 				<Menu>
 					{#each searchResults as result}
-						<MenuItem href={`/${result.appid}`}>{result.name}</MenuItem>
+						<MenuItem href={`/game/${result.appid}`}>{result.name}</MenuItem>
 					{:else}
 						<MenuItem>Search for a game</MenuItem>
 					{/each}
