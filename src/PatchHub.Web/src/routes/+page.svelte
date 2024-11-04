@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import Label from '$lib/components/common-ui/Label.svelte';
 	import type { IRankedSteamGame } from '$lib/models/Steam';
@@ -16,15 +17,15 @@
 </script>
 
 {#snippet gameCard(game: IRankedSteamGame, index: number)}
-	<div class="card bg-base-300 shadow-xl">
+	<button class="card bg-base-300 shadow-xl" onclick={() => goto(`/game/${game.appid}`)}>
 		<figure>
 			<img
-				class="duration-500 hover:scale-125"
+				class="w-full duration-500 hover:scale-125"
 				src={getImgForGame(game.appid)}
 				alt={game.appid.toString()}
 			/>
 		</figure>
-		<div class="card-body">
+		<div class="card-body w-full">
 			<div class="flex justify-between">
 				<p class="card-title">{game.name}</p>
 				<label class="swap">
@@ -43,10 +44,12 @@
 				<span class="text-success">• online</span>
 			</div>
 		</div>
-	</div>
+	</button>
 {/snippet}
 
-<div class="mx-auto mt-4 grid max-w-xl grid-cols-2 gap-4 md:max-w-7xl md:grid-cols-3">
+<div
+	class="mx-auto mt-4 max-w-7xl gap-4 px-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3"
+>
 	{#each visibleGames as game, i}
 		{@render gameCard(game, i)}
 	{/each}

@@ -1,12 +1,12 @@
-import type { ITopSteamGames, SteamApp, SteamAppListJsonModel } from '$lib/models/Steam';
+import type { ISteamApp, ISteamAppListJsonModel, ITopSteamGames } from '$lib/models/Steam';
 import steamJson from './steam-games-list.json';
 
 export class SteamGameService {
 	// This is the incorrect list since it includes DLCs and other non-games
 	// We need to use GetPartnerAppListForWebAPIKey from https://partner.steamgames.com/doc/webapi/ISteamApps
 	// but it requires a steam api key
-	private static _games: SteamApp[] = (steamJson as SteamAppListJsonModel).applist
-		.apps as SteamApp[];
+	private static _games: ISteamApp[] = (steamJson as ISteamAppListJsonModel).applist
+		.apps as ISteamApp[];
 
 	static popularGames: ITopSteamGames = {
 		last_update: 0,

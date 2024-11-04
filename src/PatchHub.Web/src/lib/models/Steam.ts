@@ -11,15 +11,40 @@ export interface IRankedSteamGame {
 	name: string;
 }
 
-export interface SteamAppListJsonModel {
-	applist: SteamAppList;
+export interface ISteamAppListJsonModel {
+	applist: ISteamAppList;
 }
 
-export interface SteamAppList {
-	apps: SteamApp[];
+export interface ISteamAppList {
+	apps: ISteamApp[];
 }
 
-export interface SteamApp {
+export interface ISteamApp {
 	appid: number;
 	name: string;
+}
+
+export interface ISteamAppNewsResponse {
+	appnews: ISteamAppNews;
+}
+
+export interface ISteamAppNews {
+	appid: number;
+	count: number;
+	newsitems: ISteamNewsItem[];
+}
+
+export interface ISteamNewsItem {
+	appid: number;
+	author: string;
+	contents: string;
+	date: number;
+	feed_type: number;
+	feedlabel: string;
+	feedname: string;
+	gid: string;
+	is_external_url: true;
+	tags: string[];
+	title: string;
+	url: string;
 }
