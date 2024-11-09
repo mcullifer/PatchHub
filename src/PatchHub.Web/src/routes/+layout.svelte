@@ -15,6 +15,9 @@
 	let searchInput = $state('');
 	let searchResults = $state<ISteamApp[]>([]);
 
+	let scrollPos = $state(0);
+	let windowHeight = $state(0);
+
 	async function search() {
 		const searchParams = new URLSearchParams({ query: searchInput });
 		const response = await fetch('/api/games/search?' + searchParams.toString());
@@ -29,6 +32,8 @@
 	</label>
 	<a class="btn btn-ghost select-none text-xl font-bold" href="/">PatchHub</a>
 {/snippet}
+
+<svelte:window bind:scrollY={scrollPos} bind:innerHeight={windowHeight} />
 
 <Navbar class="relative bg-base-200">
 	{#snippet start()}
@@ -71,6 +76,15 @@
 	{#snippet title()}
 		{@render hamburgerAndTitle()}
 	{/snippet}
-	<!-- <Button icon="menu" class="btn-circle btn-ghost btn-sm" /> -->
-	{@render children()}
+	{#snippet content()}
+		{#if scrollPos > windowHeight}
+			<button
+				class="btn btn-circle btn-primary fixed bottom-4 right-4"
+				onclick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+			>
+				<Icon icon="arrow_upward" />
+			</button>
+		{/if}
+		{@render children()}
+	{/snippet}
 </Drawer>

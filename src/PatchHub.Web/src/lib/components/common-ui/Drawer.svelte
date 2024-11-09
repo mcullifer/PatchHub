@@ -10,11 +10,13 @@
 
 	let {
 		children,
+		content,
 		title,
 		items,
 		class: classNames
 	}: {
-		children: Snippet;
+		children?: Snippet;
+		content?: Snippet;
 		title: Snippet;
 		items: drawerItem[];
 		class?: string;
@@ -25,7 +27,11 @@
 	<input id="my-drawer" type="checkbox" class="drawer-toggle" />
 	<div class="drawer-content">
 		<!-- Page content here -->
-		{@render children()}
+		{#if children}
+			{@render children()}
+		{:else if content}
+			{@render content()}
+		{/if}
 	</div>
 	<div class="drawer-side {classNames}">
 		<label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>

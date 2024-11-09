@@ -1,8 +1,9 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import webfontDownload from 'vite-plugin-webfont-dl';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-	plugins: [sveltekit()],
+	plugins: [webfontDownload(), sveltekit()],
 
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}']
@@ -10,6 +11,7 @@ export default defineConfig({
 	build: {
 		rollupOptions: {
 			treeshake: true
-		}
+		},
+		minify: true
 	}
 });

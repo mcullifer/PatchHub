@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import Label from '$lib/components/common-ui/Label.svelte';
 	import type { IRankedSteamGame } from '$lib/models/Steam';
@@ -17,17 +16,19 @@
 </script>
 
 {#snippet gameCard(game: IRankedSteamGame)}
-	<button class="card bg-base-300 shadow-xl" onclick={() => goto(`/game/${game.appid}`)}>
+	<div class="card bg-base-300 shadow-xl">
 		<figure>
-			<img
-				class="w-full duration-500 hover:scale-125"
-				src={getImgForGame(game.appid)}
-				alt={game.appid.toString()}
-			/>
+			<a href={`/game/${game.appid}`}>
+				<img
+					class="w-full duration-500 hover:scale-125"
+					src={getImgForGame(game.appid)}
+					alt={game.appid.toString()}
+				/>
+			</a>
 		</figure>
 		<div class="card-body w-full">
 			<div class="flex justify-between">
-				<p class="card-title">{game.name}</p>
+				<a href={`/game/${game.appid}`} class="link-hover link card-title">{game.name}</a>
 				<label class="swap">
 					<input type="checkbox" data-tip="Favorite" class="tooltip" />
 					<Icon icon="favorite" style="outlined" class="swap-off " />
@@ -44,7 +45,7 @@
 				<span class="text-success">• online</span>
 			</div>
 		</div>
-	</button>
+	</div>
 {/snippet}
 
 <div class="m-4 mx-auto max-w-7xl px-4 text-2xl font-bold">Top Games</div>

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import type { PageData } from './$types';
 
@@ -11,7 +10,6 @@
 		count: 0
 	};
 	let selected = $state<ISteamNewsItem | null>(null);
-	let scrollPos = $state(0);
 
 	const steamClanImgUrl = 'https://clan.akamai.steamstatic.com/images/';
 	export function bbcodeToHtml(bbcode: string): string {
@@ -105,16 +103,12 @@
 	// make scroll to top button
 </script>
 
-<svelte:window bind:scrollY={scrollPos} />
 {#snippet newsCard(item: ISteamNewsItem)}
 	<button
 		class="card card-compact border-2 transition-colors duration-200 {selected?.gid === item.gid
 			? 'border-primary'
 			: 'border-transparent'}"
-		onclick={() => {
-			selected = item;
-			window.scrollTo({ top: 0, behavior: 'auto' });
-		}}
+		onclick={() => (selected = item)}
 	>
 		<div class="card-body text-start">
 			<p>{new Date(item.date * 1000).toLocaleDateString()}</p>
@@ -123,14 +117,6 @@
 	</button>
 {/snippet}
 
-{#if scrollPos > window?.innerHeight}
-	<button
-		class="btn btn-circle btn-primary fixed bottom-4 right-4"
-		onclick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-	>
-		<Icon icon="arrow_upward" />
-	</button>
-{/if}
 <div class="mx-auto flex w-full gap-2 p-4 max-sm:flex-col">
 	{#await cleanPosts() then news}
 		<div class="flex h-fit w-max gap-2 rounded-lg bg-base-300 p-4 sm:basis-1/4 sm:flex-col">
