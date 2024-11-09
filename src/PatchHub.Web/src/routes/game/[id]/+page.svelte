@@ -108,8 +108,9 @@
 <svelte:window bind:scrollY={scrollPos} />
 {#snippet newsCard(item: ISteamNewsItem)}
 	<button
-		class="card card-bordered card-compact transition-colors duration-200"
-		class:border-primary={selected?.gid === item.gid}
+		class="card card-compact border-2 transition-colors duration-200 {selected?.gid === item.gid
+			? 'border-primary'
+			: 'border-transparent'}"
 		onclick={() => {
 			selected = item;
 			window.scrollTo({ top: 0, behavior: 'auto' });

@@ -47,8 +47,9 @@
 	</button>
 {/snippet}
 
+<div class="m-4 mx-auto max-w-7xl px-4 text-2xl font-bold">Top Games</div>
 <div
-	class="mx-auto mt-4 max-w-7xl gap-4 px-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3"
+	class="mx-auto max-w-7xl gap-4 px-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3"
 >
 	{#each visibleGames as game}
 		{@render gameCard(game)}
