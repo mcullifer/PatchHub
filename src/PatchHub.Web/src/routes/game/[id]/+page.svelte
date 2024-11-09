@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import type { PageData } from './$types';
 
@@ -10,6 +11,7 @@
 		count: 0
 	};
 	let selected = $state<ISteamNewsItem | null>(null);
+	let scrollPos = $state(0);
 
 	const steamClanImgUrl = 'https://clan.akamai.steamstatic.com/images/';
 	export function bbcodeToHtml(bbcode: string): string {
@@ -46,6 +48,13 @@
 			'[h5]': '<h5>',
 			'[/h5]': '</h5>'
 		};
+		// add support fort [td] and [tr] tags and [table] tags
+		BBToHTML['[table]'] = '<table>';
+		BBToHTML['[/table]'] = '</table>';
+		BBToHTML['[td]'] = '<td>';
+		BBToHTML['[/td]'] = '</td>';
+		BBToHTML['[tr]'] = '<tr>';
+		BBToHTML['[/tr]'] = '</tr>';
 
 		let html = bbcode;
 		for (let bb in BBToHTML) {
@@ -93,32 +102,52 @@
 		selected = news.newsitems[0];
 		return news;
 	}
+	// make scroll to top button
 </script>
 
-<div class="prose m-4 mx-auto w-full">
-	<h1 class="text-center">{data.gameName}</h1>
-</div>
-<div class="mx-auto w-full max-w-4xl gap-2">
+<svelte:window bind:scrollY={scrollPos} />
+{#snippet newsCard(item: ISteamNewsItem)}
+	<button
+		class="card card-bordered card-compact transition-colors duration-200"
+		class:border-primary={selected?.gid === item.gid}
+		onclick={() => {
+			selected = item;
+			window.scrollTo({ top: 0, behavior: 'auto' });
+		}}
+	>
+		<div class="card-body text-start">
+			<p>{new Date(item.date * 1000).toLocaleDateString()}</p>
+			<h2 class="card-title">{item.title}</h2>
+		</div>
+	</button>
+{/snippet}
+
+{#if scrollPos > window?.innerHeight}
+	<button
+		class="btn btn-circle btn-primary fixed bottom-4 right-4"
+		onclick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+	>
+		<Icon icon="arrow_upward" />
+	</button>
+{/if}
+<div class="mx-auto flex w-full gap-2 p-4 max-sm:flex-col">
 	{#await cleanPosts() then news}
-		<div class="flex gap-2 overflow-auto whitespace-nowrap">
+		<div class="flex h-fit w-max gap-2 rounded-lg bg-base-300 p-4 sm:basis-1/4 sm:flex-col">
+			<div class="prose mx-auto w-full">
+				<h1 class="text-center">{data.gameName}</h1>
+			</div>
 			{#each news.newsitems as newsItem}
-				<button
-					class="flex max-w-96 shrink-0 flex-col gap-2 whitespace-break-spaces rounded-lg
-					border-2 bg-base-300 p-2 text-start shadow-lg {selected?.gid === newsItem.gid
-						? 'border-primary'
-						: 'border-transparent'}"
-					onclick={() => (selected = newsItem)}
-				>
-					<p>{new Date(newsItem.date * 1000).toLocaleDateString()}</p>
-					<h4 class="block">{newsItem.title}</h4>
-				</button>
+				{@render newsCard(newsItem)}
 			{:else}
 				<div>No posts</div>
 			{/each}
 		</div>
 
-		<div class="prose mx-auto max-w-3xl p-4">
-			{@html selected?.contents}
-		</div>
+		{#key selected}
+			<div class="prose max-w-3xl p-4">
+				<h1 class="text-center">{selected?.title}</h1>
+				{@html selected?.contents}
+			</div>
+		{/key}
 	{/await}
 </div>

@@ -14,14 +14,14 @@ export async function GET({ fetch }) {
 		const response = await fetch(url);
 		const responseJson = await response.json();
 		const rankedGames = responseJson.response as ITopSteamGames;
-		applySteamAppNames(rankedGames);
+		await applySteamAppNames(rankedGames);
 		SteamGameService.popularGames = rankedGames;
 	}
 	return json(SteamGameService.popularGames);
 }
 
-function applySteamAppNames(rankedGames: ITopSteamGames) {
+async function applySteamAppNames(rankedGames: ITopSteamGames) {
 	for (let i = 0; i < rankedGames.ranks.length; i++) {
-		rankedGames.ranks[i].name = SteamGameService.getName(rankedGames.ranks[i].appid);
+		rankedGames.ranks[i].name = await SteamGameService.getName(rankedGames.ranks[i].appid);
 	}
 }

@@ -16,7 +16,7 @@
 	}
 </script>
 
-{#snippet gameCard(game: IRankedSteamGame, index: number)}
+{#snippet gameCard(game: IRankedSteamGame)}
 	<button class="card bg-base-300 shadow-xl" onclick={() => goto(`/game/${game.appid}`)}>
 		<figure>
 			<img
@@ -50,8 +50,8 @@
 <div
 	class="mx-auto mt-4 max-w-7xl gap-4 px-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3"
 >
-	{#each visibleGames as game, i}
-		{@render gameCard(game, i)}
+	{#each visibleGames as game}
+		{@render gameCard(game)}
 	{/each}
 	<div
 		class="sentinel"
