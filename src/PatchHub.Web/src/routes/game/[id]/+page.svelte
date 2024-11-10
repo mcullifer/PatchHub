@@ -78,6 +78,10 @@
 			}
 		);
 
+		// Handle [color=...]...[/color] blocks
+		// Example: [color=#FF474D]Old[/color] -> <span style="color:#FF474D">Old</span>
+		html = html.replace(/\[color=(.*?)\](.*?)\[\/color\]/g, '<span style="color:$1">$2</span>');
+
 		html = html.replaceAll('{STEAM_CLAN_IMAGE}', steamClanImgUrl);
 		return html;
 	}
