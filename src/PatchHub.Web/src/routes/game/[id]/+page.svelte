@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
+	import DOMPurify from 'dompurify';
+
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -131,7 +133,7 @@
 		{#key selected}
 			<div class="prose max-w-3xl p-4">
 				<h1 class="text-center">{selected?.title}</h1>
-				{@html selected?.contents}
+				{@html DOMPurify.sanitize(selected?.contents ?? '')}
 			</div>
 		{/key}
 	{/await}
