@@ -42,19 +42,18 @@
 			'[h4]': '<h4>',
 			'[/h4]': '</h4>',
 			'[h5]': '<h5>',
-			'[/h5]': '</h5>'
+			'[/h5]': '</h5>',
+			'[table]': '<table>',
+			'[/table]': '</table>',
+			'[td]': '<td>',
+			'[/td]': '</td>',
+			'[tr]': '<tr>',
+			'[/tr]': '</tr>'
 		};
-		// add support fort [td] and [tr] tags and [table] tags
-		BBToHTML['[table]'] = '<table>';
-		BBToHTML['[/table]'] = '</table>';
-		BBToHTML['[td]'] = '<td>';
-		BBToHTML['[/td]'] = '</td>';
-		BBToHTML['[tr]'] = '<tr>';
-		BBToHTML['[/tr]'] = '</tr>';
 
 		let html = bbcode;
-		for (let bb in BBToHTML) {
-			html = html.replaceAll(bb, BBToHTML[bb]);
+		for (let bbTag in BBToHTML) {
+			html = html.replaceAll(bbTag, BBToHTML[bbTag]);
 		}
 
 		// Handle special cases like [url=...]...[/url]
@@ -90,19 +89,12 @@
 		let news = await data.news;
 		if (!news) return noNews;
 
-		// I think the real strat might be to first look for all special case
-		// nodes like [url=] or [img] that have weird syntax and replace those
-		// then all the easy ones can do a straight replacement like [b] to <b>
-
-		// There is still edge cases (from incorrectly written BBCode) where
-		// they don't use a closing tag.
 		for (let i = 0; i < news.newsitems.length; i++) {
 			news.newsitems[i].contents = bbcodeToHtml(news.newsitems[i].contents);
 		}
 		selected = news.newsitems[0];
 		return news;
 	}
-	// make scroll to top button
 </script>
 
 <svelte:head>
