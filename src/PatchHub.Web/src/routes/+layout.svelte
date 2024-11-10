@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	// sort-ignore
+	import { hotkey, Hotkeys } from '$lib/actions/hotkey';
 	import Drawer from '$lib/components/common-ui/Drawer.svelte';
 	import Dropdown from '$lib/components/common-ui/Dropdown.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
@@ -8,6 +9,7 @@
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import type { ISteamApp } from '$lib/models/Steam';
+	import { useDebounce } from 'runed';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -17,12 +19,21 @@
 
 	let scrollPos = $state(0);
 	let windowHeight = $state(0);
+	let debounceSearch = useDebounce(() => search(), 200);
 
 	async function search() {
+		if (searchInput.length < 3) {
+			searchResults = [];
+			return;
+		}
 		const searchParams = new URLSearchParams({ query: searchInput });
-		const response = await fetch('/api/games/search?' + searchParams.toString());
-		const results = await response.json();
-		searchResults = results;
+		try {
+			const response = await fetch('/api/games/search?' + searchParams.toString());
+			const results = await response.json();
+			searchResults = results;
+		} catch (e) {
+			console.error('Failed to retrieve search results');
+		}
 	}
 </script>
 
@@ -48,7 +59,13 @@
 			{#snippet activator()}
 				<label class="input input-bordered flex items-center gap-2">
 					<Icon icon="search" />
-					<input bind:value={searchInput} type="text" placeholder="Search" oninput={search} />
+					<input
+						use:hotkey={{ hotkey: Hotkeys.Search, action: (searchInput) => searchInput.focus() }}
+						bind:value={searchInput}
+						type="text"
+						placeholder="Search"
+						oninput={debounceSearch}
+					/>
 				</label>
 			{/snippet}
 			{#snippet content()}

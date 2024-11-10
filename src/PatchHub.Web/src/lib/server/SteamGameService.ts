@@ -18,13 +18,14 @@ export class SteamGameService {
 	}
 
 	public static search(query: string) {
-		const parsedQuery = query.trim().toLowerCase().replace('-', '');
+		const parsed = (input: string) =>
+			input.trim().replace('-', '').replace(':', '').replace(' ', '').toLowerCase();
+
+		const parsedQuery = parsed(query);
 		// sort by string length
 		return this._games
 			.filter(
-				(game) =>
-					game.name.toLowerCase().replace('-', '').startsWith(parsedQuery) ||
-					game.appid.toString() === parsedQuery
+				(game) => parsed(game.name).startsWith(parsedQuery) || game.appid.toString() === parsedQuery
 			)
 			.sort((a, b) => a.name.length - b.name.length)
 			.slice(0, 20);

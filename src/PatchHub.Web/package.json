@@ -63,6 +63,7 @@
 		"@oslojs/encoding": "^1.1.0",
 		"better-sqlite3": "^11.1.2",
 		"drizzle-orm": "^0.33.0",
+		"runed": "^0.15.3",
 		"svelte-inview": "^4.0.4"
 	}
 }
