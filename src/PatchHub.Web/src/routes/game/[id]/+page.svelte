@@ -20,8 +20,6 @@
 			'[/i]': '</i>',
 			'[u]': '<u>',
 			'[/u]': '</u>',
-			'[url=': '<a href="',
-			'[/url]': '</a>',
 			'[img]': '<img src="',
 			'[/img]': '"/>',
 			'[list]': '<ul>',
@@ -60,7 +58,7 @@
 		}
 
 		// Handle special cases like [url=...]...[/url]
-		html = html.replace(/\[url=(.*?)\](.*?)\[\/url\]/g, '<a href="$1">$2</a>');
+		html = html.replace(/\[url=(.*?)\](.*?)\[\/url\]/gi, '<a href="$1">$2</a>');
 
 		// Handle list items and ensure closing </li> tags
 		html = html.replace(/\[\*\](.*?)($|\[\*\]|\[\/list\])/g, '<li>$1</li>$2');
@@ -103,6 +101,10 @@
 	// make scroll to top button
 </script>
 
+<svelte:head>
+	<title>{data.gameName}</title>
+</svelte:head>
+
 {#snippet newsCard(item: ISteamNewsItem)}
 	<button
 		class="card card-compact border-2 transition-colors duration-200 {selected?.gid === item.gid
@@ -113,6 +115,11 @@
 		<div class="card-body text-start">
 			<p>{new Date(item.date * 1000).toLocaleDateString()}</p>
 			<h2 class="card-title">{item.title}</h2>
+			<div class="flex flex-wrap gap-2">
+				{#each item.tags as tag}
+					<div class="badge badge-primary uppercase">{tag.replace('_', ' ')}</div>
+				{/each}
+			</div>
 		</div>
 	</button>
 {/snippet}
