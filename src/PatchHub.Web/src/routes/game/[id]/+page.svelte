@@ -115,11 +115,6 @@
 		<div class="card-body text-start">
 			<p>{new Date(item.date * 1000).toLocaleDateString()}</p>
 			<h2 class="card-title">{item.title}</h2>
-			<div class="flex flex-wrap gap-2">
-				{#each item.tags as tag}
-					<div class="badge badge-primary uppercase">{tag.replace('_', ' ')}</div>
-				{/each}
-			</div>
 		</div>
 	</button>
 {/snippet}
