@@ -8,8 +8,13 @@ export async function GET({ url, fetch, setHeaders }) {
 	const appid = url.searchParams.get('appid');
 	const count = url.searchParams.get('count');
 	if (appid === null || appid === '') return json([]);
-
-	const response = await fetch(STEAM_API_URL + NEWS_URL + `?appid=${appid}&count=${count}`);
+	const params: Record<string, string> = {
+		appid: appid,
+		count: count ?? '10'
+	};
+	const searchParams = new URLSearchParams(params);
+	const URL = `${STEAM_API_URL}${NEWS_URL}?${searchParams.toString()}`;
+	const response = await fetch(URL);
 	const data = (await response.json()) as ISteamAppNewsResponse;
 	setHeaders({ 'Cache-Control': 'max-age=300' });
 	return json(data.appnews);

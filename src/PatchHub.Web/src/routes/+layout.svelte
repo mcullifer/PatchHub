@@ -41,7 +41,7 @@
 	<label for="my-drawer" class="btn btn-circle btn-ghost drawer-button btn-sm">
 		<Icon icon="menu" />
 	</label>
-	<a class="btn btn-ghost select-none text-xl font-bold" href="/">PatchHub</a>
+	<a class="btn btn-ghost text-xl font-bold" href="/">PatchHub</a>
 {/snippet}
 
 <svelte:window bind:scrollY={scrollPos} bind:innerHeight={windowHeight} />
