@@ -10,7 +10,8 @@ export async function GET({ url, fetch, setHeaders }) {
 	if (appid === null || appid === '') return json([]);
 	const params: Record<string, string> = {
 		appid: appid,
-		count: count ?? '10'
+		count: count ?? '10',
+		feeds: 'steam_community_announcements'
 	};
 	const searchParams = new URLSearchParams(params);
 	const URL = `${STEAM_API_URL}${NEWS_URL}?${searchParams.toString()}`;
