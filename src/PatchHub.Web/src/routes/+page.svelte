@@ -1,7 +1,5 @@
 <script lang="ts">
-	import Icon from '$lib/components/common-ui/Icon.svelte';
-	import Label from '$lib/components/common-ui/Label.svelte';
-	import type { IRankedSteamGame } from '$lib/models/Steam';
+	import GameCard from '$lib/components/common-ui/GameCard.svelte';
 	import { inview } from 'svelte-inview';
 	import type { PageData } from './$types';
 
@@ -9,51 +7,14 @@
 
 	let maxVisible = $state(10);
 	let visibleGames = $derived(data.ranks.slice(0, maxVisible));
-
-	function getImgForGame(appId: number) {
-		return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
-	}
 </script>
-
-{#snippet gameCard(game: IRankedSteamGame)}
-	<div class="card bg-base-300 shadow-xl">
-		<figure>
-			<a href={`/game/${game.appid}`}>
-				<img
-					class="w-full duration-500 hover:scale-125"
-					src={getImgForGame(game.appid)}
-					alt={game.appid.toString()}
-				/>
-			</a>
-		</figure>
-		<div class="card-body w-full">
-			<div class="flex justify-between">
-				<a href={`/game/${game.appid}`} class="link-hover link card-title">{game.name}</a>
-				<label class="swap">
-					<input type="checkbox" data-tip="Favorite" class="tooltip" />
-					<Icon icon="favorite" style="outlined" class="swap-off " />
-					<Icon icon="favorite" class="swap-on text-pink-500" />
-				</label>
-			</div>
-			<div class="flex items-center gap-2">
-				<Label
-					class="font-medium"
-					iconSize="sm"
-					icon="person"
-					text={game.concurrent_in_game.toLocaleString()}
-				/>
-				<span class="text-success">• online</span>
-			</div>
-		</div>
-	</div>
-{/snippet}
 
 <div class="m-4 mx-auto max-w-7xl px-4 text-2xl font-bold">Top Games</div>
 <div
 	class="mx-auto max-w-7xl gap-4 px-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3"
 >
 	{#each visibleGames as game}
-		{@render gameCard(game)}
+		<GameCard {game} />
 	{/each}
 	<div
 		class="sentinel"

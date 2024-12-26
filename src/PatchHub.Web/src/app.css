@@ -2,20 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global override for box sizing */
 html {
+	/* Global override for box sizing */
 	box-sizing: border-box;
+	/* Fix for daisyui Modal + Drawer adding scrollbar margin? */
+	scrollbar-gutter: auto !important;
 }
-
+body {
+	height: 100vh;
+}
 *,
 *:before,
 *:after {
 	box-sizing: border-box;
-}
-
-/* Fix for daisyui Modal + Drawer adding scrollbar margin? */
-html {
-	scrollbar-gutter: auto !important;
 }
 
 /* https://developers.google.com/fonts/docs/material_icons#sizing */

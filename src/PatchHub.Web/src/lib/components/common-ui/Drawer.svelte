@@ -23,7 +23,7 @@
 	} = $props();
 </script>
 
-<div class="drawer">
+<div class="drawer h-full">
 	<input id="my-drawer" type="checkbox" class="drawer-toggle" />
 	<div class="drawer-content">
 		<!-- Page content here -->
@@ -33,7 +33,7 @@
 			{@render content()}
 		{/if}
 	</div>
-	<div class="drawer-side {classNames}">
+	<aside class="drawer-side {classNames}">
 		<label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
 		<ul class="menu min-h-full w-80 bg-base-200 pt-0 text-base-content">
 			<div class="navbar gap-2">
@@ -55,5 +55,5 @@
 				</li>
 			{/each}
 		</ul>
-	</div>
+	</aside>
 </div>

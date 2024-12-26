@@ -1,5 +1,5 @@
-import tailwindTypography from '@tailwindcss/typography';
 import containerQueries from '@tailwindcss/container-queries';
+import tailwindTypography from '@tailwindcss/typography';
 import daisyui from 'daisyui';
 
 /** @type {import('tailwindcss').Config} */
@@ -14,5 +14,6 @@ export default {
 		base: true,
 		styled: true,
 		utils: true
-	}
+	},
+	darkMode: ['selector', '[data-theme="dark"]']
 };
