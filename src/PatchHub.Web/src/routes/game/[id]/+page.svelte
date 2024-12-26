@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
@@ -9,7 +9,7 @@
 
 	let { data }: { data: PageData } = $props();
 	let noNews: ISteamAppNews = {
-		appid: parseInt($page.params.id),
+		appid: parseInt(page.params.id),
 		newsitems: [],
 		count: 0
 	};

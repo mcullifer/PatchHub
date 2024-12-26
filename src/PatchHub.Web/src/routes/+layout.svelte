@@ -2,7 +2,7 @@
 	import '../app.css';
 	// sort-ignore
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { hotkey, Hotkeys } from '$lib/actions/hotkey';
 	import Button from '$lib/components/common-ui/Button.svelte';
 	import Drawer from '$lib/components/common-ui/Drawer.svelte';
@@ -93,11 +93,11 @@
 				<Icon icon="light_mode" class="swap-on" />
 				<Icon icon="dark_mode" class="swap-off" />
 			</label>
-			{#if $page.data.user}
+			{#if page.data.user}
 				<Icon icon="person" />
-				{$page.data.user.username}
+				{page.data.user.username}
 				<Button text="Logout" class="btn-primary btn-sm" onclick={() => goto('/logout')} />
-			{:else if $page.url.pathname !== '/login'}
+			{:else if page.url.pathname !== '/login'}
 				<Button text="Login" class="btn-primary btn-sm" onclick={() => goto('/login')} />
 			{/if}
 		{/snippet}
