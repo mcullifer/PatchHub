@@ -5,7 +5,8 @@ import { error } from '@sveltejs/kit';
 export async function load({ fetch, params }) {
 	if (!params.id) error(404, 'Game not found');
 	const parsedId = parseInt(params.id);
-	const gameName = await SteamGameService.getName(parsedId);
+	if (isNaN(parsedId)) error(404, 'Game not found');
+	const gameName = SteamGameService.getName(parsedId);
 	const news = ApiService.getNews(parsedId, 10, fetch);
 
 	return {
