@@ -30,7 +30,7 @@
 
 <div class="dropdown dropdown-bottom {classNames}" class:dropdown-open={dropdownOpen}>
 	{#if activator}
-		<div tabindex="0" role="button">
+		<div tabindex="0" role="button" class="w-full">
 			{@render activator()}
 		</div>
 	{/if}

@@ -24,8 +24,8 @@
 	<a class="btn btn-ghost text-xl font-bold" href="/">PatchHub</a>
 {/snippet}
 
-<div class="flex h-full flex-col" data-theme={theme}>
-	<Navbar class="relative grow-0 bg-base-200">
+<div class="flex h-full w-full flex-col" data-theme={theme}>
+	<Navbar class="relative grow-0 gap-4 bg-base-200">
 		{#snippet start()}
 			{@render hamburgerAndTitle()}
 		{/snippet}

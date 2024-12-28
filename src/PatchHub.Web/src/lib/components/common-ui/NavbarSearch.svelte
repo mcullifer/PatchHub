@@ -27,7 +27,7 @@
 	}
 </script>
 
-<Dropdown class="w-full max-w-sm" dropdownClasses="overflow-y-auto max-h-96">
+<Dropdown class="hidden w-full max-w-sm sm:flex" dropdownClasses="overflow-y-auto max-h-96">
 	{#snippet activator()}
 		<label class="input input-bordered flex items-center gap-2">
 			<Icon icon="search" />

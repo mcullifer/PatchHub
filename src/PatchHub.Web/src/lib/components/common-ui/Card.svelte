@@ -3,12 +3,18 @@
 	type CardProps = {
 		title?: Snippet;
 		children?: Snippet;
+		figure?: Snippet;
 		class?: string;
 	};
-	let { title, children, class: classNames }: CardProps = $props();
+	let { title, children, figure, class: classNames }: CardProps = $props();
 </script>
 
 <div class="card {classNames}">
+	{#if figure}
+		<figure>
+			{@render figure()}
+		</figure>
+	{/if}
 	<div class="card-body">
 		{#if title}
 			<div class="card-title">

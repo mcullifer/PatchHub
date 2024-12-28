@@ -20,7 +20,7 @@
 			{@render start()}
 		{/if}
 	</div>
-	<div class="navbar-center sm:w-1/2 justify-center gap-2">
+	<div class="navbar-center justify-center gap-2 sm:w-1/2">
 		{#if center}
 			{@render center()}
 		{/if}
