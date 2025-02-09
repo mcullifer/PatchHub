@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import Card from '$lib/components/common-ui/Card.svelte';
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
@@ -30,32 +31,22 @@
 	<title>{data.gameName}</title>
 </svelte:head>
 
-{#snippet newsCard(item: ISteamNewsItem)}
-	<button
-		class="card card-compact border-2 transition-colors duration-200 {selected?.gid === item.gid
-			? 'border-primary'
-			: 'border-transparent'}"
-		onclick={() => (selected = item)}
-	>
-		<div class="card-body text-start">
-			<p>{new Date(item.date * 1000).toLocaleDateString()}</p>
-			<h2 class="card-title">{item.title}</h2>
-		</div>
-	</button>
-{/snippet}
-
-<div class="mx-auto flex h-full w-full gap-2 p-4 max-sm:flex-col">
+<div class="flex flex-col gap-2 overflow-y-auto p-4 sm:flex-row">
 	{#await cleanPosts() then news}
-		<aside
-			class="sticky left-0 top-4 flex h-[48rem] max-h-[48rem] w-max gap-2 overflow-y-auto rounded-lg border-[1px] border-neutral bg-base-300 p-4 sm:basis-1/4 sm:flex-col"
-		>
-			<div class="prose mx-auto w-full">
-				<h1 class="text-center">{data.gameName}</h1>
-			</div>
-			<Menu>
+		<Card class="h-[48rem] max-w-sm overflow-auto bg-base-200">
+			{#snippet title()}{data.gameName}{/snippet}
+			<Menu class="menu-lg p-0">
 				{#each news.newsitems as newsItem}
-					<MenuItem>
-						{@render newsCard(newsItem)}
+					<MenuItem
+						class={{ active: selected?.gid === newsItem.gid }}
+						onclick={() => (selected = newsItem)}
+					>
+						<div class="text-pretty">
+							<p class="text-sm font-light">
+								{new Date(newsItem.date * 1000).toLocaleDateString()}
+							</p>
+							<p>{newsItem.title}</p>
+						</div>
 					</MenuItem>
 				{:else}
 					<div class="prose text-center">
@@ -63,7 +54,7 @@
 					</div>
 				{/each}
 			</Menu>
-		</aside>
+		</Card>
 
 		{#if selected}
 			<div class="prose max-w-3xl p-4">

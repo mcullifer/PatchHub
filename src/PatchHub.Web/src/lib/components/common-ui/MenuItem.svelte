@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import type { ClassValue } from 'svelte/elements';
 
 	let {
 		children,
@@ -8,7 +9,7 @@
 		onclick
 	}: {
 		children: Snippet;
-		class?: string;
+		class?: ClassValue;
 		href?: string;
 		onclick?: () => void;
 	} = $props();

@@ -9,6 +9,6 @@
 	<title>PatchHub</title>
 </svelte:head>
 
-<div class="m-4 mx-auto w-full max-w-7xl">
+<div class="m-4 mx-auto w-full max-w-7xl px-2">
 	<TopGamesSection games={data.topGames} />
 </div>
