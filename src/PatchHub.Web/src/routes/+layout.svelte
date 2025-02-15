@@ -23,7 +23,7 @@
 </script>
 
 <div class="flex h-full w-full flex-col" data-theme={theme}>
-	<Navbar class="relative grow-0 gap-4 bg-base-200">
+	<Navbar class="grow-0 gap-4 bg-base-200">
 		{#snippet start()}
 			<Dropdown
 				open={dropdownOpen}

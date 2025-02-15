@@ -33,7 +33,7 @@
 
 <div class="flex flex-col gap-2 overflow-y-auto p-4 sm:flex-row">
 	{#await cleanPosts() then news}
-		<Card class="h-[48rem] max-w-sm overflow-auto bg-base-200">
+		<Card class="h-full max-w-sm overflow-auto bg-base-200">
 			{#snippet title()}{data.gameName}{/snippet}
 			<Menu class="menu-lg p-0">
 				{#each news.newsitems as newsItem}
