@@ -23,8 +23,9 @@
 		tip,
 		opts,
 		open: dropdownOpen = $bindable(false),
-		activatorClass = ''
-	}: DropdownProps = $props();
+		activatorClass = '',
+		onDismiss
+	}: DropdownProps & { onDismiss?: () => void } = $props();
 
 	const id = useId();
 	let elemArrow = $state<HTMLElement | null>(null);
@@ -40,6 +41,9 @@
 				tipOpen = dropdownOpen ? false : val;
 			} else {
 				dropdownOpen = !dropdownOpen;
+				if (reason === 'outside-press' || reason === 'escape-key') {
+					onDismiss?.();
+				}
 			}
 		},
 		nodeId: id,
@@ -68,7 +72,7 @@
 <div>
 	<button
 		bind:this={floating.elements.reference}
-		{...interactions.getReferenceProps({ onclick: onclick })}
+		{...interactions.getReferenceProps()}
 		class={activatorClass}
 	>
 		{@render activator()}
