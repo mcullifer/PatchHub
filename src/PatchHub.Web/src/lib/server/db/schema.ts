@@ -19,7 +19,7 @@ export const games = sqliteTable('games', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
 	name: text('name').notNull(),
 	externalId: text('external_id').notNull().unique(),
-	provider: text('type').notNull()
+	provider: text('provider').notNull()
 });
 
 export type Session = typeof session.$inferSelect;
