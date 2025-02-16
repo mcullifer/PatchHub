@@ -48,3 +48,20 @@ export interface ISteamNewsItem {
 	title: string;
 	url: string;
 }
+
+export interface ISteamAppListResponse {
+	response: ISteamAppListResponseBody;
+}
+
+export interface ISteamAppListResponseBody {
+	apps: ISteamAppListItem[];
+	have_more_results: boolean;
+	last_appid: number;
+}
+
+export interface ISteamAppListItem {
+	appid: number;
+	name: string;
+	last_modified: number;
+	price_change_number: number;
+}

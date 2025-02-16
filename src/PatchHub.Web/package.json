@@ -17,7 +17,9 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"build-storybook": "storybook build",
+		"update-steam-apps": "tsx scripts/updateDBWithSteamApps.ts",
+		"get-latest-steam-apps": "tsx scripts/updateSteamApps.ts"
 	},
 	"devDependencies": {
 		"@chromatic-com/storybook": "^3.2.4",
@@ -65,8 +67,10 @@
 		"@types/dompurify": "^3.2.0",
 		"better-sqlite3": "^11.8.1",
 		"dompurify": "^3.2.4",
+		"dotenv": "^16.4.7",
 		"drizzle-orm": "^0.38.4",
 		"runed": "^0.23.2",
-		"svelte-inview": "^4.0.4"
+		"svelte-inview": "^4.0.4",
+		"tsx": "^4.19.2"
 	}
 }

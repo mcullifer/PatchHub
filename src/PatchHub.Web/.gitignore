@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 *.db
 
 *storybook.log
+
+steam_games/
