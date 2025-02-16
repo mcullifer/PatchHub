@@ -26,7 +26,7 @@ async function bulkInsertSteamGames() {
 
 			const gameInserts = steamGames.map((game) => ({
 				name: game.name,
-				externalId: game.appid.toString(), // Convert appid to string
+				externalId: game.appid.toString(),
 				provider: 'steam'
 			}));
 

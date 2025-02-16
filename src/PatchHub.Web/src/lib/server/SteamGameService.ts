@@ -1,10 +1,10 @@
 import type { ISteamApp, ITopSteamGames } from '$lib/models/Steam';
+import { db } from '$lib/server/db';
+import { games } from '$lib/server/db/schema';
+import { like } from 'drizzle-orm';
 import { applist } from './steam-games-list.json';
 
 export class SteamGameService {
-	// This is the incorrect list since it includes DLCs and other non-games
-	// We need to use GetPartnerAppListForWebAPIKey from https://partner.steamgames.com/doc/webapi/ISteamApps
-	// but it requires a steam api key
 	private static _games: ISteamApp[] = applist.apps as ISteamApp[];
 
 	static popularGames: ITopSteamGames = {
@@ -17,17 +17,22 @@ export class SteamGameService {
 		return game ? game.name : '';
 	}
 
-	public static search(query: string) {
-		const parsed = (input: string) =>
-			input.trim().replace('-', '').replace(':', '').replace(' ', '').toLowerCase();
+	public static async search(query: string) {
+		const result = await db
+			.select({
+				appid: games.externalId,
+				name: games.name
+			})
+			.from(games)
+			.where(like(games.name, `${query}%`))
+			.limit(20);
+		if (!result || result.length === 0) return [];
 
-		const parsedQuery = parsed(query);
-		// sort by string length
-		return this._games
-			.filter(
-				(game) => parsed(game.name).startsWith(parsedQuery) || game.appid.toString() === parsedQuery
-			)
-			.sort((a, b) => a.name.length - b.name.length)
-			.slice(0, 20);
+		return result.map((g) => {
+			return {
+				appid: parseInt(g.appid),
+				name: g.name
+			};
+		}) as ISteamApp[];
 	}
 }
