@@ -57,7 +57,7 @@
 		</Card>
 
 		{#if selected}
-			<div class="prose max-w-3xl p-4">
+			<div class="prose h-fit max-w-3xl p-4">
 				<h1>{selected.title}</h1>
 				<address class="author">Author: <b>{selected.author}</b></address>
 				<article>
