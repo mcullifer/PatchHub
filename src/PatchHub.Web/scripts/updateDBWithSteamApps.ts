@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { ISteamAppListItem, ISteamAppListResponseBody } from '../src/lib/models/Steam';
-import { games } from '../src/lib/server/db/schema';
+import { game } from '../src/lib/server/db/schema';
 
 dotenv.config();
 const db_url = process.env.DATABASE_URL;
@@ -30,7 +30,7 @@ async function bulkInsertSteamGames() {
 				provider: 'steam'
 			}));
 
-			await db.insert(games).values(gameInserts);
+			await db.insert(game).values(gameInserts);
 		}
 		console.log('Bulk insert completed');
 	} catch (error) {

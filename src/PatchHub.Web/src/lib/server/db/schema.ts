@@ -15,7 +15,7 @@ export const session = sqliteTable('session', {
 	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull()
 });
 
-export const games = sqliteTable('games', {
+export const game = sqliteTable('game', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
 	name: text('name').notNull(),
 	externalId: text('external_id').notNull().unique(),
@@ -26,4 +26,4 @@ export type Session = typeof session.$inferSelect;
 
 export type User = typeof user.$inferSelect;
 
-export type Game = typeof games.$inferSelect;
+export type Game = typeof game.$inferSelect;
