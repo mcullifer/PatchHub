@@ -16,7 +16,7 @@ export async function GET({ fetch, setHeaders }) {
 		const rankedGames = responseJson.response as ITopSteamGames;
 		const promises = rankedGames.ranks.map(setAppName);
 		const rankedGamesWithName = await Promise.all(promises);
-		rankedGames.ranks = rankedGamesWithName;
+		rankedGames.ranks = rankedGamesWithName.filter((g) => g.name !== '');
 		SteamGameService.popularGames = rankedGames;
 	}
 	setHeaders({ 'Cache-Control': 'max-age=300' }); // 5 minutes
