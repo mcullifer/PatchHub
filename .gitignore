@@ -389,3 +389,4 @@ FodyWeavers.xsd
 
 # Other
 src/PatchHub.UI/wwwroot/temp
+.DS_Store
