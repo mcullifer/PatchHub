@@ -1,5 +1,5 @@
 import { STEAM_API_URL } from '$env/static/private';
-import type { ITopSteamGames } from '$lib/models/Steam';
+import type { IRankedSteamGame, ITopSteamGames } from '$lib/models/Steam';
 import { SteamGameService } from '$lib/server/SteamGameService.js';
 import { json } from '@sveltejs/kit';
 
@@ -14,15 +14,17 @@ export async function GET({ fetch, setHeaders }) {
 		const response = await fetch(url);
 		const responseJson = await response.json();
 		const rankedGames = responseJson.response as ITopSteamGames;
-		applySteamAppNames(rankedGames);
+		const promises = rankedGames.ranks.map(setAppName);
+		const rankedGamesWithName = await Promise.all(promises);
+		rankedGames.ranks = rankedGamesWithName;
 		SteamGameService.popularGames = rankedGames;
 	}
 	setHeaders({ 'Cache-Control': 'max-age=300' }); // 5 minutes
 	return json(SteamGameService.popularGames);
 }
 
-function applySteamAppNames(rankedGames: ITopSteamGames) {
-	for (let i = 0; i < rankedGames.ranks.length; i++) {
-		rankedGames.ranks[i].name = SteamGameService.getName(rankedGames.ranks[i].appid);
-	}
+async function setAppName(rankedGame: IRankedSteamGame) {
+	const app = await SteamGameService.getApp(rankedGame.appid);
+	rankedGame.name = app ? app.name : '';
+	return rankedGame;
 }
