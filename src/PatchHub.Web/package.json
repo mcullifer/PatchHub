@@ -16,9 +16,9 @@
 		"db:push": "drizzle-kit push",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
+		"db:seed": "tsx src/lib/server/db/seed.ts",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
-		"update-steam-apps": "tsx scripts/updateDBWithSteamApps.ts",
 		"get-latest-steam-apps": "tsx scripts/updateSteamApps.ts"
 	},
 	"devDependencies": {

@@ -30,9 +30,13 @@ async function updateSteamApps(lastAppId?: number) {
 			return;
 		}
 		const fileName = `${new Date().getTime()}.json`;
-		writeFileSync(`src/lib/server/steam_games/${fileName}`, JSON.stringify(apps.response), {
-			encoding: 'utf-8'
-		});
+		writeFileSync(
+			`src/lib/server/db/seeds/data/steam_games/${fileName}`,
+			JSON.stringify(apps.response),
+			{
+				encoding: 'utf-8'
+			}
+		);
 		console.log('Apps updated, new last_appid:', apps.response.last_appid);
 		if (apps.response.have_more_results) {
 			return apps.response.last_appid;
