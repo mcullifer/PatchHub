@@ -18,6 +18,7 @@ export const session = sqliteTable('session', {
 export const game = sqliteTable('game', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
 	name: text('name').notNull(),
+	normalizedName: text('normalized_name').notNull(),
 	externalId: text('external_id').notNull().unique(),
 	provider: text('provider').notNull()
 });

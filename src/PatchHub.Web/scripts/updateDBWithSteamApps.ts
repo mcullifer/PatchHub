@@ -5,6 +5,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { ISteamAppListItem, ISteamAppListResponseBody } from '../src/lib/models/Steam';
 import { game } from '../src/lib/server/db/schema';
+import { normalizeGameName } from '../src/lib/util/StringUtils';
 
 dotenv.config();
 const db_url = process.env.DATABASE_URL;
@@ -26,6 +27,7 @@ async function bulkInsertSteamGames() {
 
 			const gameInserts = steamGames.map((game) => ({
 				name: game.name,
+				normalizedName: normalizeGameName(game.name),
 				externalId: game.appid.toString(),
 				provider: 'steam'
 			}));

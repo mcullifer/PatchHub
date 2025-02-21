@@ -6,7 +6,7 @@ export default defineConfig({
 	plugins: [webfontDownload(), sveltekit()],
 
 	test: {
-		include: ['src/**/*.{test,spec}.{js,ts}']
+		include: ['src/**/*.{test,spec}.{js,ts}', './tests/*.{test,spec}.{js,ts}']
 	},
 	build: {
 		rollupOptions: {
