@@ -1,4 +1,5 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { sql, type SQL } from 'drizzle-orm';
+import { integer, sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 export const user = sqliteTable('user', {
 	id: text('id').primaryKey(),
@@ -31,3 +32,8 @@ export type Session = typeof session.$inferSelect;
 export type User = typeof user.$inferSelect;
 
 export type Catalog = typeof catalog.$inferSelect;
+
+// custom lower function
+export function lower(email: AnySQLiteColumn): SQL {
+	return sql`(lower(${email}))`;
+}
