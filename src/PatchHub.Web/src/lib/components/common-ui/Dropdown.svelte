@@ -35,7 +35,7 @@
 		</div>
 	{/if}
 	<div
-		class="dropdown-content z-[1] w-full min-w-fit rounded-lg bg-base-300 shadow-lg {dropdownClasses}"
+		class="dropdown-content z-1 w-full min-w-fit rounded-lg bg-base-300 shadow-lg {dropdownClasses}"
 	>
 		{@render content()}
 	</div>
