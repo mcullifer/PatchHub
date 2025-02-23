@@ -1,6 +1,6 @@
 import type { ISteamAppListResponseBody } from '$lib/models/Steam';
 import { catalog } from '$lib/server/db/schema';
-import { normalizeGameName } from '$lib/util/StringUtils';
+import { normalizeName } from '$lib/util/StringUtils';
 import type { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -14,7 +14,7 @@ async function seedSoftware(database: ReturnType<typeof drizzle>) {
 	try {
 		await database.insert(catalog).values({
 			name: 'PatchHub',
-			normalizedName: normalizeGameName('PatchHub'),
+			normalizedName: normalizeName('PatchHub'),
 			type: 'software',
 			createdBy: 'patchhub'
 		});
@@ -35,7 +35,7 @@ async function seedGames(database: ReturnType<typeof drizzle>) {
 			const jsonData: ISteamAppListResponseBody = JSON.parse(fileContent);
 			const gameInserts = jsonData.apps.map((game) => ({
 				name: game.name,
-				normalizedName: normalizeGameName(game.name),
+				normalizedName: normalizeName(game.name),
 				type: 'game',
 				createdBy: 'steam',
 				externalId: game.appid.toString()

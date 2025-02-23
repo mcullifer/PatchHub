@@ -1,4 +1,4 @@
-export function normalizeGameName(name: string): string {
+export function normalizeName(name: string): string {
 	return name
 		.normalize('NFD') // Normalize Unicode characters
 		.replace(/[^a-zA-Z0-9 ]/g, '') // Remove special symbols

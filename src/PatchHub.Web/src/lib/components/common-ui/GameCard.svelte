@@ -3,7 +3,7 @@
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import Label from '$lib/components/common-ui/Label.svelte';
 	import type { IRankedSteamGame } from '$lib/models/Steam';
-	import { normalizeGameName } from '$lib/util/StringUtils';
+	import { normalizeName } from '$lib/util/StringUtils';
 
 	let { game }: { game: IRankedSteamGame } = $props();
 
@@ -14,7 +14,7 @@
 
 <Card class="card-bordered bg-base-100 dark:border-neutral dark:bg-base-300 shadow-lg">
 	{#snippet figure()}
-		<a href={`/${'steam'}/${normalizeGameName(game.name)}`}>
+		<a href={`/${'steam'}/${normalizeName(game.name)}`}>
 			<img
 				class="w-full duration-500 hover:scale-125"
 				src={getImgForGame(game.appid)}
@@ -24,7 +24,7 @@
 	{/snippet}
 	{#snippet title()}
 		<div class="flex w-full justify-between">
-			<a href={`/${'steam'}/${normalizeGameName(game.name)}`} class="link-hover link">
+			<a href={`/${'steam'}/${normalizeName(game.name)}`} class="link-hover link">
 				{game.name}
 			</a>
 			<label class="swap">
