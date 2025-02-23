@@ -27,8 +27,6 @@
 		selected = news.newsitems[0];
 		return news;
 	}
-
-	$effect(() => {});
 </script>
 
 <svelte:head>
