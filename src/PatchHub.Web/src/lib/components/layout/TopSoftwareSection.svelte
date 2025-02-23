@@ -9,9 +9,12 @@
 </script>
 
 <section class="prose max-w-none {classNames}">
-	<h2>Software</h2>
+	<h2 class="flex items-center gap-2">
+		<Icon icon="apps" />
+		Software
+	</h2>
 	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
-		<Card class="card-bordered bg-base-100 shadow-lg dark:border-neutral dark:bg-base-300">
+		<Card class="card-bordered bg-base-100 dark:border-neutral dark:bg-base-300 shadow-lg">
 			{#snippet title()}
 				<div class="flex w-full justify-between">
 					<a href={`/software/${'windows11'}`} class="link-hover link">Windows 11</a>

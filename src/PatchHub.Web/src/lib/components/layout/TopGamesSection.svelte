@@ -1,5 +1,6 @@
 <script lang="ts">
 	import GameCard from '$lib/components/common-ui/GameCard.svelte';
+	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { ITopSteamGames } from '$lib/models/Steam';
 	import { inview } from 'svelte-inview';
 
@@ -14,7 +15,10 @@
 </script>
 
 <section class="prose max-w-none {classNames}">
-	<h2>Games</h2>
+	<h2 class="flex items-center gap-2">
+		<Icon icon="sports_esports" />
+		Games
+	</h2>
 	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
 		{#each visibleGames as game}
 			<GameCard {game} />
