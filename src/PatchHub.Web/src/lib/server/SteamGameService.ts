@@ -1,6 +1,6 @@
 import type { ISteamApp, ITopSteamGames } from '$lib/models/Steam';
 import { db } from '$lib/server/db';
-import { game } from '$lib/server/db/schema';
+import { catalog } from '$lib/server/db/schema';
 import { like } from 'drizzle-orm';
 
 export class SteamGameService {
@@ -10,12 +10,12 @@ export class SteamGameService {
 	};
 
 	public static async getApp(appId: number): Promise<ISteamApp | undefined> {
-		const result = await db.query.game.findFirst({
+		const result = await db.query.catalog.findFirst({
 			columns: {
 				externalId: true,
 				name: true
 			},
-			where: (game, { eq }) => eq(game.externalId, appId.toString())
+			where: (catalog, { eq }) => eq(catalog.externalId, appId.toString())
 		});
 		if (!result) return;
 		return {
@@ -27,11 +27,11 @@ export class SteamGameService {
 	public static async search(query: string) {
 		const result = await db
 			.select({
-				appid: game.externalId,
-				name: game.name
+				appid: catalog.externalId,
+				name: catalog.name
 			})
-			.from(game)
-			.where(like(game.name, `${query}%`))
+			.from(catalog)
+			.where(like(catalog.name, `%${query}%`))
 			.limit(20);
 		if (!result || result.length === 0) return [];
 

@@ -1,10 +1,11 @@
-import type { ISoftwareFeed } from '$lib/models/AtomFeed.js';
+import { ApiService } from '$lib/services/ApiService.js';
 import { error } from '@sveltejs/kit';
 
 export async function load({ fetch, params }) {
 	if (!params.name) error(404, 'Software not found');
-	const feed = await fetch('/api/software/mostpopular');
-	const data = (await feed.json()) as ISoftwareFeed;
+	const api = new ApiService(fetch);
+	const data = await api.getMostPopularSoftware();
+	if (!data) error(404, 'Software not found');
 	return {
 		softwareName: params.name,
 		news: data.software

@@ -1,7 +1,7 @@
-import type { ITopSteamGames } from '$lib/models/Steam';
+import { ApiService } from '$lib/services/ApiService.js';
 
 export async function load({ fetch }) {
-	const response = await fetch('api/games/mostpopular');
-	const topGames = (await response.json()) as ITopSteamGames;
+	const api = new ApiService(fetch);
+	const topGames = await api.getMostPopularGames();
 	return { topGames };
 }

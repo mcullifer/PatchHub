@@ -9,4 +9,4 @@ if (!db_url) throw new Error('DATABASE_URL is not set');
 const client = new Database(db_url);
 const db = drizzle(client);
 
-await seeds.game(db);
+await seeds.catalog(db);

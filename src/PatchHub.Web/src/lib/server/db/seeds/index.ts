@@ -1,1 +1,1 @@
-export { default as game } from './game';
+export { default as catalog } from './catalog';

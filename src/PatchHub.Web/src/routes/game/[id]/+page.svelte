@@ -3,6 +3,7 @@
 	import Card from '$lib/components/common-ui/Card.svelte';
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
+	import Article from '$lib/components/layout/Article.svelte';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import { BBCodeService } from '$lib/services/BBCodeService';
 	import DOMPurify from 'dompurify';
@@ -57,14 +58,10 @@
 		</Card>
 
 		{#if selected}
-			<div class="prose h-fit max-w-3xl p-4">
-				<h1>{selected.title}</h1>
-				<address class="author">Author: <b>{selected.author}</b></address>
-				<article>
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html DOMPurify.sanitize(selected.contents ?? '')}
-				</article>
-			</div>
+			<Article title={selected.title} author={selected.author}>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html DOMPurify.sanitize(selected.contents ?? '')}
+			</Article>
 		{/if}
 	{/await}
 </div>

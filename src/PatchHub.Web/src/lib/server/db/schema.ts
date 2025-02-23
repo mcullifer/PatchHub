@@ -15,16 +15,19 @@ export const session = sqliteTable('session', {
 	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull()
 });
 
-export const game = sqliteTable('game', {
+// Might want to rename this to items or something more generic
+// then add a type column that can be 'game' or 'software' or other
+export const catalog = sqliteTable('catalog', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
 	name: text('name').notNull(),
 	normalizedName: text('normalized_name').notNull(),
-	externalId: text('external_id').notNull().unique(),
-	provider: text('provider').notNull()
+	type: text('type').notNull(),
+	createdBy: text('created_by').notNull(), // External source, user, organization, etc.
+	externalId: text('external_id')
 });
 
 export type Session = typeof session.$inferSelect;
 
 export type User = typeof user.$inferSelect;
 
-export type Game = typeof game.$inferSelect;
+export type Catalog = typeof catalog.$inferSelect;

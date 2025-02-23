@@ -1,5 +1,5 @@
 import type { ISteamAppListResponseBody } from '$lib/models/Steam';
-import { game } from '$lib/server/db/schema';
+import { catalog } from '$lib/server/db/schema';
 import { normalizeGameName } from '$lib/util/StringUtils';
 import type { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readdirSync, readFileSync } from 'fs';
@@ -16,14 +16,15 @@ export default async function seed(database: ReturnType<typeof drizzle>) {
 			const gameInserts = jsonData.apps.map((game) => ({
 				name: game.name,
 				normalizedName: normalizeGameName(game.name),
-				externalId: game.appid.toString(),
-				provider: 'steam'
+				type: 'game',
+				createdBy: 'steam',
+				externalId: game.appid.toString()
 			}));
 			// insert in batches of 100 or less
 			const batchSize = 100;
 			for (let i = 0; i < gameInserts.length; i += batchSize) {
 				const batch = gameInserts.slice(i, i + batchSize);
-				await database.insert(game).values(batch);
+				await database.insert(catalog).values(batch);
 			}
 		}
 		console.log('Bulk insert completed');
