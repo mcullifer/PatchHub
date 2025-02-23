@@ -12,12 +12,12 @@
 </script>
 
 <div class="flex flex-col gap-2 overflow-y-auto p-4 sm:flex-row">
-	<Card class="h-full max-w-sm overflow-auto bg-base-200">
+	<Card class="bg-base-200 h-full max-w-sm overflow-auto">
 		{#snippet title()}{data.softwareName}{/snippet}
 		<Menu class="menu-lg p-0">
 			{#each data.news.items as newsItem}
 				<MenuItem
-					class={{ active: selected?.id === newsItem.id }}
+					class={{ 'menu-active': selected?.id === newsItem.id }}
 					onclick={() => (selected = newsItem)}
 				>
 					<div class="text-pretty">

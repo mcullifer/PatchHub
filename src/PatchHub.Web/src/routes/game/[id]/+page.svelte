@@ -34,12 +34,12 @@
 
 <div class="flex flex-col gap-2 overflow-y-auto p-4 sm:flex-row">
 	{#await cleanPosts() then news}
-		<Card class="h-full max-w-sm overflow-auto bg-base-200">
+		<Card class="bg-base-200 h-full max-w-sm overflow-auto">
 			{#snippet title()}{data.gameName}{/snippet}
 			<Menu class="menu-lg p-0">
 				{#each news.newsitems as newsItem}
 					<MenuItem
-						class={{ active: selected?.gid === newsItem.gid }}
+						class={{ 'menu-active': selected?.gid === newsItem.gid }}
 						onclick={() => (selected = newsItem)}
 					>
 						<div class="text-pretty">
