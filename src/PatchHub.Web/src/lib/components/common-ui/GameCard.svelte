@@ -3,6 +3,7 @@
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import Label from '$lib/components/common-ui/Label.svelte';
 	import type { IRankedSteamGame } from '$lib/models/Steam';
+	import { normalizeGameName } from '$lib/util/StringUtils';
 
 	let { game }: { game: IRankedSteamGame } = $props();
 
@@ -11,9 +12,9 @@
 	}
 </script>
 
-<Card class="card-bordered bg-base-100 shadow-lg dark:border-neutral dark:bg-base-300">
+<Card class="card-bordered bg-base-100 dark:border-neutral dark:bg-base-300 shadow-lg">
 	{#snippet figure()}
-		<a href={`/game/${game.appid}`}>
+		<a href={`/${'steam'}/${normalizeGameName(game.name)}`}>
 			<img
 				class="w-full duration-500 hover:scale-125"
 				src={getImgForGame(game.appid)}
@@ -23,7 +24,9 @@
 	{/snippet}
 	{#snippet title()}
 		<div class="flex w-full justify-between">
-			<a href={`/game/${game.appid}`} class="link-hover link">{game.name}</a>
+			<a href={`/${'steam'}/${normalizeGameName(game.name)}`} class="link-hover link">
+				{game.name}
+			</a>
 			<label class="swap">
 				<input type="checkbox" data-tip="Favorite" class="tooltip" />
 				<Icon icon="favorite" style="outlined" class="swap-off " />

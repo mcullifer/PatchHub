@@ -2,7 +2,7 @@ import { db } from '$lib/server/db/index.js';
 import { ApiService } from '$lib/services/ApiService';
 import { error } from '@sveltejs/kit';
 
-export async function load({ params }) {
+export async function load({ params, fetch }) {
 	const { createdBy, name } = params;
 	const result = await db.query.catalog.findFirst({
 		columns: {
@@ -23,11 +23,11 @@ export async function load({ params }) {
 		if (isNaN(parsedId)) error(500, 'Invalid external id');
 		const news = api.getNews(parsedId, 10);
 		return {
-			gameName: result.name,
+			catalogItem: result,
 			news: news
 		};
 	}
 	return {
-		item: result
+		catalogItem: result
 	};
 }
