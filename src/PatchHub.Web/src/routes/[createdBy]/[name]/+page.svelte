@@ -69,6 +69,7 @@
 		<Article title={selected.title} author={selected.author}>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			{@html DOMPurify.sanitize(selected.contents ?? '')}
+			<!-- <Lexical content={DOMPurify.sanitize(selected.contents ?? '')} /> -->
 		</Article>
 	{/if}
 </div>

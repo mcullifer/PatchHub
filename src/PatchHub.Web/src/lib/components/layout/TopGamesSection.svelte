@@ -2,14 +2,15 @@
 	import GameCard from '$lib/components/common-ui/GameCard.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { ITopSteamGames } from '$lib/models/Steam';
+	import type { Catalog } from '$lib/server/db/schema';
 	import { inview } from 'svelte-inview';
 
 	type TopGameSectionProps = {
 		games: ITopSteamGames;
+		favorites: Catalog[];
 		class?: string;
 	};
-
-	let { games, class: classNames = '' }: TopGameSectionProps = $props();
+	let { games, favorites, class: classNames = '' }: TopGameSectionProps = $props();
 	let maxVisible = $state(10);
 	let visibleGames = $derived(games.ranks.slice(0, maxVisible));
 </script>
@@ -21,7 +22,12 @@
 	</h2>
 	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
 		{#each visibleGames as game}
-			<GameCard {game} />
+			<GameCard
+				{game}
+				isFavorited={favorites.find((f) => parseInt(f.externalId ?? '0') === game.appid)
+					? true
+					: false}
+			/>
 		{/each}
 		<div
 			class="sentinel"

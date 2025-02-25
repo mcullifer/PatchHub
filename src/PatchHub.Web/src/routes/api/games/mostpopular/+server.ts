@@ -27,5 +27,6 @@ export async function GET({ setHeaders }) {
 async function setAppName(rankedGame: IRankedSteamGame) {
 	const app = await SteamGameService.getApp(rankedGame.appid);
 	rankedGame.name = app ? app.name : '';
+	rankedGame.catalogId = app ? app.id : -1;
 	return rankedGame;
 }

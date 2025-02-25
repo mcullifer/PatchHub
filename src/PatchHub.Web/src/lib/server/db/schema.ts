@@ -1,5 +1,5 @@
 import { sql, type SQL } from 'drizzle-orm';
-import { integer, sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 export const user = sqliteTable('user', {
 	id: text('id').primaryKey(),
@@ -27,11 +27,24 @@ export const catalog = sqliteTable('catalog', {
 	externalId: text('external_id')
 });
 
+export const favorite = sqliteTable(
+	'favorite',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id),
+		catalogId: integer('catalog_id')
+			.notNull()
+			.references(() => catalog.id)
+	},
+	(t) => [unique().on(t.userId, t.catalogId)]
+);
+
 export type Session = typeof session.$inferSelect;
-
 export type User = typeof user.$inferSelect;
-
 export type Catalog = typeof catalog.$inferSelect;
+export type Favorite = typeof favorite.$inferSelect;
 
 // custom lower function
 export function lower(email: AnySQLiteColumn): SQL {

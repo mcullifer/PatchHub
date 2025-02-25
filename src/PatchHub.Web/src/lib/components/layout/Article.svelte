@@ -12,7 +12,7 @@
 	let { title, author, children }: IArticleProps = $props();
 </script>
 
-<div class="prose h-fit max-w-3xl p-4">
+<div class="prose h-fit w-full max-w-3xl p-4">
 	<h1>{title}</h1>
 	<address class="author">Author: <b>{author ?? 'None specified'}</b></address>
 	<article>

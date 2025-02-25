@@ -1,5 +1,6 @@
 import type { ISoftwareFeed } from '$lib/models/AtomFeed';
 import type { ISteamAppNews, ITopSteamGames } from '$lib/models/Steam';
+import type { Catalog } from '$lib/server/db/schema';
 
 export class ApiService {
 	private fetchFn: typeof fetch;
@@ -42,6 +43,24 @@ export class ApiService {
 		} catch (e) {
 			console.error(e);
 			return null;
+		}
+	}
+
+	async getFavorites() {
+		try {
+			const response = await this.fetchFn('/api/favorites');
+			return (await response.json()) as { favorites: Catalog[] };
+		} catch (e) {
+			console.error(e);
+			return { favorites: [] };
+		}
+	}
+
+	async removeFavorite(id: number) {
+		try {
+			await this.fetchFn(`/api/favorites/${id}`, { method: 'DELETE' });
+		} catch (e) {
+			console.error(e);
 		}
 	}
 }

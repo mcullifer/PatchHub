@@ -1,5 +1,4 @@
 import { db } from '$lib/server/db/index.js';
-import { lower } from '$lib/server/db/schema';
 import { ApiService } from '$lib/services/ApiService';
 import { error } from '@sveltejs/kit';
 
@@ -14,7 +13,7 @@ export async function load({ params, fetch }) {
 			createdBy: true
 		},
 		where: (catalog, { and, eq }) =>
-			and(eq(lower(catalog.normalizedName), name.toLowerCase()), eq(catalog.createdBy, createdBy))
+			and(eq(catalog.normalizedName, name.toUpperCase()), eq(catalog.createdBy, createdBy))
 	});
 	if (!result) error(404, 'Not found');
 	if (result.type === 'game') {

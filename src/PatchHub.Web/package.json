@@ -58,20 +58,20 @@
 		"vitest": "^3.0.6"
 	},
 	"dependencies": {
+		"@lexical/html": "^0.25.0",
+		"@lexical/rich-text": "^0.25.0",
 		"@node-rs/argon2": "^1.8.3",
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
 		"@rowanmanning/feed-parser": "^1.1.1",
 		"@skeletonlabs/floating-ui-svelte": "^0.3.9",
 		"@tailwindcss/vite": "^4.0.8",
-		"@tiptap/core": "^2.11.5",
-		"@tiptap/pm": "^2.11.5",
-		"@tiptap/starter-kit": "^2.11.5",
 		"@types/dompurify": "^3.2.0",
 		"better-sqlite3": "^11.8.1",
 		"dompurify": "^3.2.4",
 		"dotenv": "^16.4.7",
 		"drizzle-orm": "^0.39.3",
+		"lexical": "^0.25.0",
 		"runed": "^0.23.4",
 		"svelte-inview": "^4.0.4",
 		"tsx": "^4.19.2"

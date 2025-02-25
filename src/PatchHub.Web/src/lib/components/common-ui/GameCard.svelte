@@ -3,12 +3,29 @@
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import Label from '$lib/components/common-ui/Label.svelte';
 	import type { IRankedSteamGame } from '$lib/models/Steam';
+	import { ApiService } from '$lib/services/ApiService';
 	import { normalizeName } from '$lib/util/StringUtils';
 
-	let { game }: { game: IRankedSteamGame } = $props();
+	let { game, isFavorited }: { game: IRankedSteamGame; isFavorited: boolean } = $props();
 
 	function getImgForGame(appId: number) {
 		return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
+	}
+
+	async function favoriteGame() {
+		if (isFavorited) {
+			const api = new ApiService();
+			await api.removeFavorite(game.catalogId);
+			isFavorited = false;
+		} else {
+			const response = await fetch('/api/favorites', {
+				method: 'POST',
+				body: JSON.stringify({ catalogId: game.catalogId })
+			});
+			if (response.ok) {
+				isFavorited = true;
+			}
+		}
 	}
 </script>
 
@@ -28,7 +45,13 @@
 				{game.name}
 			</a>
 			<label class="swap">
-				<input type="checkbox" data-tip="Favorite" class="tooltip" />
+				<input
+					type="checkbox"
+					data-tip="Favorite"
+					class="tooltip"
+					checked={isFavorited}
+					onchange={async () => await favoriteGame()}
+				/>
 				<Icon icon="favorite" style="outlined" class="swap-off " />
 				<Icon icon="favorite" class="swap-on text-pink-500" />
 			</label>

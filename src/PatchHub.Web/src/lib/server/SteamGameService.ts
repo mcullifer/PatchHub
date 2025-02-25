@@ -9,19 +9,12 @@ export class SteamGameService {
 		ranks: []
 	};
 
-	public static async getApp(appId: number): Promise<ISteamApp | undefined> {
+	public static async getApp(appId: number) {
 		const result = await db.query.catalog.findFirst({
-			columns: {
-				externalId: true,
-				name: true
-			},
 			where: (catalog, { eq }) => eq(catalog.externalId, appId.toString())
 		});
 		if (!result) return;
-		return {
-			appid: parseInt(result.externalId),
-			name: result.name
-		};
+		return result;
 	}
 
 	public static async search(query: string) {

@@ -4,6 +4,7 @@ export interface ITopSteamGames {
 }
 
 export interface IRankedSteamGame {
+	catalogId: number;
 	rank: number;
 	appid: number;
 	concurrent_in_game: number;

@@ -12,5 +12,5 @@
 
 <div class="m-4 mx-auto w-full max-w-7xl space-y-2 px-2">
 	<TopSoftwareSection />
-	<TopGamesSection games={data.topGames} />
+	<TopGamesSection games={data.topGames} favorites={data.favorites.favorites} />
 </div>
