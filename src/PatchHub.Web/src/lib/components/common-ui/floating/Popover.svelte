@@ -73,6 +73,9 @@
 		openOn.includes('hover') ? [role, hover, click, dismiss] : [role, click, dismiss]
 	);
 
+	export function setBoundElement(elem: HTMLElement) {
+		floating.elements.reference = elem;
+	}
 	$effect(() => {
 		if (openedPopoverId !== id) {
 			open = false;

@@ -3,6 +3,7 @@
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
 	import Article from '$lib/components/layout/Article.svelte';
+	import TipTap from '$lib/components/wysiwyg/TipTap.svelte';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import { BBCodeService } from '$lib/services/BBCodeService';
 	import DOMPurify from 'dompurify';
@@ -68,8 +69,8 @@
 	{#if selected}
 		<Article title={selected.title} author={selected.author}>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html DOMPurify.sanitize(selected.contents ?? '')}
-			<!-- <Lexical content={DOMPurify.sanitize(selected.contents ?? '')} /> -->
+			<!-- {@html DOMPurify.sanitize(selected.contents ?? '')} -->
+			<TipTap content={DOMPurify.sanitize(selected.contents ?? '')} />
 		</Article>
 	{/if}
 </div>
