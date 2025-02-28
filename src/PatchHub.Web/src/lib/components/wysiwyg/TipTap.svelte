@@ -4,7 +4,6 @@
 	import { Editor } from '@tiptap/core';
 	import Image from '@tiptap/extension-image';
 	import StarterKit from '@tiptap/starter-kit';
-	import { untrack } from 'svelte';
 	import AutoJoiner from 'tiptap-extension-auto-joiner';
 	import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 
@@ -34,9 +33,6 @@
 				editor = undefined;
 				editor = transaction.editor;
 			}
-		});
-		untrack(() => {
-			editor?.createNodeViews();
 		});
 		return () => {
 			editor?.destroy();
