@@ -29,7 +29,7 @@
 	}
 </script>
 
-<Card class="card-bordered bg-base-100 dark:border-neutral dark:bg-base-300 shadow-lg">
+<Card class="card-border bg-base-300 shadow-lg">
 	{#snippet figure()}
 		<a href={`/${'steam'}/${normalizeName(game.name)}`}>
 			<img
@@ -52,7 +52,7 @@
 					checked={isFavorited}
 					onchange={async () => await favoriteGame()}
 				/>
-				<Icon icon="favorite" style="outlined" class="swap-off " />
+				<Icon icon="favorite" style="outlined" class="swap-off" />
 				<Icon icon="favorite" class="swap-on text-pink-500" />
 			</label>
 		</div>

@@ -20,10 +20,14 @@
 	let lightModeEnabled = $state(false);
 	let theme = $derived(lightModeEnabled ? 'light' : 'dark');
 	let dropdownOpen = $state(false);
+
+	$effect(() => {
+		document.documentElement.setAttribute('data-theme', theme);
+	});
 </script>
 
-<div class="flex h-full w-full flex-col" data-theme={theme}>
-	<Navbar class="grow-0 gap-4 bg-base-200">
+<div class="flex h-full w-full flex-col">
+	<Navbar class="bg-base-200 grow-0 gap-4">
 		{#snippet start()}
 			<Dropdown
 				open={dropdownOpen}
@@ -36,7 +40,7 @@
 				{#snippet activator()}
 					<Swap effect="swap-rotate" offIcon="menu" onIcon="close" bind:checked={dropdownOpen} />
 				{/snippet}
-				<Menu class="w-48 rounded-box border border-base-content/20 bg-base-100">
+				<Menu class="rounded-box border-base-content/20 bg-base-100 w-48 border">
 					<MenuItem href="/">
 						<Icon icon="home" />
 						Home

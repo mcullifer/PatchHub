@@ -8,16 +8,16 @@
 
 <form method="post" action="?/login" class="h-full" use:enhance>
 	<div class="flex h-full w-full items-center justify-center">
-		<div class="card card-bordered bg-base-200 shadow-lg ring-2 ring-primary">
+		<div class="card card-border bg-base-200 ring-primary shadow-lg ring-2">
 			<div class="card-body">
 				<div class="card-title">
 					<h2>Login/Register</h2>
 				</div>
-				<label class="input input-bordered flex items-center gap-2">
+				<label class="input flex items-center gap-2">
 					<Icon icon="person" />
 					<input name="username" placeholder="Username" />
 				</label>
-				<label class="input input-bordered flex items-center gap-2">
+				<label class="input flex items-center gap-2">
 					<Icon icon="key" />
 					<input type="password" name="password" placeholder="Password" />
 				</label>

@@ -29,7 +29,7 @@
 
 <Dropdown class="hidden w-full max-w-sm sm:flex" dropdownClasses="overflow-y-auto max-h-96">
 	{#snippet activator()}
-		<label class="input input-bordered flex w-full items-center gap-2">
+		<label class="input flex w-full items-center gap-2">
 			<Icon icon="search" size="sm" />
 			<input
 				use:hotkey={{
@@ -42,8 +42,7 @@
 				oninput={debounceSearch}
 			/>
 			{#if searchInput.length === 0}
-				<kbd class="kbd kbd-sm">⌘</kbd>
-				<kbd class="kbd kbd-sm">K</kbd>
+				<kbd class="kbd kbd-sm">⌘ K</kbd>
 			{/if}
 		</label>
 	{/snippet}
