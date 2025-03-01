@@ -30,7 +30,7 @@
 <Dropdown class="hidden w-full max-w-sm sm:flex" dropdownClasses="overflow-y-auto max-h-96">
 	{#snippet activator()}
 		<label class="input flex w-full items-center gap-2">
-			<Icon icon="search" size="sm" />
+			<Icon icon="search" size="sm" class="select-none" />
 			<input
 				use:hotkey={{
 					hotkey: Hotkeys.Search,
