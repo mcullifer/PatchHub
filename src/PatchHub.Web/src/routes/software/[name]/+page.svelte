@@ -15,7 +15,7 @@
 	<Card class="bg-base-200 h-full max-w-sm overflow-auto">
 		{#snippet title()}{data.softwareName}{/snippet}
 		<Menu class="menu-lg p-0">
-			{#each data.news.items as newsItem}
+			{#each data.news.items as newsItem (newsItem.id)}
 				<MenuItem
 					class={{ 'menu-active': selected?.id === newsItem.id }}
 					onclick={() => (selected = newsItem)}

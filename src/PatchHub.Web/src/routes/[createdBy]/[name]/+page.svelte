@@ -45,7 +45,7 @@
 					</div>
 				{/snippet}
 				<Menu class="menu-lg p-0">
-					{#each news.newsitems as newsItem}
+					{#each news.newsitems as newsItem (newsItem.gid)}
 						<MenuItem
 							class={{ 'menu-active': selected?.gid === newsItem.gid }}
 							onclick={() => (selected = newsItem)}

@@ -21,7 +21,7 @@
 		Games
 	</h2>
 	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
-		{#each visibleGames as game}
+		{#each visibleGames as game (game.appid)}
 			<GameCard
 				{game}
 				isFavorited={favorites.find((f) => parseInt(f.externalId ?? '0') === game.appid)

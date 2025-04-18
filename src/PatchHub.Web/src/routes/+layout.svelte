@@ -63,6 +63,7 @@
 		{#snippet end()}
 			<label class="swap swap-rotate">
 				<input
+					id="theme-toggle"
 					type="checkbox"
 					bind:checked={lightModeEnabled}
 					value="light"
