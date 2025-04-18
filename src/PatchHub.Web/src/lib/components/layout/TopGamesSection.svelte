@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/common-ui/Button.svelte';
 	import GameCard from '$lib/components/common-ui/GameCard.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { ITopSteamGames } from '$lib/models/Steam';
@@ -11,8 +12,13 @@
 		class?: string;
 	};
 	let { games, favorites, class: classNames = '' }: TopGameSectionProps = $props();
-	let maxVisible = $state(10);
+	let maxVisible = $state(6);
 	let visibleGames = $derived(games.ranks.slice(0, maxVisible));
+	let showMore = $state(false);
+
+	const isFavorited = (gameId: number) => {
+		return favorites.find((f) => parseInt(f.externalId ?? '0') === gameId) ? true : false;
+	};
 </script>
 
 <section class="prose max-w-none {classNames}">
@@ -22,24 +28,30 @@
 	</h2>
 	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
 		{#each visibleGames as game (game.appid)}
-			<GameCard
-				{game}
-				isFavorited={favorites.find((f) => parseInt(f.externalId ?? '0') === game.appid)
-					? true
-					: false}
-			/>
+			<GameCard {game} isFavorited={isFavorited(game.appid)} />
 		{/each}
-		<div
-			class="sentinel"
-			use:inview={{
-				rootMargin: '50px'
-			}}
-			oninview_change={(e) => {
-				if (maxVisible >= games.ranks.length) {
-					e.detail.observer.disconnect();
-				}
-				maxVisible += 10;
-			}}
-		></div>
+		{#if showMore}
+			<div
+				class="sentinel"
+				use:inview={{
+					rootMargin: '50px'
+				}}
+				oninview_change={(e) => {
+					if (maxVisible >= games.ranks.length) {
+						e.detail.observer.disconnect();
+					}
+					maxVisible += 10;
+				}}
+			></div>
+		{/if}
 	</div>
+	{#if !showMore}
+		<div class="flex w-full justify-center py-4">
+			<Button
+				text="Show more"
+				class="btn-primary btn-sm btn-wide"
+				onclick={() => (showMore = true)}
+			/>
+		</div>
+	{/if}
 </section>
