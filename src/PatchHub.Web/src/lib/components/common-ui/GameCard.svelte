@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import Card from '$lib/components/common-ui/Card.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import Label from '$lib/components/common-ui/Label.svelte';
@@ -44,17 +45,19 @@
 			<a href={`/${'steam'}/${normalizeName(game.name)}`} class="link-hover link">
 				{game.name}
 			</a>
-			<label class="swap">
-				<input
-					type="checkbox"
-					data-tip="Favorite"
-					class="tooltip"
-					checked={isFavorited}
-					onchange={async () => await favoriteGame()}
-				/>
-				<Icon icon="favorite" style="outlined" class="swap-off" />
-				<Icon icon="favorite" class="swap-on text-pink-500" />
-			</label>
+			{#if page.data.user !== null}
+				<label class="swap">
+					<input
+						type="checkbox"
+						data-tip="Favorite"
+						class="tooltip"
+						checked={isFavorited}
+						onchange={async () => await favoriteGame()}
+					/>
+					<Icon icon="favorite" style="outlined" class="swap-off" />
+					<Icon icon="favorite" class="swap-on text-pink-500" />
+				</label>
+			{/if}
 		</div>
 	{/snippet}
 	<div class="flex items-center gap-2">
