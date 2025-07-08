@@ -1,30 +1,47 @@
 <script lang="ts">
+	import Tooltip from '$lib/components/common-ui/floating/Tooltip.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { Snippet } from 'svelte';
-	import type { HTMLButtonAttributes } from 'svelte/elements';
+	import type { ClassValue, HTMLButtonAttributes } from 'svelte/elements';
 
 	let {
 		class: classNames = 'btn-primary',
 		icon,
 		text,
 		children,
+		tip,
 		...restProps
 	}: {
-		class?: string;
+		class?: ClassValue;
 		icon?: string;
 		text?: string;
 		children?: Snippet;
+		tip?: string;
 	} & HTMLButtonAttributes = $props();
 </script>
 
-<button class="btn {classNames}" {...restProps}>
-	{#if icon}
-		<Icon {icon} />
+<Tooltip>
+	{#snippet reference(floating, interactions)}
+		<button
+			bind:this={floating.elements.reference}
+			{...interactions.getReferenceProps()}
+			class="btn {classNames}"
+			{...restProps}
+		>
+			{#if icon}
+				<Icon {icon} />
+			{/if}
+			{#if text}
+				{text}
+			{/if}
+			{#if children}
+				{@render children()}
+			{/if}
+		</button>
+	{/snippet}
+	{#if tip !== undefined}
+		<div class="bg-neutral text-neutral-content rounded-lg p-2 text-sm font-normal">
+			{tip}
+		</div>
 	{/if}
-	{#if text}
-		{text}
-	{/if}
-	{#if children}
-		{@render children()}
-	{/if}
-</button>
+</Tooltip>

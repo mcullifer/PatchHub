@@ -34,11 +34,17 @@
 				opts={{
 					middleware: [shift({ padding: 10 }), flip()]
 				}}
-				activatorClass="btn-circle btn-ghost btn-sm btn"
 				onDismiss={() => (dropdownOpen = false)}
 			>
-				{#snippet activator()}
-					<Swap effect="swap-rotate" offIcon="menu" onIcon="close" bind:checked={dropdownOpen} />
+				{#snippet activator(floating, interactions)}
+					<div
+						bind:this={floating.elements.reference}
+						{...interactions.getReferenceProps({
+							class: 'btn-circle btn-ghost btn-sm btn'
+						})}
+					>
+						<Swap effect="swap-rotate" offIcon="menu" onIcon="close" bind:checked={dropdownOpen} />
+					</div>
 				{/snippet}
 				<Menu class="rounded-box border-base-content/20 bg-base-100 w-48 border">
 					<MenuItem href="/">

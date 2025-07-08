@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { hotkey, Hotkeys } from '$lib/actions/hotkey';
-	import Dropdown from '$lib/components/common-ui/Dropdown.svelte';
+	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
@@ -27,9 +27,13 @@
 	}
 </script>
 
-<Dropdown class="hidden w-full max-w-sm sm:flex" dropdownClasses="overflow-y-auto max-h-96">
-	{#snippet activator()}
-		<label class="input flex w-full items-center gap-2">
+<Dropdown>
+	{#snippet activator(floating, interactions)}
+		<label
+			bind:this={floating.elements.reference}
+			{...interactions.getReferenceProps()}
+			class="input flex max-w-sm items-center gap-2"
+		>
 			<Icon icon="search" size="sm" class="select-none" />
 			<input
 				use:hotkey={{
@@ -46,13 +50,13 @@
 			{/if}
 		</label>
 	{/snippet}
-	{#snippet content()}
-		<Menu class="w-full">
-			{#each searchResults as result}
-				<MenuItem href={`/game/${result.appid}`}>{result.name}</MenuItem>
-			{:else}
-				<MenuItem>Search for a game</MenuItem>
-			{/each}
-		</Menu>
-	{/snippet}
+	<Menu
+		class="bg-base-100 border-base-content/20 rounded-box max-h-96 w-full overflow-y-auto border"
+	>
+		{#each searchResults as result, i (i)}
+			<MenuItem href={`/game/${result.appid}`}>{result.name}</MenuItem>
+		{:else}
+			<MenuItem>Search for a game</MenuItem>
+		{/each}
+	</Menu>
 </Dropdown>

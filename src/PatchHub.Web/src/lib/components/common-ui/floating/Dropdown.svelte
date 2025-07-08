@@ -72,7 +72,8 @@
 {#if dropdownOpen || (tipOpen && tip)}
 	<div
 		bind:this={floating.elements.floating}
-		style={floating.floatingStyles}
+		style={floating.floatingStyles +
+			`width: ${floating.elements.reference?.getBoundingClientRect().width}px;`}
 		{...interactions.getFloatingProps()}
 		class={['floating', dropdownOpen && 'z-30', tipOpen && 'z-50']}
 	>
