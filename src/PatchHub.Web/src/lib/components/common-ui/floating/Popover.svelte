@@ -28,8 +28,6 @@
 		openOn = ['click'],
 		closeOn = ['outside-press', 'escape-key', 'click'],
 		opts,
-		onclick,
-		referenceClass = '',
 		floatingClass = ''
 	}: PopoverProps = $props();
 
@@ -83,27 +81,18 @@
 	});
 </script>
 
-<div>
-	<!-- Reference Element -->
-	<button
-		bind:this={floating.elements.reference}
-		{...interactions.getReferenceProps({ onclick: onclick })}
-		class={[referenceClass]}
+{@render reference(floating, interactions)}
+<!-- Floating Element -->
+{#if open}
+	<div
+		bind:this={floating.elements.floating}
+		style={floating.floatingStyles}
+		{...interactions.getFloatingProps()}
+		class={['floating z-50', floatingClass]}
 	>
-		{@render reference()}
-	</button>
-	<!-- Floating Element -->
-	{#if open}
-		<div
-			bind:this={floating.elements.floating}
-			style={floating.floatingStyles}
-			{...interactions.getFloatingProps()}
-			class={['floating z-50', floatingClass]}
-		>
-			<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
-				{@render children()}
-				<FloatingArrow bind:ref={elemArrow} context={floating.context} class="fill-base-100" />
-			</div>
+		<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
+			{@render children()}
+			<FloatingArrow bind:ref={elemArrow} context={floating.context} class="fill-base-100" />
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}

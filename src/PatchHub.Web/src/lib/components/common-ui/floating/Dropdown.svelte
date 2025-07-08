@@ -23,7 +23,6 @@
 		tip,
 		opts,
 		open: dropdownOpen = $bindable(false),
-		activatorClass = '',
 		onDismiss
 	}: DropdownProps & { onDismiss?: () => void } = $props();
 
@@ -69,35 +68,27 @@
 	});
 </script>
 
-<div>
-	<button
-		bind:this={floating.elements.reference}
-		{...interactions.getReferenceProps()}
-		class={activatorClass}
+{@render activator(floating, interactions)}
+{#if dropdownOpen || (tipOpen && tip)}
+	<div
+		bind:this={floating.elements.floating}
+		style={floating.floatingStyles}
+		{...interactions.getFloatingProps()}
+		class={['floating', dropdownOpen && 'z-30', tipOpen && 'z-50']}
 	>
-		{@render activator()}
-	</button>
-	{#if dropdownOpen || (tipOpen && tip)}
-		<div
-			bind:this={floating.elements.floating}
-			style={floating.floatingStyles}
-			{...interactions.getFloatingProps()}
-			class={['floating', dropdownOpen && 'z-30', tipOpen && 'z-50']}
-		>
-			<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
-				{#if dropdownOpen}
-					{@render children()}
-				{:else if tipOpen}
-					<div class="rounded-lg bg-neutral p-2 text-sm text-neutral-content">
-						{@render tip?.()}
-					</div>
-				{/if}
-				<FloatingArrow
-					bind:ref={elemArrow}
-					context={floating.context}
-					class={{ 'fill-base-100': dropdownOpen, 'fill-neutral': tipOpen }}
-				/>
-			</div>
+		<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
+			{#if dropdownOpen}
+				{@render children()}
+			{:else if tipOpen}
+				<div class="bg-neutral text-neutral-content rounded-lg p-2 text-sm">
+					{@render tip?.()}
+				</div>
+			{/if}
+			<FloatingArrow
+				bind:ref={elemArrow}
+				context={floating.context}
+				class={{ 'fill-base-100': dropdownOpen, 'fill-neutral': tipOpen }}
+			/>
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}

@@ -1,4 +1,9 @@
-import type { OpenChangeReason, UseFloatingOptions } from '@skeletonlabs/floating-ui-svelte';
+import type {
+	OpenChangeReason,
+	UseFloatingOptions,
+	UseFloatingReturn,
+	UseInteractionsReturn
+} from '@skeletonlabs/floating-ui-svelte';
 import type { Snippet } from 'svelte';
 import type { ClassValue } from 'svelte/elements';
 
@@ -8,10 +13,9 @@ export type FloatingOptions = Omit<
 >;
 
 export type FloatingPropsBase = {
-	reference: Snippet;
+	reference: Snippet<[UseFloatingReturn, UseInteractionsReturn]>;
 	children: Snippet;
 	opts?: FloatingOptions;
-	referenceClass?: ClassValue;
 	floatingClass?: ClassValue;
 };
 
@@ -21,14 +25,12 @@ export type PopoverProps = {
 	open?: boolean;
 	closeOn?: OpenChangeReason[];
 	openOn?: OpenChangeReason[];
-	onclick?: () => void;
 } & Omit<FloatingPropsBase, 'arrowClass'>;
 
 export type DropdownProps = {
-	activator: Snippet;
+	activator: Snippet<[UseFloatingReturn, UseInteractionsReturn]>;
 	children: Snippet;
 	tip?: Snippet;
 	opts?: FloatingOptions;
 	open?: boolean;
-	activatorClass?: ClassValue;
 };

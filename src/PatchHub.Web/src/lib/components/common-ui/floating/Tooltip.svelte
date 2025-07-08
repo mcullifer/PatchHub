@@ -20,7 +20,6 @@
 		reference,
 		children,
 		opts,
-		referenceClass = '',
 		floatingClass = '',
 		arrowClass = '',
 		delay = 0
@@ -56,29 +55,21 @@
 	const interactions = useInteractions([role, hover, dismiss]);
 </script>
 
-<div>
+{@render reference(floating, interactions)}
+{#if open}
 	<div
-		bind:this={floating.elements.reference}
-		{...interactions.getReferenceProps()}
-		class={referenceClass}
+		bind:this={floating.elements.floating}
+		style={floating.floatingStyles}
+		{...interactions.getFloatingProps()}
+		class={['floating z-50', floatingClass]}
 	>
-		{@render reference()}
-	</div>
-	{#if open}
-		<div
-			bind:this={floating.elements.floating}
-			style={floating.floatingStyles}
-			{...interactions.getFloatingProps()}
-			class={['floating z-50', floatingClass]}
-		>
-			<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
-				{@render children()}
-				<FloatingArrow
-					bind:ref={elemArrow}
-					context={floating.context}
-					class={['fill-neutral', arrowClass]}
-				/>
-			</div>
+		<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
+			{@render children()}
+			<FloatingArrow
+				bind:ref={elemArrow}
+				context={floating.context}
+				class={['fill-neutral', arrowClass]}
+			/>
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}
