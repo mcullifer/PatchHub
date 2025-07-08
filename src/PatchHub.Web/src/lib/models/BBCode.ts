@@ -1,6 +1,8 @@
 export const BBToHTML: { [key: string]: string } = {
 	'[b]': '<b>',
 	'[/b]': '</b>',
+	'[p]': '<p>',
+	'[/p]': '</p>',
 	'[i]': '<i>',
 	'[/i]': '</i>',
 	'[u]': '<u>',
