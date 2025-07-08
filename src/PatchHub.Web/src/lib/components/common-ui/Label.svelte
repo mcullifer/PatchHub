@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '$lib/components/common-ui/Icon.svelte';
+	import { Icon } from '$lib/components/common-ui';
 
 	export let text = '';
 	export let textSize = 'text-md';

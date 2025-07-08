@@ -1,7 +1,5 @@
 <script lang="ts">
-	import Button from '$lib/components/common-ui/Button.svelte';
-	import GameCard from '$lib/components/common-ui/GameCard.svelte';
-	import Icon from '$lib/components/common-ui/Icon.svelte';
+	import { Button, GameCard, Icon } from '$lib/components/common-ui';
 	import type { ITopSteamGames } from '$lib/models/Steam';
 	import type { Catalog } from '$lib/server/db/schema';
 	import { inview } from 'svelte-inview';

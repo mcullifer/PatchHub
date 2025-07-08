@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { Icon } from '$lib/components/common-ui';
 	import Tooltip from '$lib/components/common-ui/floating/Tooltip.svelte';
-	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue, HTMLButtonAttributes } from 'svelte/elements';
 

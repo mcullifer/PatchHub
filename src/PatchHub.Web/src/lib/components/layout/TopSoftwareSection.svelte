@@ -1,6 +1,5 @@
 <script lang="ts">
-	import Card from '$lib/components/common-ui/Card.svelte';
-	import Icon from '$lib/components/common-ui/Icon.svelte';
+	import { Card, Icon } from '$lib/components/common-ui';
 	import { inview } from 'svelte-inview';
 	import type { ClassValue } from 'svelte/elements';
 

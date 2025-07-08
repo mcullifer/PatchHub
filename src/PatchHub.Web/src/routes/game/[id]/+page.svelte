@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import Card from '$lib/components/common-ui/Card.svelte';
-	import Menu from '$lib/components/common-ui/Menu.svelte';
-	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
+	import { Card, Menu, MenuItem } from '$lib/components/common-ui';
 	import Article from '$lib/components/layout/Article.svelte';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import { BBCodeService } from '$lib/services/BBCodeService';

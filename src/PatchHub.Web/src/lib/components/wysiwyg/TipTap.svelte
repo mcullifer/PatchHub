@@ -1,6 +1,5 @@
 <script lang="ts">
-	import Menu from '$lib/components/common-ui/Menu.svelte';
-	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
+	import { Menu, MenuItem } from '$lib/components/common-ui';
 	import { Editor } from '@tiptap/core';
 	import Image from '@tiptap/extension-image';
 	import StarterKit from '@tiptap/starter-kit';

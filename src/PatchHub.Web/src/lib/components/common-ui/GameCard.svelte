@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import Card from '$lib/components/common-ui/Card.svelte';
-	import Icon from '$lib/components/common-ui/Icon.svelte';
-	import Label from '$lib/components/common-ui/Label.svelte';
+	import { Card, Icon, Label } from '$lib/components/common-ui';
 	import type { IRankedSteamGame } from '$lib/models/Steam';
 	import { ApiService } from '$lib/services/ApiService';
 	import { normalizeName } from '$lib/util/StringUtils';

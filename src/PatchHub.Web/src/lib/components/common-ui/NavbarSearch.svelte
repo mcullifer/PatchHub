@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { hotkey, Hotkeys } from '$lib/actions/hotkey';
+	import { Icon, Menu, MenuItem } from '$lib/components/common-ui';
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
-	import Icon from '$lib/components/common-ui/Icon.svelte';
-	import Menu from '$lib/components/common-ui/Menu.svelte';
-	import MenuItem from '$lib/components/common-ui/MenuItem.svelte';
 	import type { ISteamApp } from '$lib/models/Steam';
 	import { useDebounce } from 'runed';
 
+	let dropdownOpen = $state(false);
 	let debounceSearch = useDebounce(() => search(), 200);
 	let searchInput = $state('');
 	let searchResults = $state<ISteamApp[]>([]);
 
 	async function search() {
+		dropdownOpen = true;
 		if (searchInput.length < 3) {
 			searchResults = [];
 			return;
@@ -27,7 +27,7 @@
 	}
 </script>
 
-<Dropdown>
+<Dropdown bind:open={dropdownOpen}>
 	{#snippet activator(floating, interactions)}
 		<label
 			bind:this={floating.elements.reference}
@@ -50,13 +50,13 @@
 			{/if}
 		</label>
 	{/snippet}
-	<Menu
-		class="bg-base-100 border-base-content/20 rounded-box max-h-96 w-full overflow-y-auto border"
-	>
-		{#each searchResults as result, i (i)}
-			<MenuItem href={`/game/${result.appid}`}>{result.name}</MenuItem>
-		{:else}
-			<MenuItem>Search for a game</MenuItem>
-		{/each}
-	</Menu>
+	<div class="bg-base-100 border-base-content/20 rounded-box max-h-96 overflow-y-auto border">
+		<Menu>
+			{#each searchResults as result, i (i)}
+				<MenuItem href={`/game/${result.appid}`}>{result.name}</MenuItem>
+			{:else}
+				<MenuItem>Search for a game</MenuItem>
+			{/each}
+		</Menu>
+	</div>
 </Dropdown>
