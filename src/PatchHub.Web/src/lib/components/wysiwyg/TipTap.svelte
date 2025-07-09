@@ -20,7 +20,9 @@
 					excludedTags: ['pre', 'code', 'table p']
 				}),
 				StarterKit,
-				Image
+				Image.configure({
+					inline: true
+				})
 			],
 			content: content,
 			editorProps: {
