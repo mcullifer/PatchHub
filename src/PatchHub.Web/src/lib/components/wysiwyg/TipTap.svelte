@@ -2,6 +2,7 @@
 	import { Menu, MenuItem } from '$lib/components/common-ui';
 	import { Editor } from '@tiptap/core';
 	import Image from '@tiptap/extension-image';
+	import Link from '@tiptap/extension-link';
 	import StarterKit from '@tiptap/starter-kit';
 	import AutoJoiner from 'tiptap-extension-auto-joiner';
 	import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
@@ -15,11 +16,17 @@
 			element: element,
 			extensions: [
 				AutoJoiner,
+				Link.configure({
+					autolink: true,
+					HTMLAttributes: {
+						class: 'link link-hover'
+					}
+				}),
 				GlobalDragHandle.configure({
 					dragHandleSelector: '.drag-handle',
 					excludedTags: ['pre', 'code', 'table p']
 				}),
-				StarterKit,
+				StarterKit.configure(),
 				Image.configure({
 					inline: true
 				})
