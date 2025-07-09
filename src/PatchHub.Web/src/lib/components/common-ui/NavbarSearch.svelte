@@ -51,11 +51,15 @@
 		</label>
 	{/snippet}
 	<div class="bg-base-100 border-base-content/20 rounded-box max-h-96 overflow-y-auto border">
-		<Menu>
+		<Menu class="w-full">
 			{#each searchResults as result, i (i)}
 				<MenuItem href={`/game/${result.appid}`}>{result.name}</MenuItem>
 			{:else}
-				<MenuItem>Search for a game</MenuItem>
+				{#if searchInput.length > 0 && !debounceSearch.pending}
+					<MenuItem>No results found</MenuItem>
+				{:else}
+					<MenuItem>Search for a game</MenuItem>
+				{/if}
 			{/each}
 		</Menu>
 	</div>

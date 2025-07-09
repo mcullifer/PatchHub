@@ -59,7 +59,9 @@
 
 	const role = useRole(floating.context);
 	const hover = useHover(floating.context, { move: true });
-	const click = useClick(floating.context);
+	const click = useClick(floating.context, {
+		keyboardHandlers: false
+	});
 	const dismiss = useDismiss(floating.context);
 	const interactions = useInteractions([role, hover, click, dismiss]);
 
