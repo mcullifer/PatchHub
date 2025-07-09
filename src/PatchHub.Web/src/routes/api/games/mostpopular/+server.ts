@@ -17,16 +17,18 @@ export async function GET({ setHeaders }) {
 		error(500, 'Failed to retrieve top games');
 	}
 
-	const rankedGamesWithName = await Promise.all(rankedGames.ranks.map(setAppName));
+	const rankedGamesWithName = await getAppNames(rankedGames.ranks);
 	rankedGames.ranks = rankedGamesWithName.filter((g) => g.name !== '');
 	SteamGameService.popularGames = rankedGames;
 	setHeaders({ 'Cache-Control': 'max-age=300' }); // 5 minutes
 	return json(SteamGameService.popularGames);
 }
 
-async function setAppName(rankedGame: IRankedSteamGame) {
-	const app = await SteamGameService.getApp(rankedGame.appid);
-	rankedGame.name = app ? app.name : '';
-	rankedGame.catalogId = app ? app.id : -1;
-	return rankedGame;
+async function getAppNames(rankedGames: IRankedSteamGame[]) {
+	const appIds = rankedGames.map((g) => g.appid);
+	const appNames = await SteamGameService.getNamesForApps(appIds);
+	rankedGames.forEach((game) => {
+		game.name = appNames[game.appid.toString()];
+	});
+	return rankedGames;
 }

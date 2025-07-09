@@ -1,7 +1,7 @@
 import type { ISteamApp, ITopSteamGames } from '$lib/models/Steam';
 import { db } from '$lib/server/db';
 import { catalog } from '$lib/server/db/schema';
-import { like } from 'drizzle-orm';
+import { inArray, isNotNull, like } from 'drizzle-orm';
 
 export class SteamGameService {
 	static popularGames: ITopSteamGames = {
@@ -15,6 +15,27 @@ export class SteamGameService {
 		});
 		if (!result) return;
 		return result;
+	}
+
+	public static async getNamesForApps(appIds: number[]) {
+		const res = await db
+			.select({
+				appid: catalog.externalId,
+				name: catalog.name
+			})
+			.from(catalog)
+			.where(
+				inArray(
+					catalog.externalId,
+					appIds.map((a) => a.toString())
+				) && isNotNull(catalog.externalId)
+			);
+		const appNames: Record<string, string> = {};
+		for (const app of res) {
+			if (app.appid === null || app.name === null) continue;
+			appNames[app.appid] = app.name;
+		}
+		return appNames;
 	}
 
 	public static async search(query: string) {

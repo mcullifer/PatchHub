@@ -7,14 +7,10 @@ export async function load({ fetch, parent }) {
 	const user = (await parent()).user;
 	const response = {
 		topGames,
-		favorites: {
-			favorites: [] as Catalog[]
-		}
+		favorites: [] as Catalog[]
 	};
-	if (user) {
-		const favorites = await api.getFavorites();
-		response.favorites = favorites;
-	}
-
+	if (!user) return response;
+	const res = await api.getFavorites();
+	response.favorites = res.favorites;
 	return response;
 }

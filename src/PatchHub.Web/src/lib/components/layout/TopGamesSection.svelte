@@ -1,32 +1,29 @@
 <script lang="ts">
-	import { Button, GameCard, Icon } from '$lib/components/common-ui';
-	import type { ITopSteamGames } from '$lib/models/Steam';
-	import type { Catalog } from '$lib/server/db/schema';
+	import { Button, Icon } from '$lib/components/common-ui';
+	import type { IRankedSteamGame, ITopSteamGames } from '$lib/models/Steam';
+	import type { Snippet } from 'svelte';
 	import { inview } from 'svelte-inview';
+	import type { ClassValue } from 'svelte/elements';
 
 	type TopGameSectionProps = {
 		games: ITopSteamGames;
-		favorites: Catalog[];
-		class?: string;
+		item: Snippet<[IRankedSteamGame]>;
+		class?: ClassValue;
 	};
-	let { games, favorites, class: classNames = '' }: TopGameSectionProps = $props();
+	let { games, item, class: classNames = '' }: TopGameSectionProps = $props();
 	let maxVisible = $state(6);
 	let visibleGames = $derived(games.ranks.slice(0, maxVisible));
 	let showMore = $state(false);
-
-	const isFavorited = (gameId: number) => {
-		return favorites.find((f) => parseInt(f.externalId ?? '0') === gameId) ? true : false;
-	};
 </script>
 
-<section class="prose max-w-none {classNames}">
+<section class={['prose max-w-none', classNames]}>
 	<h2 class="flex items-center gap-2">
 		<Icon icon="sports_esports" />
 		Games
 	</h2>
 	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
 		{#each visibleGames as game (game.appid)}
-			<GameCard {game} isFavorited={isFavorited(game.appid)} />
+			{@render item(game)}
 		{/each}
 		{#if showMore}
 			<div
