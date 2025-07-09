@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { GameCard } from '$lib/components/common-ui';
+	import { Card, GameCard, Icon } from '$lib/components/common-ui';
 	import TopGamesSection from '$lib/components/layout/TopGamesSection.svelte';
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
 	import type { PageData } from './$types';
@@ -18,7 +18,15 @@
 <div class="m-4 mx-auto w-full max-w-7xl space-y-2 px-2">
 	<TopGamesSection games={data.topGames}>
 		{#snippet item(game)}
-			<GameCard {game} isFavorited={isFavorited(game.appid)} />
+			<svelte:boundary>
+				<GameCard {game} isFavorited={isFavorited(game.appid)} />
+				{#snippet failed()}
+					<Card class="card-border bg-base-300 text-center shadow-lg">
+						<Icon icon="error" class="text-error self-center pt-8" size="xl" />
+						Something went wrong while loading this game.
+					</Card>
+				{/snippet}
+			</svelte:boundary>
 		{/snippet}
 	</TopGamesSection>
 	<TopSoftwareSection />

@@ -22,9 +22,6 @@
 		if (!news) return noNews;
 		for (let i = 0; i < news.newsitems.length; i++) {
 			news.newsitems[i].contents = BBCodeService.bbcodeToHtml(news.newsitems[i].contents);
-			if (i === 0) {
-				console.log(news.newsitems[i].contents);
-			}
 		}
 		selected = news.newsitems[0];
 		return news;
