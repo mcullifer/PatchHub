@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Card, Icon } from '$lib/components/common-ui';
-	import { inview } from 'svelte-inview';
+	import { Card, Icon, InView } from '$lib/components/common-ui';
 	import type { ClassValue } from 'svelte/elements';
 
 	let { class: classNames }: { class?: ClassValue } = $props();
@@ -25,18 +24,6 @@
 				</div>
 			{/snippet}
 		</Card>
-		<div
-			class="sentinel"
-			use:inview={{
-				rootMargin: '50px'
-			}}
-			oninview_change={(e) => {
-				// if (maxVisible >= software.software.items.length) {
-				// 	e.detail.observer.disconnect();
-				// }
-				// maxVisible += 10;
-				e.detail.observer.disconnect();
-			}}
-		></div>
+		<InView opts={{ rootMargin: '50px' }} onInviewChange={(e) => e.detail.observer.disconnect()} />
 	</div>
 </section>

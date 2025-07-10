@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Button, Icon } from '$lib/components/common-ui';
+	import { Button, Icon, InView } from '$lib/components/common-ui';
 	import type { IRankedSteamGame, ITopSteamGames } from '$lib/models/Steam';
 	import type { Snippet } from 'svelte';
-	import { inview } from 'svelte-inview';
+	import type { ObserverEventDetails } from 'svelte-inview';
 	import type { ClassValue } from 'svelte/elements';
 
 	type TopGameSectionProps = {
@@ -14,6 +14,13 @@
 	let maxVisible = $state(6);
 	let visibleGames = $derived(games.ranks.slice(0, maxVisible));
 	let showMore = $state(false);
+
+	function onInviewChange(e: CustomEvent<ObserverEventDetails>) {
+		if (maxVisible >= games.ranks.length) {
+			e.detail.observer.disconnect();
+		}
+		maxVisible += 10;
+	}
 </script>
 
 <section class={['prose max-w-none', classNames]}>
@@ -26,18 +33,7 @@
 			{@render item(game)}
 		{/each}
 		{#if showMore}
-			<div
-				class="sentinel"
-				use:inview={{
-					rootMargin: '50px'
-				}}
-				oninview_change={(e) => {
-					if (maxVisible >= games.ranks.length) {
-						e.detail.observer.disconnect();
-					}
-					maxVisible += 10;
-				}}
-			></div>
+			<InView opts={{ rootMargin: '50px' }} {onInviewChange} />
 		{/if}
 	</div>
 	{#if !showMore}
