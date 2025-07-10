@@ -20,28 +20,40 @@
 	} & HTMLButtonAttributes = $props();
 </script>
 
-<Tooltip>
-	{#snippet reference(floating, interactions)}
-		<button
-			bind:this={floating.elements.reference}
-			{...interactions.getReferenceProps()}
-			class="btn {classNames}"
-			{...restProps}
-		>
-			{#if icon}
-				<Icon {icon} />
-			{/if}
-			{#if text}
-				{text}
-			{/if}
-			{#if children}
-				{@render children()}
-			{/if}
-		</button>
-	{/snippet}
-	{#if tip !== undefined}
+{#if tip !== undefined}
+	<Tooltip>
+		{#snippet reference(floating, interactions)}
+			<button
+				bind:this={floating.elements.reference}
+				{...interactions.getReferenceProps()}
+				class="btn {classNames}"
+				{...restProps}
+			>
+				{#if icon}
+					<Icon {icon} />
+				{/if}
+				{#if text}
+					{text}
+				{/if}
+				{#if children}
+					{@render children()}
+				{/if}
+			</button>
+		{/snippet}
 		<div class="bg-neutral text-neutral-content rounded-lg p-2 text-sm font-normal">
 			{tip}
 		</div>
-	{/if}
-</Tooltip>
+	</Tooltip>
+{:else}
+	<button class="btn {classNames}" {...restProps}>
+		{#if icon}
+			<Icon {icon} />
+		{/if}
+		{#if text}
+			{text}
+		{/if}
+		{#if children}
+			{@render children()}
+		{/if}
+	</button>
+{/if}
