@@ -21,7 +21,7 @@ export async function load({ params, fetch }) {
 		if (result.externalId === null) error(500, 'No external id');
 		const parsedId = parseInt(result.externalId);
 		if (isNaN(parsedId)) error(500, 'Invalid external id');
-		const news = api.getNews(parsedId, 10);
+		const news = api.games.news(parsedId, 10);
 		return {
 			catalogItem: result,
 			news: news

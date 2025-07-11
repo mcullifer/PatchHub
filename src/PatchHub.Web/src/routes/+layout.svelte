@@ -7,10 +7,13 @@
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import NavbarSearch from '$lib/components/common-ui/NavbarSearch.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
+	import { setApiContext } from '$lib/contexts/ApiContext.svelte';
 	import { flip, shift } from '@skeletonlabs/floating-ui-svelte';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
+
+	setApiContext();
 
 	let lightModeEnabled = $state(false);
 	let theme = $derived(lightModeEnabled ? 'light' : 'dark');

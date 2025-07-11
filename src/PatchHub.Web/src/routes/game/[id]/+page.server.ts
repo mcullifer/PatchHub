@@ -9,7 +9,7 @@ export async function load({ fetch, params }) {
 	const app = await SteamGameService.getApp(parsedId);
 	if (!app) error(404, 'Game not found');
 	const api = new ApiService(fetch);
-	const news = api.getNews(parsedId, 10);
+	const news = api.games.news(parsedId, 10);
 
 	return {
 		gameName: app.name,

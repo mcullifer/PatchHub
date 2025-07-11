@@ -7,7 +7,7 @@
 	import AutoJoiner from 'tiptap-extension-auto-joiner';
 	import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 
-	let { content }: { content?: string } = $props();
+	let { content, editable = true }: { content?: string; editable?: boolean } = $props();
 	let element = $state<HTMLDivElement>();
 	let editor = $state<Editor>();
 
@@ -31,6 +31,7 @@
 					inline: true
 				})
 			],
+			editable: editable,
 			content: content,
 			editorProps: {
 				attributes: {

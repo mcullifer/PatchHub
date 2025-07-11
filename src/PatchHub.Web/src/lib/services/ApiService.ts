@@ -1,66 +1,17 @@
-import type { ISoftwareFeed } from '$lib/models/AtomFeed';
-import type { ISteamAppNews, ITopSteamGames } from '$lib/models/Steam';
-import type { Catalog } from '$lib/server/db/schema';
+import { FavoritesService } from '$lib/services/FavoritesService';
+import { GameService } from '$lib/services/GameService';
+import { SoftwareService } from '$lib/services/SoftwareService';
 
 export class ApiService {
 	private fetchFn: typeof fetch;
+	games: GameService;
+	favorites: FavoritesService;
+	software: SoftwareService;
 
 	constructor(fetchFn?: typeof fetch) {
 		this.fetchFn = fetchFn || fetch;
-	}
-
-	async getNews(appid: number, count: number = 10): Promise<ISteamAppNews> {
-		try {
-			const response = await this.fetchFn(`/api/games/news?appid=${appid}&count=${count}`);
-			return response.json();
-		} catch (e) {
-			console.error(e);
-			return {
-				appid,
-				count: 0,
-				newsitems: []
-			};
-		}
-	}
-
-	async getMostPopularGames(): Promise<ITopSteamGames> {
-		try {
-			const response = await this.fetchFn('/api/games/mostpopular');
-			return response.json() as Promise<ITopSteamGames>;
-		} catch (e) {
-			console.error(e);
-			return {
-				last_update: 0,
-				ranks: []
-			};
-		}
-	}
-
-	async getMostPopularSoftware(): Promise<ISoftwareFeed | null> {
-		try {
-			const response = await this.fetchFn('/api/software/mostpopular');
-			return response.json() as Promise<ISoftwareFeed>;
-		} catch (e) {
-			console.error(e);
-			return null;
-		}
-	}
-
-	async getFavorites() {
-		try {
-			const response = await this.fetchFn('/api/favorites');
-			return (await response.json()) as { favorites: Catalog[] };
-		} catch (e) {
-			console.error(e);
-			return { favorites: [] };
-		}
-	}
-
-	async removeFavorite(id: number) {
-		try {
-			await this.fetchFn(`/api/favorites/${id}`, { method: 'DELETE' });
-		} catch (e) {
-			console.error(e);
-		}
+		this.games = new GameService(this.fetchFn);
+		this.favorites = new FavoritesService(this.fetchFn);
+		this.software = new SoftwareService(this.fetchFn);
 	}
 }

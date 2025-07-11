@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Card, Icon, Label } from '$lib/components/common-ui';
+	import { getApiContext } from '$lib/contexts/ApiContext.svelte';
 	import type { IRankedSteamGame } from '$lib/models/Steam';
-	import { ApiService } from '$lib/services/ApiService';
 	import { normalizeName } from '$lib/util/StringUtils';
 
 	let { game, isFavorited }: { game: IRankedSteamGame; isFavorited: boolean } = $props();
+
+	const api = getApiContext();
 
 	function getImgForGame(appId: number) {
 		return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
@@ -13,8 +15,7 @@
 
 	async function favoriteGame() {
 		if (isFavorited) {
-			const api = new ApiService();
-			await api.removeFavorite(game.catalogId);
+			await api.favorites.remove(game.catalogId);
 			isFavorited = false;
 		} else {
 			const response = await fetch('/api/favorites', {
