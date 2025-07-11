@@ -9,7 +9,7 @@ export async function GET({ setHeaders }) {
 	const outOfDate = SteamGameService.popularGames.last_update + oneHour < now;
 	if (!outOfDate && SteamGameService.popularGames.ranks.length > 0) {
 		setHeaders({ 'Cache-Control': 'max-age=300' }); // 5 minutes
-		return json(SteamGameService.popularGames);
+		return json(SteamGameService.popularGames.ranks);
 	}
 	const rankedGames = await steam.popular();
 	if (!rankedGames) {
@@ -18,17 +18,20 @@ export async function GET({ setHeaders }) {
 	}
 
 	const rankedGamesWithName = await getAppNames(rankedGames.ranks);
-	rankedGames.ranks = rankedGamesWithName.filter((g) => g.name !== '');
+	const filtered = rankedGamesWithName.filter((g) => g.name !== '' && g.name !== undefined);
+	rankedGames.ranks = filtered;
 	SteamGameService.popularGames = rankedGames;
 	setHeaders({ 'Cache-Control': 'max-age=300' }); // 5 minutes
-	return json(SteamGameService.popularGames);
+	return json(SteamGameService.popularGames.ranks);
 }
 
 async function getAppNames(rankedGames: IRankedSteamGame[]) {
 	const appIds = rankedGames.map((g) => g.appid);
 	const appNames = await SteamGameService.getNamesForApps(appIds);
-	rankedGames.forEach((game) => {
-		game.name = appNames[game.appid.toString()];
+	return rankedGames.map((game) => {
+		return {
+			...game,
+			name: appNames[game.appid.toString()] || ''
+		};
 	});
-	return rankedGames;
 }

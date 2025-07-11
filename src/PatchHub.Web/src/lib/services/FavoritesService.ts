@@ -24,11 +24,24 @@ export class FavoritesService {
 		}
 	}
 
-	async remove(id: number) {
+	async add(id: number) {
 		try {
-			await this.fetchFn(`/api/favorites/${id}`, { method: 'DELETE' });
+			return await this.fetchFn('/api/favorites', {
+				method: 'POST',
+				body: JSON.stringify({ catalogId: id })
+			});
 		} catch (e) {
 			console.error(e);
+			return new Response('Failed to add favorite', { status: 500 });
+		}
+	}
+
+	async remove(id: number) {
+		try {
+			return await this.fetchFn(`/api/favorites/${id}`, { method: 'DELETE' });
+		} catch (e) {
+			console.error(e);
+			return new Response('Failed to remove favorite', { status: 500 });
 		}
 	}
 }

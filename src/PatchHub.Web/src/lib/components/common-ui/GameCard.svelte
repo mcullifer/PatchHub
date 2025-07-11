@@ -2,10 +2,10 @@
 	import { page } from '$app/state';
 	import { Card, Icon, Label } from '$lib/components/common-ui';
 	import { getApiContext } from '$lib/contexts/ApiContext.svelte';
-	import type { IRankedSteamGame } from '$lib/models/Steam';
+	import type { INamedSteamGame } from '$lib/models/Steam';
 	import { normalizeName } from '$lib/util/StringUtils';
 
-	let { game, isFavorited }: { game: IRankedSteamGame; isFavorited: boolean } = $props();
+	let { game, isFavorited }: { game: INamedSteamGame; isFavorited: boolean } = $props();
 
 	const api = getApiContext();
 
@@ -14,17 +14,13 @@
 	}
 
 	async function favoriteGame() {
-		if (isFavorited) {
-			await api.favorites.remove(game.catalogId);
-			isFavorited = false;
-		} else {
-			const response = await fetch('/api/favorites', {
-				method: 'POST',
-				body: JSON.stringify({ catalogId: game.catalogId })
-			});
-			if (response.ok) {
-				isFavorited = true;
-			}
+		// TODO: We need to get our actual catalog item for each game
+		let response = isFavorited
+			? api.favorites.remove(game.catalogId)
+			: api.favorites.add(game.catalogId);
+		isFavorited = !isFavorited;
+		if (!(await response).ok) {
+			isFavorited = !isFavorited;
 		}
 	}
 </script>
@@ -59,7 +55,8 @@
 			{/if}
 		</div>
 	{/snippet}
-	<div class="flex items-center gap-2">
+
+	<div class="prose flex items-center gap-2">
 		<Label
 			class="font-medium"
 			iconSize="sm"

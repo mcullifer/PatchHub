@@ -1,4 +1,4 @@
-import type { ISteamAppNews, ITopSteamGames } from '$lib/models/Steam';
+import type { INamedSteamGame, ISteamAppNews } from '$lib/models/Steam';
 
 export class GameService {
 	private fetchFn: typeof fetch;
@@ -21,16 +21,13 @@ export class GameService {
 		}
 	}
 
-	async mostPopular(): Promise<ITopSteamGames> {
+	async mostPopular(): Promise<INamedSteamGame[]> {
 		try {
 			const response = await this.fetchFn('/api/games/mostpopular');
-			return response.json() as Promise<ITopSteamGames>;
+			return response.json() as Promise<INamedSteamGame[]>;
 		} catch (e) {
 			console.error(e);
-			return {
-				last_update: 0,
-				ranks: []
-			};
+			return [];
 		}
 	}
 }

@@ -1,22 +1,22 @@
 <script lang="ts">
 	import { Button, Icon, InView } from '$lib/components/common-ui';
-	import type { IRankedSteamGame, ITopSteamGames } from '$lib/models/Steam';
+	import type { INamedSteamGame } from '$lib/models/Steam';
 	import type { Snippet } from 'svelte';
 	import type { ObserverEventDetails } from 'svelte-inview';
 	import type { ClassValue } from 'svelte/elements';
 
 	type TopGameSectionProps = {
-		games: ITopSteamGames;
-		item: Snippet<[IRankedSteamGame]>;
+		games: INamedSteamGame[];
+		item: Snippet<[INamedSteamGame]>;
 		class?: ClassValue;
 	};
 	let { games, item, class: classNames = '' }: TopGameSectionProps = $props();
 	let maxVisible = $state(6);
-	let visibleGames = $derived(games.ranks.slice(0, maxVisible));
+	let visibleGames = $derived(games.slice(0, maxVisible));
 	let showMore = $state(false);
 
 	function onInviewChange(e: CustomEvent<ObserverEventDetails>) {
-		if (maxVisible >= games.ranks.length) {
+		if (maxVisible >= games.length) {
 			e.detail.observer.disconnect();
 		}
 		maxVisible += 10;

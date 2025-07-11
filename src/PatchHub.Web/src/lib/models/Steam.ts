@@ -3,13 +3,15 @@ export interface ITopSteamGames {
 	ranks: IRankedSteamGame[];
 }
 
+export interface INamedSteamGame extends IRankedSteamGame {
+	name: string;
+}
+
 export interface IRankedSteamGame {
-	catalogId: number;
 	rank: number;
 	appid: number;
 	concurrent_in_game: number;
 	peak_in_game: number;
-	name: string;
 }
 
 export interface ISteamAppListJsonModel {
