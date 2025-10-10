@@ -1,26 +1,17 @@
 <script lang="ts">
-	import { Button, Icon, InView } from '$lib/components/common-ui';
+	import { Button, Icon, VisibleWhenInView } from '$lib/components/common-ui';
 	import type { INamedSteamGame } from '$lib/models/Steam';
+	import { getTopGames } from '$lib/remote/topgames.remote';
 	import type { Snippet } from 'svelte';
-	import type { ObserverEventDetails } from 'svelte-inview';
 	import type { ClassValue } from 'svelte/elements';
 
 	type TopGameSectionProps = {
-		games: INamedSteamGame[];
 		item: Snippet<[INamedSteamGame]>;
 		class?: ClassValue;
 	};
-	let { games, item, class: classNames = '' }: TopGameSectionProps = $props();
-	let maxVisible = $state(6);
-	let visibleGames = $derived(games.slice(0, maxVisible));
+	let { item, class: classNames = '' }: TopGameSectionProps = $props();
+	let inview = $state<ReturnType<typeof VisibleWhenInView>>();
 	let showMore = $state(false);
-
-	function onInviewChange(e: CustomEvent<ObserverEventDetails>) {
-		if (maxVisible >= games.length) {
-			e.detail.observer.disconnect();
-		}
-		maxVisible += 10;
-	}
 </script>
 
 <section class={['prose max-w-none', classNames]}>
@@ -29,19 +20,33 @@
 		Games
 	</h2>
 	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
-		{#each visibleGames as game (game.appid)}
-			{@render item(game)}
-		{/each}
-		{#if showMore}
-			<InView opts={{ rootMargin: '50px' }} {onInviewChange} />
-		{/if}
+		{#await getTopGames()}
+			{#each { length: 6 } as n, i (i)}
+				<div class="skeleton h-full w-full"></div>
+			{/each}
+		{:then games}
+			<VisibleWhenInView
+				bind:this={inview}
+				items={games}
+				visibleOnStart={6}
+				increment={10}
+				opts={{ immediate: false }}
+			>
+				{#snippet template(game)}
+					{@render item(game)}
+				{/snippet}
+			</VisibleWhenInView>
+		{/await}
 	</div>
 	{#if !showMore}
 		<div class="flex w-full justify-center py-4">
 			<Button
 				text="Show more"
 				class="btn-primary btn-sm btn-wide"
-				onclick={() => (showMore = true)}
+				onclick={() => {
+					showMore = true;
+					inview?.resume();
+				}}
 			/>
 		</div>
 	{/if}

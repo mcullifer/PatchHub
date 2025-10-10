@@ -17,6 +17,17 @@ export class SteamGameService {
 		return result;
 	}
 
+	public static async getAppsByExternalId(appIds: number[]) {
+		const result = await db.query.catalog.findMany({
+			where: (catalog, { inArray }) =>
+				inArray(
+					catalog.externalId,
+					appIds.map((a) => a.toString())
+				)
+		});
+		return result;
+	}
+
 	public static async getNamesForApps(appIds: number[]) {
 		const res = await db
 			.select({

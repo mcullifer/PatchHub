@@ -27,6 +27,7 @@ export async function GET({ setHeaders }) {
 
 async function getAppNames(rankedGames: IRankedSteamGame[]) {
 	const appIds = rankedGames.map((g) => g.appid);
+	const apps = await SteamGameService.getAppsByExternalId(appIds);
 	const appNames = await SteamGameService.getNamesForApps(appIds);
 	return rankedGames.map((game) => {
 		return {

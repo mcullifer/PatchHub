@@ -8,5 +8,18 @@ import Menu from './Menu.svelte';
 import MenuItem from './MenuItem.svelte';
 import ScrollToTop from './ScrollToTop.svelte';
 import Swap from './Swap.svelte';
+import VisibleWhenInView from './VisibleWhenInView.svelte';
 
-export { Button, Card, GameCard, Icon, InView, Label, Menu, MenuItem, ScrollToTop, Swap };
+export {
+	Button,
+	Card,
+	GameCard,
+	Icon,
+	InView,
+	Label,
+	Menu,
+	MenuItem,
+	ScrollToTop,
+	Swap,
+	VisibleWhenInView
+};

@@ -2,6 +2,9 @@ export interface ITopSteamGames {
 	last_update: number;
 	ranks: IRankedSteamGame[];
 }
+// TODO: We don't want to do this we actually wnt to return the catalog type
+// then extend it with the IRankedSteamGame data in another field
+// we need the actual catalog items so we have the catalog id for user favorites
 
 export interface INamedSteamGame extends IRankedSteamGame {
 	name: string;

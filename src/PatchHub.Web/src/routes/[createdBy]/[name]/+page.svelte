@@ -21,7 +21,8 @@
 		let news = await data.news;
 		if (!news) return noNews;
 		for (let i = 0; i < news.newsitems.length; i++) {
-			news.newsitems[i].contents = BBCodeService.bbcodeToHtml(news.newsitems[i].contents);
+			// news.newsitems[i].contents = parser.parse(news.newsitems[i].contents).html;
+			news.newsitems[i].contents = BBCodeService.bbcodeToHtml(news.newsitems[i].contents, 'double');
 		}
 		selected = news.newsitems[0];
 		return news;

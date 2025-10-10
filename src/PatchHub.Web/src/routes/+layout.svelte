@@ -2,6 +2,7 @@
 	import '../app.css';
 	// sort-ignore
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Button, Icon, Menu, MenuItem, ScrollToTop, Swap } from '$lib/components/common-ui';
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
@@ -59,7 +60,7 @@
 					</MenuItem>
 				</Menu>
 			</Dropdown>
-			<a class="btn btn-ghost text-xl font-bold" href="/">PatchHub</a>
+			<a class="btn btn-ghost text-xl font-bold" href={resolve('/')}>PatchHub</a>
 		{/snippet}
 		{#snippet center()}
 			<NavbarSearch />
@@ -79,9 +80,9 @@
 			{#if page.data.user}
 				<Icon icon="person" />
 				{page.data.user.username}
-				<Button text="Logout" class="btn-primary btn-sm" onclick={() => goto('/logout')} />
+				<Button text="Logout" class="btn-primary btn-sm" onclick={() => goto(resolve('/logout'))} />
 			{:else if page.url.pathname !== '/login'}
-				<Button text="Login" class="btn-primary btn-sm" onclick={() => goto('/login')} />
+				<Button text="Login" class="btn-primary btn-sm" onclick={() => goto(resolve('/login'))} />
 			{/if}
 		{/snippet}
 	</Navbar>

@@ -2,12 +2,13 @@
 	import { Card, GameCard, Icon } from '$lib/components/common-ui';
 	import TopGamesSection from '$lib/components/layout/TopGamesSection.svelte';
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
-	import type { PageData } from './$types';
+	import { getFavorites } from '$lib/remote/favorites.remote';
 
-	let { data }: { data: PageData } = $props();
+	const favorites = getFavorites();
 
 	const isFavorited = (gameId: number) => {
-		return data.favorites.find((f) => parseInt(f.externalId ?? '0') === gameId) ? true : false;
+		if (!favorites.current) return false;
+		return favorites.current.some((f) => gameId.toString() === f.externalId);
 	};
 </script>
 
@@ -16,7 +17,7 @@
 </svelte:head>
 
 <div class="m-4 mx-auto w-full max-w-7xl space-y-2 px-2">
-	<TopGamesSection games={data.topGames}>
+	<TopGamesSection>
 		{#snippet item(game)}
 			<svelte:boundary>
 				<GameCard {game} isFavorited={isFavorited(game.appid)} />

@@ -35,7 +35,7 @@
 			content: content,
 			editorProps: {
 				attributes: {
-					class: 'prose w-full outline-none'
+					class: 'tiptap-editor prose  max-w-none w-full outline-none'
 				}
 			},
 			onTransaction: (transaction) => {
@@ -79,6 +79,60 @@
 
 <style lang="postcss">
 	@reference '../../../app.css';
+
+	/* Compact spacing for TipTap editor to reduce large gaps */
+	:global(.tiptap-editor) {
+		/* Reduce spacing between paragraphs and headings */
+		:global(p) {
+			margin-top: 0.5em;
+			margin-bottom: 0.5em;
+		}
+
+		:global(h1, h2, h3, h4, h5, h6) {
+			margin-top: 0.75em;
+			margin-bottom: 0.5em;
+		}
+
+		/* Compact lists */
+		:global(ul, ol) {
+			margin-top: 0.5em;
+			margin-bottom: 0.5em;
+			padding-left: 1.5em;
+		}
+
+		:global(li) {
+			margin-top: 0.25em;
+			margin-bottom: 0.25em;
+		}
+
+		/* Compact blockquotes */
+		:global(blockquote) {
+			margin-top: 0.75em;
+			margin-bottom: 0.75em;
+			padding-left: 1em;
+			border-left: 3px solid currentColor;
+		}
+
+		/* Images */
+		:global(img) {
+			margin-top: 0.5em;
+			margin-bottom: 0.5em;
+			max-width: 100%;
+			height: auto;
+		}
+
+		/* First and last element spacing */
+		:global(> *:first-child) {
+			margin-top: 0;
+		}
+
+		:global(> *:last-child) {
+			margin-bottom: 0;
+		}
+
+		/* Remove excessive line height */
+		line-height: 1.6;
+	}
 
 	.drag-handle {
 		@media screen and (max-width: 600px) {
