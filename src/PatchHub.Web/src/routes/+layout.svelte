@@ -1,18 +1,19 @@
 <script lang="ts">
 	import '../app.css';
 	// sort-ignore
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import { Button, Icon, Menu, MenuItem, ScrollToTop, Swap } from '$lib/components/common-ui';
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import NavbarSearch from '$lib/components/common-ui/NavbarSearch.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
+	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import { setApiContext } from '$lib/contexts/ApiContext.svelte';
+	import { signIn } from '$lib/remote/auth.remote';
 	import { flip, shift } from '@skeletonlabs/floating-ui-svelte';
 	import type { Snippet } from 'svelte';
+	import type { LayoutData } from './$types';
 
-	let { children }: { children: Snippet } = $props();
+	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
 	setApiContext();
 
@@ -26,7 +27,7 @@
 </script>
 
 <div class="flex h-full w-full flex-col">
-	<Navbar class="bg-base-200 grow-0 gap-4">
+	<Navbar class="bg-base-200 gap-4">
 		{#snippet start()}
 			<Dropdown
 				open={dropdownOpen}
@@ -77,12 +78,12 @@
 				<Icon icon="light_mode" class="swap-on" />
 				<Icon icon="dark_mode" class="swap-off" />
 			</label>
-			{#if page.data.user}
-				<Icon icon="person" />
-				{page.data.user.username}
-				<Button text="Logout" class="btn-primary btn-sm" onclick={() => goto(resolve('/logout'))} />
-			{:else if page.url.pathname !== '/login'}
-				<Button text="Login" class="btn-primary btn-sm" onclick={() => goto(resolve('/login'))} />
+			{#if data.user}
+				<ProfileDropdown class="w-8 rounded" user={data.user} />
+			{:else}
+				<form {...signIn}>
+					<Button class="btn-primary btn-sm">Login</Button>
+				</form>
 			{/if}
 		{/snippet}
 	</Navbar>

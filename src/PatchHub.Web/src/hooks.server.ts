@@ -1,32 +1,22 @@
-import type { Handle } from '@sveltejs/kit';
-import { dev } from '$app/environment';
-import * as auth from '$lib/server/auth.js';
+import {
+	WORKOS_API_KEY,
+	WORKOS_CLIENT_ID,
+	WORKOS_COOKIE_PASSWORD,
+	WORKOS_REDIRECT_URI
+} from '$env/static/private';
+import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
 
-const handleAuth: Handle = async ({ event, resolve }) => {
-	const sessionId = event.cookies.get(auth.sessionCookieName);
-	if (!sessionId) {
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
-	}
+// Configure AuthKit with SvelteKit's environment variables
+configureAuthKit({
+	clientId: WORKOS_CLIENT_ID,
+	apiKey: WORKOS_API_KEY,
+	redirectUri: WORKOS_REDIRECT_URI,
+	cookiePassword: WORKOS_COOKIE_PASSWORD
+});
 
-	const { session, user } = await auth.validateSession(sessionId);
-	if (session) {
-		event.cookies.set(auth.sessionCookieName, session.id, {
-			path: '/',
-			sameSite: 'lax',
-			httpOnly: true,
-			expires: session.expiresAt,
-			secure: !dev
-		});
-	} else {
-		event.cookies.delete(auth.sessionCookieName, { path: '/' });
-	}
-
-	event.locals.user = user;
-	event.locals.session = session;
-
-	return resolve(event);
-};
-
-export const handle: Handle = handleAuth;
+// There is a weird WorkOS error that says
+// "Failed to revoke session on WorkOS." even though it does.
+export const handle = authKitHandle({
+	debug: false,
+	onError: () => {}
+});

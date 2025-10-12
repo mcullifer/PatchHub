@@ -16,19 +16,20 @@
 	<title>PatchHub</title>
 </svelte:head>
 
-<div class="m-4 mx-auto w-full max-w-7xl space-y-2 px-2">
+<div class="mx-auto max-w-7xl space-y-16 px-4 py-8 sm:px-6 lg:px-8">
 	<TopGamesSection>
 		{#snippet item(game)}
 			<svelte:boundary>
 				<GameCard {game} isFavorited={isFavorited(game.appid)} />
 				{#snippet failed()}
-					<Card class="card-border bg-base-300 text-center shadow-lg">
+					<Card class="bg-base-200 text-center">
 						<Icon icon="error" class="text-error self-center pt-8" size="xl" />
-						Something went wrong while loading this game.
+						<p class="mt-2 text-sm opacity-70">Something went wrong</p>
 					</Card>
 				{/snippet}
 			</svelte:boundary>
 		{/snippet}
 	</TopGamesSection>
+
 	<TopSoftwareSection />
 </div>

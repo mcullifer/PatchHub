@@ -31,38 +31,33 @@ body {
 	height: 100vh;
 }
 
-/* https://developers.google.com/fonts/docs/material_icons#sizing */
+/* Icon sizes aligned with Tailwind text scale */
 .icon-xs {
 	font-size: 1rem;
-	/* 16px */
+	/* 16px - matches text-base */
 	width: 1rem;
-	/* 16px */
 }
 
 .icon-sm {
 	font-size: 1.125rem;
-	/* 18px */
+	/* 18px - matches text-lg */
 	width: 1.125rem;
-	/* 18px */
 }
 
 .icon-md {
 	font-size: 1.5rem;
-	/* 24px */
+	/* 24px - matches text-2xl */
 	width: 1.5rem;
-	/* 24px */
 }
 
 .icon-lg {
 	font-size: 2.25rem;
-	/* 36px */
+	/* 36px - matches text-4xl */
 	width: 2.25rem;
-	/* 36px */
 }
 
 .icon-xl {
 	font-size: 3rem;
-	/* 48px */
+	/* 48px - matches text-5xl */
 	width: 3rem;
-	/* 48px */
 }

@@ -14,14 +14,26 @@
 	let showMore = $state(false);
 </script>
 
-<section class={['prose max-w-none', classNames]}>
-	<h2 class="flex items-center gap-2">
-		<Icon icon="sports_esports" />
-		Games
-	</h2>
-	<div class="not-prose gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
+<section class={classNames}>
+	<div class="mb-6">
+		<div class="border-base-content/10 flex items-end justify-between border-b pb-4">
+			<div>
+				<h2 class="mb-1 flex items-center gap-3 text-2xl font-bold">
+					<Icon icon="sports_esports" size="md" />
+					<span>Games</span>
+				</h2>
+				<p class="text-base-content/50 text-sm">Latest patches and updates</p>
+			</div>
+			<div class="badge badge-ghost badge-lg gap-2">
+				<Icon icon="trending_up" size="xs" />
+				Trending
+			</div>
+		</div>
+	</div>
+	<div class="gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
 		{#await getTopGames()}
-			{#each { length: 6 } as n, i (i)}
+			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
+			{#each Array(6) as _, i (i)}
 				<div class="skeleton h-full w-full"></div>
 			{/each}
 		{:then games}
@@ -39,15 +51,17 @@
 		{/await}
 	</div>
 	{#if !showMore}
-		<div class="flex w-full justify-center py-4">
+		<div class="mt-8 flex w-full justify-center">
 			<Button
-				text="Show more"
-				class="btn-primary btn-sm btn-wide"
+				text="Show more games"
+				class="btn btn-outline btn-sm gap-2"
 				onclick={() => {
 					showMore = true;
 					inview?.resume();
 				}}
-			/>
+			>
+				<Icon icon="expand_more" size="xs" />
+			</Button>
 		</div>
 	{/if}
 </section>
