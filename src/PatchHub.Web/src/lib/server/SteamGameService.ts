@@ -1,28 +1,32 @@
-import type { ISteamApp, ITopSteamGames } from '$lib/models/Steam';
+import type { INamedSteamGame, ISteamApp } from '$lib/models/Steam';
 import { db } from '$lib/server/db';
-import { catalog } from '$lib/server/db/schema';
-import { inArray, isNotNull, like } from 'drizzle-orm';
+import { externalItem } from '$lib/server/db/schema';
+import { and, eq, inArray, isNotNull, like } from 'drizzle-orm';
 
 export class SteamGameService {
-	static popularGames: ITopSteamGames = {
+	static popularGames: { last_update: number; ranks: INamedSteamGame[] } = {
 		last_update: 0,
 		ranks: []
 	};
 
 	public static async getApp(appId: number) {
-		const result = await db.query.catalog.findFirst({
-			where: (catalog, { eq }) => eq(catalog.externalId, appId.toString())
+		const result = await db.query.externalItem.findFirst({
+			where: (items, { and, eq }) =>
+				and(eq(items.externalId, appId.toString()), eq(items.type, 'steam'))
 		});
 		if (!result) return;
 		return result;
 	}
 
 	public static async getAppsByExternalId(appIds: number[]) {
-		const result = await db.query.catalog.findMany({
-			where: (catalog, { inArray }) =>
-				inArray(
-					catalog.externalId,
-					appIds.map((a) => a.toString())
+		const result = await db.query.externalItem.findMany({
+			where: (items, { and, inArray, eq }) =>
+				and(
+					inArray(
+						items.externalId,
+						appIds.map((a) => a.toString())
+					),
+					eq(items.type, 'steam')
 				)
 		});
 		return result;
@@ -31,15 +35,19 @@ export class SteamGameService {
 	public static async getNamesForApps(appIds: number[]) {
 		const res = await db
 			.select({
-				appid: catalog.externalId,
-				name: catalog.name
+				appid: externalItem.externalId,
+				name: externalItem.name
 			})
-			.from(catalog)
+			.from(externalItem)
 			.where(
-				inArray(
-					catalog.externalId,
-					appIds.map((a) => a.toString())
-				) && isNotNull(catalog.externalId)
+				and(
+					inArray(
+						externalItem.externalId,
+						appIds.map((a) => a.toString())
+					),
+					isNotNull(externalItem.externalId),
+					eq(externalItem.type, 'steam')
+				)
 			);
 		const appNames: Record<string, string> = {};
 		for (const app of res) {
@@ -52,18 +60,18 @@ export class SteamGameService {
 	public static async search(query: string) {
 		const result = await db
 			.select({
-				appid: catalog.externalId,
-				name: catalog.name
+				appid: externalItem.externalId,
+				name: externalItem.name
 			})
-			.from(catalog)
-			.where(like(catalog.name, `%${query}%`))
+			.from(externalItem)
+			.where(and(like(externalItem.name, `%${query}%`), eq(externalItem.type, 'steam')))
 			.limit(20);
 		if (!result || result.length === 0) return [];
 
 		return result.map((g) => {
 			return {
-				appid: parseInt(g.appid),
-				name: g.name
+				appid: parseInt(g.appid!),
+				name: g.name!
 			};
 		}) as ISteamApp[];
 	}

@@ -1,33 +1,31 @@
+import { getGameNews } from '$lib/remote/games.remote';
 import { db } from '$lib/server/db/index.js';
-import { ApiService } from '$lib/services/ApiService';
 import { error } from '@sveltejs/kit';
 
-export async function load({ params, fetch }) {
+export async function load({ params }) {
 	const { createdBy, name } = params;
-	const result = await db.query.catalog.findFirst({
+	const item = await db.query.externalItem.findFirst({
 		columns: {
 			id: true,
 			name: true,
 			externalId: true,
-			type: true,
-			createdBy: true
+			type: true
 		},
-		where: (catalog, { and, eq }) =>
-			and(eq(catalog.normalizedName, name.toUpperCase()), eq(catalog.createdBy, createdBy))
+		where: (externalItem, { and, eq }) =>
+			and(eq(externalItem.normalizedName, name.toUpperCase()), eq(externalItem.type, createdBy))
 	});
-	if (!result) error(404, 'Not found');
-	if (result.type === 'game') {
-		const api = new ApiService(fetch);
-		if (result.externalId === null) error(500, 'No external id');
-		const parsedId = parseInt(result.externalId);
+	if (!item) error(404, 'Not found');
+	if (item.type === 'steam') {
+		if (item.externalId === null) error(500, 'No external id');
+		const parsedId = parseInt(item.externalId);
 		if (isNaN(parsedId)) error(500, 'Invalid external id');
-		const news = api.games.news(parsedId, 10);
+		const news = getGameNews({ appid: parsedId, count: 10 });
 		return {
-			catalogItem: result,
-			news: news
+			item,
+			news
 		};
 	}
 	return {
-		catalogItem: result
+		item
 	};
 }

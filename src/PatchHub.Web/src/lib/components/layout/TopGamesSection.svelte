@@ -30,11 +30,12 @@
 			</div>
 		</div>
 	</div>
-	<div class="gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
+	<div class="grow gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
 		{#await getTopGames()}
 			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 			{#each Array(6) as _, i (i)}
-				<div class="skeleton h-full w-full"></div>
+				<!-- TODO: Wtf is going on here like just grow my boy pls -->
+				<div class="skeleton flex min-h-64 min-w-72 grow"></div>
 			{/each}
 		{:then games}
 			<VisibleWhenInView

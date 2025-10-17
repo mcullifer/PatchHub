@@ -1,33 +1,31 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Card, Icon, Label } from '$lib/components/common-ui';
-	import { getApiContext } from '$lib/contexts/ApiContext.svelte';
 	import type { INamedSteamGame } from '$lib/models/Steam';
 	import { normalizeName } from '$lib/util/StringUtils';
 
 	let { game, isFavorited }: { game: INamedSteamGame; isFavorited: boolean } = $props();
-
-	const api = getApiContext();
 
 	function getImgForGame(appId: number) {
 		return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
 	}
 
 	async function favoriteGame() {
-		// TODO: We need to get our actual catalog item for each game
-		let response = isFavorited
-			? api.favorites.remove(game.catalogId)
-			: api.favorites.add(game.catalogId);
-		isFavorited = !isFavorited;
-		if (!(await response).ok) {
-			isFavorited = !isFavorited;
-		}
+		// // TODO: We need to get our actual catalog item for each game
+		// let response = isFavorited
+		// 	? api.favorites.remove(game.catalogId)
+		// 	: api.favorites.add(game.catalogId);
+		// isFavorited = !isFavorited;
+		// if (!(await response).ok) {
+		// 	isFavorited = !isFavorited;
+		// }
 	}
 </script>
 
 <Card class="card-border bg-base-300 shadow-lg">
 	{#snippet figure()}
-		<a href={`/${'steam'}/${normalizeName(game.name)}`}>
+		<a data-sveltekit-preload-data="off" href={resolve(`/${'steam'}/${normalizeName(game.name)}`)}>
 			<img
 				class="w-full duration-500 hover:scale-125"
 				src={getImgForGame(game.appid)}
@@ -37,7 +35,11 @@
 	{/snippet}
 	{#snippet title()}
 		<div class="flex w-full justify-between">
-			<a href={`/${'steam'}/${normalizeName(game.name)}`} class="link-hover link">
+			<a
+				data-sveltekit-preload-data="off"
+				href={resolve(`/${'steam'}/${normalizeName(game.name)}`)}
+				class="link-hover link"
+			>
 				{game.name}
 			</a>
 			{#if page.data.user !== null}

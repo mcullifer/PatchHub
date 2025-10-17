@@ -19,15 +19,16 @@ export async function GET({ setHeaders }) {
 
 	const rankedGamesWithName = await getAppNames(rankedGames.ranks);
 	const filtered = rankedGamesWithName.filter((g) => g.name !== '' && g.name !== undefined);
-	rankedGames.ranks = filtered;
-	SteamGameService.popularGames = rankedGames;
+	SteamGameService.popularGames = {
+		last_update: rankedGames.last_update,
+		ranks: filtered
+	};
 	setHeaders({ 'Cache-Control': 'max-age=300' }); // 5 minutes
 	return json(SteamGameService.popularGames.ranks);
 }
 
 async function getAppNames(rankedGames: IRankedSteamGame[]) {
 	const appIds = rankedGames.map((g) => g.appid);
-	const apps = await SteamGameService.getAppsByExternalId(appIds);
 	const appNames = await SteamGameService.getNamesForApps(appIds);
 	return rankedGames.map((game) => {
 		return {

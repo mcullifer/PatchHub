@@ -1,10 +1,23 @@
 import { query } from '$app/server';
-import type { IRankedSteamGame } from '$lib/models/Steam';
+import type { INamedSteamGame, IRankedSteamGame, ISteamApp } from '$lib/models/Steam';
 import * as steam from '$lib/server/apis/steam';
 import { SteamGameService } from '$lib/server/SteamGameService';
-import { error } from '@sveltejs/kit';
+import * as v from 'valibot';
 
-export const getTopGames = query(async () => {
+export const getGameNews = query(
+	v.object({
+		appid: v.number(),
+		count: v.optional(v.number(), 10)
+	}),
+	async ({ appid, count }) => {
+		if (!appid) return null;
+		const response = await steam.news(appid.toString(), count.toString());
+		if (!response) return null;
+		return response.appnews;
+	}
+);
+
+export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> => {
 	const oneHour = 60 * 60 * 1000;
 	const now = Date.now() / 1000;
 	const outOfDate = SteamGameService.popularGames.last_update + oneHour < now;
@@ -16,20 +29,27 @@ export const getTopGames = query(async () => {
 	const rankedGames = await steam.popular();
 	if (!rankedGames) {
 		SteamGameService.popularGames = { last_update: 0, ranks: [] };
-		error(500, 'Failed to retrieve top games');
+		return [];
 	}
 
 	const rankedGamesWithName = await getAppNames(rankedGames.ranks);
 	const filtered = rankedGamesWithName.filter((g) => g.name !== '' && g.name !== undefined);
+
+	// Update cache with named games
 	SteamGameService.popularGames = {
 		last_update: rankedGames.last_update,
 		ranks: filtered
 	};
 
-	return SteamGameService.popularGames.ranks;
+	return filtered;
 });
 
-async function getAppNames(rankedGames: IRankedSteamGame[]) {
+export const searchGames = query(v.string(), async (searchQuery): Promise<ISteamApp[]> => {
+	if (!searchQuery || searchQuery.trim() === '') return [];
+	return await SteamGameService.search(searchQuery);
+});
+
+async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteamGame[]> {
 	const appIds = rankedGames.map((g) => g.appid);
 	const appNames = await SteamGameService.getNamesForApps(appIds);
 	return rankedGames.map((game) => {

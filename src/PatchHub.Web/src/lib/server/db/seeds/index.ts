@@ -1,1 +1,1 @@
-export { default as catalog } from './catalog';
+export { default as externalItem } from './external_item';

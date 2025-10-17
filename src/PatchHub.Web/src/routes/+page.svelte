@@ -8,7 +8,10 @@
 
 	const isFavorited = (gameId: number) => {
 		if (!favorites.current) return false;
-		return favorites.current.some((f) => gameId.toString() === f.externalId);
+		return (
+			favorites.current.externalItems.some((f) => gameId.toString() === f.externalId) ||
+			favorites.current.projects.some((f) => gameId.toString() === f.id.toString())
+		);
 	};
 </script>
 

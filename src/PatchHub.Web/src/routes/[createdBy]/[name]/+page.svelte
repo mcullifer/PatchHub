@@ -9,9 +9,8 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let app = data.catalogItem;
 	let noNews: ISteamAppNews = {
-		appid: parseInt(app?.externalId ?? '0'),
+		appid: parseInt(data.item?.externalId ?? '0'),
 		newsitems: [],
 		count: 0
 	};
@@ -30,17 +29,17 @@
 </script>
 
 <svelte:head>
-	<title>{data.catalogItem.name}</title>
+	<title>{data.item.name}</title>
 </svelte:head>
 
 <div class="flex flex-col gap-2 overflow-y-auto p-4 sm:flex-row">
-	{#if data.catalogItem.type === 'game'}
+	{#if data.item.type === 'steam'}
 		{#await cleanNewsPosts() then news}
 			<Card class="bg-base-200 h-full max-w-sm overflow-auto">
 				{#snippet title()}
 					<div class="flex items-center gap-2">
-						{data.catalogItem.name}
-						<div class="badge badge-soft badge-info capitalize">{data.catalogItem.type}</div>
+						{data.item.name}
+						<div class="badge badge-soft badge-info capitalize">{data.item.type}</div>
 					</div>
 				{/snippet}
 				<Menu class="menu-lg p-0">
