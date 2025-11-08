@@ -47,7 +47,7 @@ async function updateSteamApps(lastAppId?: number) {
 }
 
 async function getNextNSteamApps(iterations: number) {
-	let lastAppId: number | undefined = 3870310;
+	let lastAppId: number | undefined = 4121970;
 	for (let i = 0; i < iterations; i++) {
 		lastAppId = await updateSteamApps(lastAppId);
 		if (lastAppId === undefined) {

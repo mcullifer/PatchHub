@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { Card, Icon, InView } from '$lib/components/common-ui';
 	import type { ClassValue } from 'svelte/elements';
 
@@ -27,11 +28,13 @@
 			{#snippet title()}
 				<div class="flex w-full justify-between">
 					<a href={`/software/${'windows11'}`} class="link-hover link">Windows 11</a>
-					<label class="swap">
-						<input type="checkbox" data-tip="Favorite" class="tooltip" />
-						<Icon icon="favorite" style="outlined" class="swap-off " />
-						<Icon icon="favorite" class="swap-on text-pink-500" />
-					</label>
+					{#if page.data.user !== null}
+						<label class="swap">
+							<input type="checkbox" data-tip="Favorite" class="tooltip" />
+							<Icon icon="favorite" style="outlined" class="swap-off " />
+							<Icon icon="favorite" class="swap-on text-pink-500" />
+						</label>
+					{/if}
 				</div>
 			{/snippet}
 		</Card>

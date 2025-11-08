@@ -23,7 +23,7 @@
 	}
 </script>
 
-<Card class="card-border bg-base-300 shadow-lg">
+<Card class="card-border card-sm border-base-content/20 bg-base-200 shadow-md">
 	{#snippet figure()}
 		<a data-sveltekit-preload-data="off" href={resolve(`/${'steam'}/${normalizeName(game.name)}`)}>
 			<img
@@ -60,7 +60,7 @@
 
 	<div class="prose flex items-center gap-2">
 		<Label
-			class="font-medium"
+			class="opacity-80"
 			iconSize="sm"
 			icon="person"
 			text={game.concurrent_in_game.toLocaleString()}

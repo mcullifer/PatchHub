@@ -9,4 +9,5 @@ if (!db_url) throw new Error('DATABASE_URL is not set');
 const client = new Database(db_url);
 const db = drizzle(client);
 
-await seeds.externalItem(db);
+const targetFile = process.argv[2];
+await seeds.externalItem(db, targetFile);

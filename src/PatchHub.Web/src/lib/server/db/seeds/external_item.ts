@@ -5,18 +5,29 @@ import type { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
-export default async function seed(database: ReturnType<typeof drizzle>) {
-	await seedSteamGames(database);
+export default async function seed(database: ReturnType<typeof drizzle>, targetFile?: string) {
+	await seedSteamGames(database, targetFile);
 }
 
-async function seedSteamGames(database: ReturnType<typeof drizzle>) {
+async function seedSteamGames(database: ReturnType<typeof drizzle>, targetFile?: string) {
 	const steamGamesDir = 'src/lib/server/db/seeds/data/steam_games';
 	const skippedGames: Array<{ name: string; normalizedName: string; reason: string }> = [];
 	let successCount = 0;
 	const batchSize = 100;
 
 	try {
-		const files = readdirSync(steamGamesDir);
+		let files = readdirSync(steamGamesDir);
+
+		// Filter files if targetFile is specified
+		if (targetFile) {
+			if (!files.includes(targetFile)) {
+				console.error(`❌ File not found: ${targetFile}`);
+				console.log(`Available files: ${files.join(', ')}`);
+				return;
+			}
+			files = [targetFile];
+		}
+
 		for (const file of files) {
 			const filePath = join(steamGamesDir, file);
 			const fileContent = readFileSync(filePath, 'utf-8');

@@ -21,8 +21,20 @@
 			</div>
 		</button>
 	{/snippet}
-	<Menu class="bg-base-100 rounded-box border-base-content/20 border">
-		<MenuItem class="menu-title">{user.email}</MenuItem>
+	<Menu class="bg-base-100 rounded-box border-base-content/20 w-52 border">
+		<div class="flex items-center gap-2 p-2">
+			<div class="avatar">
+				<div class={classNames}>
+					<img src={user.profilePictureUrl} alt="Profile" />
+				</div>
+			</div>
+			<div class="space-y-0">
+				<div class="font-bold">
+					{user.metadata?.username ? user.metadata.username : user.email}
+				</div>
+				<div class="font-normal opacity-70">{user.firstName} {user.lastName}</div>
+			</div>
+		</div>
 		<MenuItem href="/profile">
 			<Icon icon="person" size="sm" />
 			Profile

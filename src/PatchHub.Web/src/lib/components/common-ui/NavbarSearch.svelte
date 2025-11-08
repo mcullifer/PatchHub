@@ -98,11 +98,11 @@
 		<Menu class="w-full">
 			{#each searchResults as result, i (i)}
 				<MenuItem
-					href={`/game/${result.appid}`}
 					class={selectedIndex === i ? 'menu-active' : ''}
 					onclick={() => {
 						dropdownOpen = false;
 						searchInput = '';
+						goto(resolve(`/game/${result.appid}`));
 					}}
 				>
 					{result.name}

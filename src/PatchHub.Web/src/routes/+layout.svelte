@@ -2,14 +2,12 @@
 	import '../app.css';
 	// sort-ignore
 	import { resolve } from '$app/paths';
-	import { Button, Icon, Menu, MenuItem, ScrollToTop, Swap } from '$lib/components/common-ui';
-	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
+	import { Button, Icon, ScrollToTop } from '$lib/components/common-ui';
 	import NavbarSearch from '$lib/components/common-ui/NavbarSearch.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import { setApiContext } from '$lib/contexts/ApiContext.svelte';
 	import { signIn } from '$lib/remote/auth.remote';
-	import { flip, shift } from '@skeletonlabs/floating-ui-svelte';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
@@ -19,7 +17,6 @@
 
 	let lightModeEnabled = $state(false);
 	let theme = $derived(lightModeEnabled ? 'light' : 'dark');
-	let dropdownOpen = $state(false);
 
 	$effect(() => {
 		document.documentElement.setAttribute('data-theme', theme);
@@ -29,39 +26,10 @@
 <div class="flex h-full w-full flex-col">
 	<Navbar class="bg-base-200 gap-4">
 		{#snippet start()}
-			<Dropdown
-				open={dropdownOpen}
-				opts={{
-					middleware: [shift({ padding: 10 }), flip()]
-				}}
-				onDismiss={() => (dropdownOpen = false)}
-			>
-				{#snippet activator(floating, interactions)}
-					<div
-						bind:this={floating.elements.reference}
-						{...interactions.getReferenceProps({
-							class: 'btn-circle btn-ghost btn-sm btn'
-						})}
-					>
-						<Swap effect="swap-rotate" offIcon="menu" onIcon="close" bind:checked={dropdownOpen} />
-					</div>
-				{/snippet}
-				<Menu class="rounded-box border-base-content/20 bg-base-100 w-48 border">
-					<MenuItem href="/">
-						<Icon icon="home" />
-						Home
-					</MenuItem>
-					<MenuItem href="/about">
-						<Icon icon="info" />
-						About
-					</MenuItem>
-					<MenuItem href="/contact">
-						<Icon icon="mail" />
-						Contact
-					</MenuItem>
-				</Menu>
-			</Dropdown>
-			<a class="btn btn-ghost text-xl font-bold" href={resolve('/')}>PatchHub</a>
+			<a class="text-primary flex gap-0 px-4 text-xl font-bold" href={resolve('/')}>
+				<span class="text-primary">patch</span>
+				<span class={lightModeEnabled ? 'text-base-content' : 'text-white'}>hub</span>
+			</a>
 		{/snippet}
 		{#snippet center()}
 			<NavbarSearch />
@@ -82,7 +50,10 @@
 				<ProfileDropdown class="w-8 rounded" user={data.user} />
 			{:else}
 				<form {...signIn}>
-					<Button class="btn-primary btn-sm">Login</Button>
+					<Button class="btn-primary btn-sm">
+						Login / Signup
+						<Icon icon="arrow_forward" size="sm" />
+					</Button>
 				</form>
 			{/if}
 		{/snippet}

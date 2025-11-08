@@ -19,8 +19,9 @@
 				Link.configure({
 					autolink: true,
 					HTMLAttributes: {
-						class: 'link link-hover'
-					}
+						class: 'link link-hover link-primary'
+					},
+					defaultProtocol: 'https'
 				}),
 				GlobalDragHandle.configure({
 					dragHandleSelector: '.drag-handle',
@@ -35,7 +36,8 @@
 			content: content,
 			editorProps: {
 				attributes: {
-					class: 'tiptap-editor prose  max-w-none w-full outline-none'
+					class:
+						'tiptap-editor prose [&_a]:link [&_a]:link-hover [&_a]:link-primary max-w-none w-full outline-none'
 				}
 			},
 			onTransaction: (transaction) => {

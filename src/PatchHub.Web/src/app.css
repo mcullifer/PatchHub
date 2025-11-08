@@ -1,8 +1,11 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 @plugin 'daisyui' {
-	themes: light, dark;
+	themes:
+		light,
+		dark --prefers-dark;
 }
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
