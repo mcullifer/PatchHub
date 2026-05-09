@@ -5,6 +5,7 @@
 	import { Icon, Menu, MenuItem } from '$lib/components/common-ui';
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import type { ISteamApp } from '$lib/models/Steam';
+	import { getSteamGamePath } from '$lib/util/SteamRoute';
 	import { useDebounce } from 'runed';
 
 	let dropdownOpen = $state(false);
@@ -58,7 +59,7 @@
 				if (searchResults[selectedIndex]) {
 					dropdownOpen = false;
 					searchInput = '';
-					goto(resolve(`/game/${searchResults[selectedIndex].appid}`));
+					goto(resolve(getSteamGamePath(searchResults[selectedIndex]) as `/${string}/${string}/${string}`));
 				}
 				break;
 			case 'Escape':
@@ -102,7 +103,7 @@
 					onclick={() => {
 						dropdownOpen = false;
 						searchInput = '';
-						goto(resolve(`/game/${result.appid}`));
+						goto(resolve(getSteamGamePath(result) as `/${string}/${string}/${string}`));
 					}}
 				>
 					{result.name}

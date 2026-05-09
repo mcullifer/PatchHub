@@ -8,6 +8,7 @@ export interface ITopSteamGames {
 
 export interface INamedSteamGame extends IRankedSteamGame {
 	name: string;
+	slug?: string;
 }
 
 export interface IRankedSteamGame {
@@ -28,6 +29,7 @@ export interface ISteamAppList {
 export interface ISteamApp {
 	appid: number;
 	name: string;
+	slug?: string;
 }
 
 export interface ISteamAppNewsResponse {

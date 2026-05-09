@@ -59,5 +59,7 @@
 		{/snippet}
 	</Navbar>
 	<ScrollToTop />
-	{@render children()}
+	<main class="min-h-0 flex-1">
+		{@render children()}
+	</main>
 </div>

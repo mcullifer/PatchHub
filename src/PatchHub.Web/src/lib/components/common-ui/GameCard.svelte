@@ -3,12 +3,52 @@
 	import { page } from '$app/state';
 	import { Card, Icon, Label } from '$lib/components/common-ui';
 	import type { INamedSteamGame } from '$lib/models/Steam';
-	import { normalizeName } from '$lib/util/StringUtils';
+	import { getSteamGamePath } from '$lib/util/SteamRoute';
 
 	let { game, isFavorited }: { game: INamedSteamGame; isFavorited: boolean } = $props();
 
-	function getImgForGame(appId: number) {
+	let defaultHeaderImageUrl = $derived(getDefaultHeaderImageUrl(game.appid));
+	let imageSrc = $state('');
+	let triedResolvedHeaderImage = $state(false);
+	let showImagePlaceholder = $state(false);
+
+	function getDefaultHeaderImageUrl(appId: number): string {
 		return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
+	}
+
+	let steamPath = $derived(getSteamGamePath(game));
+
+	$effect(() => {
+		imageSrc = defaultHeaderImageUrl;
+		triedResolvedHeaderImage = false;
+		showImagePlaceholder = false;
+	});
+
+	async function resolveHeaderImage(): Promise<void> {
+		if (triedResolvedHeaderImage) {
+			showImagePlaceholder = true;
+			return;
+		}
+
+		triedResolvedHeaderImage = true;
+
+		try {
+			const response = await fetch(resolve(`/api/steam/apps/${game.appid}/header-image`));
+			if (!response.ok) {
+				showImagePlaceholder = true;
+				return;
+			}
+
+			const body = (await response.json()) as { headerImageUrl?: unknown };
+			if (typeof body.headerImageUrl !== 'string' || body.headerImageUrl === imageSrc) {
+				showImagePlaceholder = true;
+				return;
+			}
+
+			imageSrc = body.headerImageUrl;
+		} catch {
+			showImagePlaceholder = true;
+		}
 	}
 
 	async function favoriteGame() {
@@ -25,19 +65,29 @@
 
 <Card class="card-border card-sm border-base-content/20 bg-base-200 shadow-md">
 	{#snippet figure()}
-		<a data-sveltekit-preload-data="off" href={resolve(`/${'steam'}/${normalizeName(game.name)}`)}>
-			<img
-				class="w-full duration-500 hover:scale-125"
-				src={getImgForGame(game.appid)}
-				alt={game.appid.toString()}
-			/>
+		<a
+			data-sveltekit-preload-data="off"
+			href={resolve(steamPath as `/${string}/${string}/${string}`)}
+		>
+			{#if showImagePlaceholder}
+				<div class="bg-base-300 flex aspect-[460/215] w-full items-center justify-center">
+					<Icon icon="sports_esports" size="xl" class="text-base-content/30" />
+				</div>
+			{:else}
+				<img
+					class="aspect-[460/215] w-full object-cover duration-500 hover:scale-125"
+					src={imageSrc}
+					alt=""
+					onerror={resolveHeaderImage}
+				/>
+			{/if}
 		</a>
 	{/snippet}
 	{#snippet title()}
 		<div class="flex w-full justify-between">
 			<a
 				data-sveltekit-preload-data="off"
-				href={resolve(`/${'steam'}/${normalizeName(game.name)}`)}
+				href={resolve(steamPath as `/${string}/${string}/${string}`)}
 				class="link-hover link"
 			>
 				{game.name}

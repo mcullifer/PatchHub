@@ -1,4 +1,4 @@
-import type { IRankedSteamGame } from '$lib/models/Steam';
+import type { INamedSteamGame, IRankedSteamGame } from '$lib/models/Steam';
 import * as steam from '$lib/server/apis/steam';
 import { SteamGameService } from '$lib/server/SteamGameService.js';
 import { error, json } from '@sveltejs/kit';
@@ -27,13 +27,15 @@ export async function GET({ setHeaders }) {
 	return json(SteamGameService.popularGames.ranks);
 }
 
-async function getAppNames(rankedGames: IRankedSteamGame[]) {
+async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteamGame[]> {
 	const appIds = rankedGames.map((g) => g.appid);
 	const appNames = await SteamGameService.getNamesForApps(appIds);
 	return rankedGames.map((game) => {
+		const app = appNames[game.appid.toString()];
 		return {
 			...game,
-			name: appNames[game.appid.toString()] || ''
+			name: app?.name || '',
+			slug: app?.slug
 		};
 	});
 }

@@ -11,8 +11,3 @@ export const workosClient = new WorkOS(WORKOS_API_KEY);
 export async function updateWorkOSUser(opts: UpdateUserOptions) {
 	await workosClient.userManagement.updateUser(opts);
 }
-
-export async function getUserMetadata(userId: string) {
-	const user = await workosClient.userManagement.getUser(userId);
-	return user;
-}

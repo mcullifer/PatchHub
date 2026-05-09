@@ -53,9 +53,11 @@ async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteam
 	const appIds = rankedGames.map((g) => g.appid);
 	const appNames = await SteamGameService.getNamesForApps(appIds);
 	return rankedGames.map((game) => {
+		const app = appNames[game.appid.toString()];
 		return {
 			...game,
-			name: appNames[game.appid.toString()] || ''
+			name: app?.name || '',
+			slug: app?.slug
 		};
 	});
 }

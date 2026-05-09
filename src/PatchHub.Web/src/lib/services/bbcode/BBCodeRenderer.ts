@@ -1,0 +1,237 @@
+import type { BBCodeNode, ElementNode, ParseOptions } from './types';
+
+const allowedSchemes = new Set(['http:', 'https:', 'mailto:']);
+const namedColors = new Set([
+	'black',
+	'blue',
+	'gray',
+	'green',
+	'grey',
+	'orange',
+	'purple',
+	'red',
+	'white',
+	'yellow'
+]);
+const sizeClasses: Record<string, string> = {
+	'1': 'bbcode-size-xs',
+	'2': 'bbcode-size-sm',
+	'3': 'bbcode-size-md',
+	'4': 'bbcode-size-lg',
+	'5': 'bbcode-size-xl',
+	small: 'bbcode-size-sm',
+	normal: 'bbcode-size-md',
+	large: 'bbcode-size-lg',
+	huge: 'bbcode-size-xl'
+};
+
+export class BBCodeRenderer {
+	private readonly options: Required<Pick<ParseOptions, 'preserveNewlines' | 'steamClanImageUrl'>>;
+
+	constructor(options: ParseOptions = {}) {
+		this.options = {
+			preserveNewlines: options.preserveNewlines ?? 'none',
+			steamClanImageUrl: options.steamClanImageUrl ?? 'https://clan.akamai.steamstatic.com/images/'
+		};
+	}
+
+	render(node: BBCodeNode): string {
+		if (node.type === 'document') return this.renderChildren(node.children);
+		if (node.type === 'text') return this.renderText(node.value);
+		return this.renderElement(node);
+	}
+
+	private renderChildren(nodes: BBCodeNode[]): string {
+		return nodes.map((node) => this.render(node)).join('');
+	}
+
+	private renderText(value: string): string {
+		const escaped = escapeHtml(value);
+		if (this.options.preserveNewlines === 'all') return escaped.replace(/\n/g, '<br>');
+		if (this.options.preserveNewlines === 'double') {
+			return escaped.replace(/\n{2,}/g, ' <br>').replace(/\n/g, ' ');
+		}
+		return escaped.replace(/\n+/g, ' ');
+	}
+
+	private renderElement(node: ElementNode): string {
+		const content = this.renderChildren(node.children);
+		const textContent = getPlainText(node.children);
+
+		switch (node.tag.name) {
+			case 'b':
+				return `<strong>${content}</strong>`;
+			case 'i':
+				return `<em>${content}</em>`;
+			case 'u':
+				return `<u>${content}</u>`;
+			case 's':
+			case 'strike':
+				return `<s>${content}</s>`;
+			case 'h1':
+			case 'h2':
+			case 'h3':
+			case 'h4':
+			case 'h5':
+			case 'h6':
+				return `<${node.tag.name}>${content}</${node.tag.name}>`;
+			case 'quote':
+				return `<blockquote>${content}</blockquote>`;
+			case 'p':
+				return `<p>${content}</p>`;
+			case 'code':
+				return `<code>${escapeHtml(textContent)}</code>`;
+			case 'hr':
+				return '<hr />';
+			case 'list':
+				return `<ul>${content}</ul>`;
+			case 'olist':
+				return `<ol>${content}</ol>`;
+			case '*':
+				return `<li>${content}</li>`;
+			case 'table':
+				return `<table>${content}</table>`;
+			case 'tr':
+				return `<tr>${content}</tr>`;
+			case 'td':
+				return `<td>${content}</td>`;
+			case 'th':
+				return `<th>${content}</th>`;
+			case 'url':
+				return renderLink(node, content, textContent);
+			case 'img':
+				return this.renderImage(node, textContent);
+			case 'previewyoutube':
+				return renderYouTubePreview(node);
+			case 'video':
+				return renderVideo(node);
+			case 'color':
+				return renderColor(node, content);
+			case 'size':
+				return renderSize(node, content);
+			case 'spoiler':
+				return `<details><summary>Spoiler</summary>${content}</details>`;
+			default:
+				return escapeHtml(node.tag.raw) + content;
+		}
+	}
+
+	private renderImage(node: ElementNode, textContent: string): string {
+		const rawSource = node.tag.attributes.src || node.tag.value || textContent.trim();
+		const src = this.resolveSteamImageUrl(rawSource);
+		if (!isSafeUrl(src, true)) return escapeHtml(node.tag.raw + textContent + `[/${node.tag.name}]`);
+
+		const alt = node.tag.attributes.alt ?? '';
+		return `<img src="${escapeAttribute(src)}" alt="${escapeAttribute(alt)}" />`;
+	}
+
+	private resolveSteamImageUrl(source: string): string {
+		if (source.startsWith('{STEAM_CLAN_IMAGE}')) {
+			return this.options.steamClanImageUrl + source.replace('{STEAM_CLAN_IMAGE}', '').replace(/^\/+/, '');
+		}
+
+		return source;
+	}
+}
+
+function renderLink(node: ElementNode, content: string, textContent: string): string {
+	const href = node.tag.value || node.tag.attributes.url || textContent.trim();
+	if (!isSafeUrl(href)) return content || escapeHtml(href);
+
+	const label = content || escapeHtml(href);
+	return `<a href="${escapeAttribute(href)}">${label}</a>`;
+}
+
+function renderYouTubePreview(node: ElementNode): string {
+	const videoId = sanitizeYouTubeId(node.tag.value || node.tag.attributes.previewyoutube || '');
+	if (!videoId) return escapeHtml(node.tag.raw);
+
+	const href = `https://www.youtube.com/watch?v=${videoId}`;
+	const thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+	return `<a href="${href}" class="bbcode-youtube-preview"><img src="${thumbnail}" alt="YouTube Video Thumbnail" /></a>`;
+}
+
+function renderVideo(node: ElementNode): string {
+	const youtubeId = sanitizeYouTubeId(node.tag.value || node.tag.attributes.video || '');
+	if (youtubeId) {
+		const href = `https://www.youtube.com/watch?v=${youtubeId}`;
+		const thumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+		return `<a href="${href}" class="bbcode-youtube-preview"><img src="${thumbnail}" alt="YouTube Video Thumbnail" /></a>`;
+	}
+
+	const sources = ['webm', 'mp4']
+		.map((type) => {
+			const source = node.tag.attributes[type];
+			if (!source || !isSafeUrl(source, true)) return '';
+			return `<source src="${escapeAttribute(source)}" type="video/${type}" />`;
+		})
+		.join('');
+
+	if (!sources) return escapeHtml(node.tag.raw);
+
+	const poster = node.tag.attributes.poster;
+	const posterAttribute = poster && isSafeUrl(poster, true) ? ` poster="${escapeAttribute(poster)}"` : '';
+	const autoplay = node.tag.attributes.autoplay === 'true' ? ' autoplay muted' : '';
+	const loop = node.tag.attributes.loop === 'true' ? ' loop' : '';
+	return `<video controls playsinline${posterAttribute}${autoplay}${loop}>${sources}</video>`;
+}
+
+function renderColor(node: ElementNode, content: string): string {
+	const color = node.tag.value || node.tag.attributes.color || '';
+	if (!isSafeColor(color)) return content;
+	return `<span style="color: ${escapeAttribute(color)}">${content}</span>`;
+}
+
+function renderSize(node: ElementNode, content: string): string {
+	const size = (node.tag.value || node.tag.attributes.size || '').toLowerCase();
+	if (/^\d{1,2}px$/.test(size)) return `<span style="font-size: ${escapeAttribute(size)}">${content}</span>`;
+	const className = sizeClasses[size];
+	if (!className) return content;
+	return `<span class="${className}">${content}</span>`;
+}
+
+function sanitizeYouTubeId(value: string): string {
+	const id = value.split(';')[0].replace(/^["']|["']$/g, '').trim();
+	return /^[a-zA-Z0-9_-]{6,32}$/.test(id) ? id : '';
+}
+
+function isSafeColor(value: string): boolean {
+	const normalized = value.trim().toLowerCase();
+	return namedColors.has(normalized) || /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(normalized);
+}
+
+function isSafeUrl(value: string, allowRelative = false): boolean {
+	const trimmed = value.trim();
+	if (!trimmed) return false;
+
+	try {
+		const url = new URL(trimmed, allowRelative ? 'https://patchhub.local' : undefined);
+		if (allowRelative && url.origin === 'https://patchhub.local') return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+		return allowedSchemes.has(url.protocol);
+	} catch {
+		return false;
+	}
+}
+
+function getPlainText(nodes: BBCodeNode[]): string {
+	return nodes
+		.map((node) => {
+			if (node.type === 'text') return node.value;
+			if (node.type === 'element') return getPlainText(node.children);
+			return getPlainText(node.children);
+		})
+		.join('');
+}
+
+function escapeHtml(value: string): string {
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(value: string): string {
+	return escapeHtml(value).replace(/`/g, '&#96;');
+}

@@ -1,5 +1,5 @@
 import { query } from '$app/server';
-import type { IRankedSteamGame } from '$lib/models/Steam';
+import type { INamedSteamGame, IRankedSteamGame } from '$lib/models/Steam';
 import * as steam from '$lib/server/apis/steam';
 import { SteamGameService } from '$lib/server/SteamGameService';
 import { error } from '@sveltejs/kit';
@@ -29,13 +29,15 @@ export const getTopGames = query(async () => {
 	return SteamGameService.popularGames.ranks;
 });
 
-async function getAppNames(rankedGames: IRankedSteamGame[]) {
+async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteamGame[]> {
 	const appIds = rankedGames.map((g) => g.appid);
 	const appNames = await SteamGameService.getNamesForApps(appIds);
 	return rankedGames.map((game) => {
+		const app = appNames[game.appid.toString()];
 		return {
 			...game,
-			name: appNames[game.appid.toString()] || ''
+			name: app?.name || '',
+			slug: app?.slug
 		};
 	});
 }

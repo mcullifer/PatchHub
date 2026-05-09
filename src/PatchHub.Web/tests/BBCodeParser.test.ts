@@ -284,6 +284,12 @@ describe('BBCodeParser - Self-Closing Tags', () => {
 		expect(result.html).toBe('<hr />');
 		expect(result.errors).toHaveLength(0);
 	});
+
+	it('should parse Steam-style horizontal rule with a closing tag', () => {
+		const result = parser.parse('Before[hr][/hr]After');
+		expect(result.html).toBe('Before<hr />After');
+		expect(result.errors).toHaveLength(0);
+	});
 });
 
 describe('BBCodeParser - Error Handling', () => {
@@ -322,7 +328,7 @@ describe('BBCodeParser - Error Handling', () => {
 
 	it('should handle invalid input type', () => {
 		const parser = new BBCodeParser();
-		const result = parser.parse(null as any);
+		const result = parser.parse(null as unknown as string);
 		expect(result.errors.length).toBeGreaterThan(0);
 	});
 });
