@@ -25,7 +25,7 @@
 			</div>
 			<div class="divider my-0"></div>
 
-			<form {...setupAccount} class=" space-y-4">
+			<form {...setupAccount} class="space-y-4">
 				<fieldset class="fieldset">
 					<label for="username" class="label">
 						<span class="label-text">Username</span>
@@ -39,7 +39,7 @@
 						/>
 					</label>
 					{#if setupAccount.fields.username.issues()}
-						{#each setupAccount.fields.username.issues() as issue, i (i)}
+						{#each setupAccount.fields.username.issues() as issue (issue.message)}
 							<div role="alert" class="alert alert-error alert-soft mt-2">
 								<Icon icon="error" class="text-error" size="sm" />
 								<div>
@@ -52,9 +52,8 @@
 
 				<button
 					type="submit"
-					class="btn btn-primary btn-block"
+					class={['btn btn-primary btn-block', { loading: setupAccount.pending > 0 }]}
 					disabled={setupAccount.pending > 0}
-					class:loading={setupAccount.pending > 0}
 				>
 					{setupAccount.pending > 0 ? 'Creating Account...' : 'Create Account'}
 				</button>

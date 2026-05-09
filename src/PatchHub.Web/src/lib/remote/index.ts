@@ -12,6 +12,3 @@ export {
 	removeExternalItemFavorite,
 	removeProjectFavorite
 } from './favorites.remote';
-
-// Auth remote functions
-export { signIn } from './auth.remote';

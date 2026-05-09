@@ -9,6 +9,7 @@ Agents should optimize for a product that is fast to scan, trustworthy, and easy
 - `.docs/development-guidelines.md`
 - `.docs/svelte-guidelines.md`
 - `.docs/remote-functions-guidelines.md`
+- `.docs/auth-and-organizations.md`
 - `.docs/ui-guidelines.md`
 - `.docs/testing-and-verification.md`
 - Any active plan in `.plans/`

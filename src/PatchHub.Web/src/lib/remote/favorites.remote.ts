@@ -1,4 +1,5 @@
 import { command, getRequestEvent, query } from '$app/server';
+import { getAuthContext, requireInternalUser } from '$lib/server/auth/AuthContext';
 import { db } from '$lib/server/db';
 import {
 	externalItem,
@@ -11,13 +12,11 @@ import * as v from 'valibot';
 
 export const getFavorites = query(async () => {
 	const event = getRequestEvent();
-	if (!event.locals.auth.user?.externalId) {
+	const { internalUserId } = await getAuthContext(event);
+	if (!internalUserId) {
 		return { externalItems: [], projects: [] };
 	}
 
-	const internalUserId = parseInt(event.locals.auth.user.externalId);
-
-	// Get external item favorites
 	const externalItemResult = await db
 		.select({
 			id: externalItem.id,
@@ -61,10 +60,10 @@ export const getFavorites = query(async () => {
 
 export const addExternalItemFavorite = command(v.number(), async (externalItemId) => {
 	const event = getRequestEvent();
-	if (!event.locals.auth.user?.externalId) throw new Error('Unauthorized');
+	const dbUser = await requireInternalUser(event);
 
 	await db.insert(externalItemFavorite).values({
-		userId: parseInt(event.locals.auth.user.externalId),
+		userId: dbUser.id,
 		externalItemId,
 		createdAt: new Date()
 	});
@@ -72,24 +71,24 @@ export const addExternalItemFavorite = command(v.number(), async (externalItemId
 
 export const removeExternalItemFavorite = command(v.number(), async (externalItemId) => {
 	const event = getRequestEvent();
-	if (!event.locals.auth.user?.externalId) throw new Error('Unauthorized');
+	const dbUser = await requireInternalUser(event);
 
 	await db
 		.delete(externalItemFavorite)
 		.where(
 			and(
 				eq(externalItemFavorite.externalItemId, externalItemId),
-				eq(externalItemFavorite.userId, parseInt(event.locals.auth.user.externalId))
+				eq(externalItemFavorite.userId, dbUser.id)
 			)
 		);
 });
 
 export const addProjectFavorite = command(v.number(), async (projectId) => {
 	const event = getRequestEvent();
-	if (!event.locals.auth.user?.externalId) throw new Error('Unauthorized');
+	const dbUser = await requireInternalUser(event);
 
 	await db.insert(projectFavorite).values({
-		userId: parseInt(event.locals.auth.user.externalId),
+		userId: dbUser.id,
 		projectId,
 		createdAt: new Date()
 	});
@@ -97,14 +96,9 @@ export const addProjectFavorite = command(v.number(), async (projectId) => {
 
 export const removeProjectFavorite = command(v.number(), async (projectId) => {
 	const event = getRequestEvent();
-	if (!event.locals.auth.user?.externalId) throw new Error('Unauthorized');
+	const dbUser = await requireInternalUser(event);
 
 	await db
 		.delete(projectFavorite)
-		.where(
-			and(
-				eq(projectFavorite.projectId, projectId),
-				eq(projectFavorite.userId, parseInt(event.locals.auth.user.externalId))
-			)
-		);
+		.where(and(eq(projectFavorite.projectId, projectId), eq(projectFavorite.userId, dbUser.id)));
 });

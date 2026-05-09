@@ -2,12 +2,11 @@
 	import '../app.css';
 	// sort-ignore
 	import { resolve } from '$app/paths';
-	import { Button, Icon, ScrollToTop } from '$lib/components/common-ui';
+	import { Icon, ScrollToTop } from '$lib/components/common-ui';
 	import NavbarSearch from '$lib/components/common-ui/NavbarSearch.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import { setApiContext } from '$lib/contexts/ApiContext.svelte';
-	import { signIn } from '$lib/remote/auth.remote';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
@@ -49,12 +48,10 @@
 			{#if data.user}
 				<ProfileDropdown class="w-8 rounded" user={data.user} />
 			{:else}
-				<form {...signIn}>
-					<Button class="btn-primary btn-sm">
-						Login / Signup
-						<Icon icon="arrow_forward" size="sm" />
-					</Button>
-				</form>
+				<a class="btn btn-primary btn-sm" href={resolve('/auth/login')}>
+					Login / Signup
+					<Icon icon="arrow_forward" size="sm" />
+				</a>
 			{/if}
 		{/snippet}
 	</Navbar>

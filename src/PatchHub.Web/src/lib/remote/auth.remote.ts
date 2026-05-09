@@ -1,14 +1,8 @@
 import { form, getRequestEvent } from '$app/server';
-import { createUser, findUserByUsername } from '$lib/server/UserService';
+import { createOrGetUserForWorkOSUser, findUserByUsername } from '$lib/server/UserService';
 import { updateWorkOSUser } from '$lib/server/WorkOSClient';
 import { error, redirect } from '@sveltejs/kit';
-import { authKit } from '@workos/authkit-sveltekit';
 import * as v from 'valibot';
-
-export const signIn = form(async () => {
-	const signInUrl = await authKit.getSignInUrl({ returnTo: '/' });
-	redirect(307, signInUrl);
-});
 
 export const setupAccount = form(
 	v.objectAsync({
@@ -29,13 +23,11 @@ export const setupAccount = form(
 	}),
 	async ({ username }) => {
 		const { locals } = getRequestEvent();
-		// Ensure user is authenticated
 		if (!locals.auth.user) {
 			error(401, 'Not authenticated');
 		}
 		const workosUser = locals.auth.user;
-		// Create user in database
-		const dbUser = await createUser(
+		const dbUser = await createOrGetUserForWorkOSUser(
 			workosUser.id,
 			workosUser.email,
 			username,
@@ -50,7 +42,6 @@ export const setupAccount = form(
 			metadata: { username: dbUser.username }
 		});
 
-		// Redirect to home page
 		throw redirect(302, '/');
 	}
 );

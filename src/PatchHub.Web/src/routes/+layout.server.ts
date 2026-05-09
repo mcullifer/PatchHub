@@ -1,5 +1,4 @@
-import { findUserByAuthProviderId } from '$lib/server/UserService';
-import { authKit } from '@workos/authkit-sveltekit';
+import { getAuthContext } from '$lib/server/auth/AuthContext';
 import type { LayoutServerLoad } from './$types';
 
 type LayoutUser = {
@@ -12,19 +11,18 @@ type LayoutUser = {
 };
 
 export const load: LayoutServerLoad = async (event) => {
-	const workosUser = await authKit.getUser(event);
+	const { workosUser, dbUser } = await getAuthContext(event);
 	if (!workosUser) {
 		return { user: null };
 	}
 
-	const internalUser = await findUserByAuthProviderId(workosUser.id);
 	const user: LayoutUser = {
 		id: workosUser.id,
 		email: workosUser.email,
 		firstName: workosUser.firstName,
 		lastName: workosUser.lastName,
 		profilePictureUrl: workosUser.profilePictureUrl,
-		username: internalUser?.username ?? null
+		username: dbUser?.username ?? null
 	};
 
 	return { user };

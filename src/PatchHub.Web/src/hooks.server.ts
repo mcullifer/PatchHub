@@ -1,53 +1,45 @@
-import {
-	WORKOS_API_KEY,
-	WORKOS_CLIENT_ID,
-	WORKOS_COOKIE_PASSWORD,
-	WORKOS_REDIRECT_URI
-} from '$env/static/private';
-import { findUserByAuthProviderId } from '$lib/server/UserService';
+import { env } from '$env/dynamic/private';
+import { getAuthContext } from '$lib/server/auth/AuthContext';
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
 
-// Configure AuthKit with SvelteKit's environment variables
 configureAuthKit({
-	clientId: WORKOS_CLIENT_ID,
-	apiKey: WORKOS_API_KEY,
-	redirectUri: WORKOS_REDIRECT_URI,
-	cookiePassword: WORKOS_COOKIE_PASSWORD
+	clientId: env.WORKOS_CLIENT_ID,
+	apiKey: env.WORKOS_API_KEY,
+	redirectUri: env.WORKOS_REDIRECT_URI,
+	cookiePassword: env.WORKOS_COOKIE_PASSWORD
 });
 
-// There is a weird WorkOS error that says
-// "Failed to revoke session on WorkOS." even though it does.
 const authHandle = authKitHandle({
 	debug: false,
-	onError: () => {}
+	onError: (error) => {
+		const message = error instanceof Error ? error.message : String(error);
+		if (message.includes('Failed to revoke session on WorkOS')) return;
+
+		console.error('AuthKit error:', error);
+	}
 });
 
-// Custom handle to redirect new users to account setup
+const setupExcludedPathPrefixes = ['/auth/callback', '/auth/login', '/auth/logout', '/auth/setup'];
+
 const provisionUserHandle: Handle = async ({ event, resolve }) => {
-	// Skip if user is not authenticated
 	if (!event.locals.auth.user) return resolve(event);
-
-	// Skip if already on the setup page to avoid redirect loops
-	if (event.url.pathname === '/auth/setup') return resolve(event);
-
-	const workosUserId = event.locals.auth.user.id;
+	if (setupExcludedPathPrefixes.some((path) => event.url.pathname.startsWith(path))) {
+		return resolve(event);
+	}
 
 	try {
-		// Check if user exists in our database
-		const dbUser = await findUserByAuthProviderId(workosUserId);
+		const { dbUser } = await getAuthContext(event);
 		if (!dbUser) {
-			// Redirect to setup page if user doesn't exist
 			return Response.redirect(new URL('/auth/setup', event.url.origin), 302);
 		}
 	} catch (error) {
-		console.error('Error checking user:', error);
-		// Continue with the request even if check fails
+		console.error('Error checking internal user:', error);
+		return Response.redirect(new URL('/auth/setup', event.url.origin), 302);
 	}
 
 	return resolve(event);
 };
 
-// Chain the handles together
 export const handle = sequence(authHandle, provisionUserHandle);
