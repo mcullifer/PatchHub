@@ -33,6 +33,13 @@
 - Keep parsing code deterministic and covered by unit tests when source formats are inconsistent.
 - Prefer small composable service methods over large methods that fetch, transform, filter, and format all at once.
 
+## Adding Software Sources
+
+- Add manually curated software feeds in `src/lib/server/software/SoftwareSourceRegistry.ts`.
+- Keep source-specific fetch/parsing behavior in `src/lib/server/software`, then return normalized `SoftwareUpdateEntry` DTOs to routes and remote functions.
+- Use Svelte remote functions for app-internal software reads. Add `+server.ts` routes only for real HTTP boundaries or custom cache/header behavior.
+- Seed searchable/favoriteable software rows through `SoftwareCatalogService.upsertRegisteredSources()`.
+
 ## Error Handling
 
 - Fail gracefully in UI with useful empty and error states.

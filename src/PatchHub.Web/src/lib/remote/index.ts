@@ -2,7 +2,7 @@
 export { getGameNews, getMostPopularGames, searchGames } from './games.remote';
 
 // Software remote functions
-export { getMostPopularSoftware } from './software.remote';
+export { getSoftwareSourceSummaries } from './software.remote';
 
 // Favorites remote functions
 export {

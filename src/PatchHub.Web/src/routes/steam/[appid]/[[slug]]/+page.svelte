@@ -99,7 +99,7 @@
 
 		<div class="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 lg:p-6">
 			<header class="card bg-base-200 border-base-300 overflow-hidden border shadow-sm">
-				<div class="relative grid min-h-72 gap-0 lg:grid-cols-[minmax(320px,42%)_1fr]">
+				<div class="relative grid min-h-72 gap-0 lg:grid-cols-[minmax(320px,45%)_minmax(0,55%)]">
 					<figure class="bg-base-300 relative min-h-56 overflow-hidden lg:min-h-full">
 						{#if headerImageUrl}
 							<img
@@ -118,7 +118,8 @@
 							class="from-base-200/0 via-base-200/30 to-base-200 absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r"
 						></div>
 					</figure>
-					<div class="card-body relative z-10 gap-5 lg:-ml-20">
+
+					<div class="card-body relative z-10 gap-5">
 						<div class="flex flex-wrap items-center gap-2">
 							<span class="badge badge-info badge-soft gap-1">
 								<Icon icon="sports_esports" size="xs" />

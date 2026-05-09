@@ -1,5 +1,6 @@
 import type { ISteamAppListResponseBody } from '$lib/models/Steam';
 import { externalItem } from '$lib/server/db/schema';
+import { SoftwareCatalogService } from '$lib/server/software/SoftwareCatalogService';
 import { createSteamExternalItemValues } from '$lib/server/steam/SteamCatalog';
 import type { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readdirSync, readFileSync } from 'fs';
@@ -7,6 +8,7 @@ import { join } from 'path';
 
 export default async function seed(database: ReturnType<typeof drizzle>, targetFile?: string) {
 	await seedSteamGames(database, targetFile);
+	await SoftwareCatalogService.upsertRegisteredSources();
 }
 
 async function seedSteamGames(database: ReturnType<typeof drizzle>, targetFile?: string) {
