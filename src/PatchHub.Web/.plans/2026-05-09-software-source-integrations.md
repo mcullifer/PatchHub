@@ -186,6 +186,7 @@ Each adapter returns the same DTO and source health metadata.
 - [x] Decide and implement canonical route resolution for `/software/[slug]`.
 - [x] Rework `/software/[name]` load to resolve the source by slug and return normalized source/update DTOs.
 - [x] Update `/software/[name]/+page.svelte` to visually match the Steam route pattern: hero, source badges, stats, post list, selected article, source link, empty state, and error state.
+- [x] Extract shared Steam/software detail-page layout blocks into reusable Svelte components.
 - [x] Update `TopSoftwareSection.svelte` to use registered or queried software sources instead of hard-coded one-off data.
 - [x] Add a home-page software DTO/query that returns source card summaries with latest update metadata and freshness state.
 - [x] Make home software cards link to canonical `/software/[slug]` routes and reuse favorite behavior where possible.
@@ -199,6 +200,7 @@ Each adapter returns the same DTO and source health metadata.
 
 - [ ] `npm run check`
 - [ ] `npm run lint`
+- [x] `npm run check:svelte` after shared detail component extraction.
 - [x] `npm run test:unit -- --run`
 - [x] HTTP smoke check for `/software/windows-11`.
 - [x] HTTP smoke check for `/`.

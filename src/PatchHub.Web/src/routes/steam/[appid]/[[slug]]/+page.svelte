@@ -1,5 +1,13 @@
 <script lang="ts">
 	import { Icon } from '$lib/components/common-ui';
+	import {
+		UpdateFeedArticle,
+		UpdateFeedEmptyState,
+		UpdateFeedHero,
+		UpdateFeedPostList,
+		type UpdateFeedPostListItem,
+		type UpdateFeedStat
+	} from '$lib/components/update-feed';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import { BBCodeService } from '$lib/services/BBCodeService';
 	import DOMPurify from 'dompurify';
@@ -45,6 +53,27 @@
 		return news.newsitems.find((item) => item.gid === selectedId) ?? news.newsitems[0] ?? null;
 	}
 
+	function getHeroStats(selectedNews: ISteamNewsItem | null): UpdateFeedStat[] {
+		if (!selectedNews) return [];
+
+		return [
+			{ label: 'Latest selected', value: formatNewsDate(selectedNews.date) },
+			{ label: 'Source', value: selectedNews.feedlabel || 'Steam' },
+			{ label: 'Author', value: selectedNews.author || 'Steam' }
+		];
+	}
+
+	function getNavItems(news: ISteamAppNews): UpdateFeedPostListItem[] {
+		return news.newsitems.map((newsItem, index) => ({
+			id: newsItem.gid,
+			title: newsItem.title,
+			dateLabel: formatNewsDate(newsItem.date),
+			summary: getPostSummary(newsItem),
+			icon: getPostIcon(newsItem, index),
+			isSelected: isSelected(newsItem, index)
+		}));
+	}
+
 	function isSelected(newsItem: ISteamNewsItem, index: number): boolean {
 		return selectedId === newsItem.gid || (selectedId === null && index === 0);
 	}
@@ -70,10 +99,6 @@
 		return DOMPurify.sanitize(html);
 	}
 
-	function openSteamNews(url: string): void {
-		window.open(url, '_blank', 'noopener,noreferrer');
-	}
-
 	function useNextHeaderImage(): void {
 		headerImageIndex += 1;
 	}
@@ -96,181 +121,83 @@
 	{:then rawNews}
 		{@const news = parseNews(rawNews)}
 		{@const selectedNews = getSelectedNews(news)}
+		{@const heroStats = getHeroStats(selectedNews)}
+		{@const navItems = getNavItems(news)}
 
 		<div class="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 lg:p-6">
-			<header class="card bg-base-200 border-base-300 overflow-hidden border shadow-sm">
-				<div class="relative grid min-h-72 gap-0 lg:grid-cols-[minmax(320px,45%)_minmax(0,55%)]">
-					<figure class="bg-base-300 relative min-h-56 overflow-hidden lg:min-h-full">
-						{#if headerImageUrl}
-							<img
-								class="h-full w-full object-cover"
-								src={headerImageUrl}
-								alt=""
-								loading="lazy"
-								onerror={useNextHeaderImage}
-							/>
-						{:else}
-							<div class="flex h-full min-h-56 items-center justify-center">
-								<Icon icon="sports_esports" size="xl" class="text-base-content/30" />
-							</div>
-						{/if}
-						<div
-							class="from-base-200/0 via-base-200/30 to-base-200 absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r"
-						></div>
-					</figure>
+			{#snippet fallbackIcon()}
+				<Icon icon="sports_esports" size="xl" class="text-base-content/30" />
+			{/snippet}
 
-					<div class="card-body relative z-10 gap-5">
-						<div class="flex flex-wrap items-center gap-2">
-							<span class="badge badge-info badge-soft gap-1">
-								<Icon icon="sports_esports" size="xs" />
-								Steam
-							</span>
-							<span class="badge bg-base-100/95 border-base-300 text-base-content shadow-sm">
-								App {data.game.appid}
-							</span>
-							<span class="badge bg-base-100/95 border-base-300 text-base-content shadow-sm">
-								{news.count} posts
-							</span>
-						</div>
+			{#snippet heroBadges()}
+				<span class="badge badge-info badge-soft gap-1">
+					<Icon icon="sports_esports" size="xs" />
+					Steam
+				</span>
+				<span class="badge bg-base-100/95 border-base-300 text-base-content shadow-sm">
+					App {data.game.appid}
+				</span>
+				<span class="badge bg-base-100/95 border-base-300 text-base-content shadow-sm">
+					{news.count} posts
+				</span>
+			{/snippet}
 
-						<div class="max-w-3xl">
-							<h1 class="text-2xl leading-tight font-bold text-pretty md:text-3xl">
-								{data.game.name}
-							</h1>
-							<p class="text-base-content/80 mt-2 max-w-2xl text-sm">
-								Steam announcements and update posts collected into one readable feed.
-							</p>
-						</div>
-
-						{#if selectedNews}
-							<div
-								class="stats stats-vertical bg-base-100 border-base-300 sm:stats-horizontal w-full border shadow-sm"
-							>
-								<div class="stat px-4 py-3">
-									<div class="stat-title">Latest selected</div>
-									<div class="stat-value text-lg">{formatNewsDate(selectedNews.date)}</div>
-								</div>
-								<div class="stat px-4 py-3">
-									<div class="stat-title">Source</div>
-									<div class="stat-value text-lg">{selectedNews.feedlabel || 'Steam'}</div>
-								</div>
-								<div class="stat px-4 py-3">
-									<div class="stat-title">Author</div>
-									<div class="stat-value text-lg">{selectedNews.author || 'Steam'}</div>
-								</div>
-							</div>
-						{/if}
-					</div>
-				</div>
-			</header>
+			<UpdateFeedHero
+				title={data.game.name}
+				description="Steam announcements and update posts collected into one readable feed."
+				imageUrl={headerImageUrl}
+				stats={heroStats}
+				{fallbackIcon}
+				badges={heroBadges}
+				onimageerror={useNextHeaderImage}
+			/>
 
 			<div class="grid min-h-0 gap-5 lg:grid-cols-[minmax(280px,360px)_1fr]">
-				<aside class="card bg-base-200 border-base-300 h-fit border shadow-sm lg:sticky lg:top-20">
-					<div class="card-body gap-4 p-0">
-						<div class="border-base-300 flex items-center justify-between gap-3 border-b px-4 py-3">
-							<div>
-								<h2 class="font-semibold">Posts</h2>
-								<p class="text-base-content/60 text-sm">Newest Steam news from this app.</p>
-							</div>
-							<span class="badge badge-primary badge-soft">{news.newsitems.length}</span>
-						</div>
-
-						<nav class="max-h-[38rem] overflow-y-auto" aria-label="Steam news">
-							<ul class="menu menu-sm w-full gap-1 p-2">
-								{#each news.newsitems as newsItem, index (newsItem.gid)}
-									<li>
-										<button
-											type="button"
-											class={[
-												'rounded-box items-start gap-3 py-3 text-left',
-												isSelected(newsItem, index) ? 'menu-active' : ''
-											]}
-											aria-current={isSelected(newsItem, index) ? 'true' : undefined}
-											onclick={() => (selectedId = newsItem.gid)}
-										>
-											<Icon icon={getPostIcon(newsItem, index)} size="sm" class="mt-0.5 shrink-0" />
-											<span class="min-w-0 flex-1">
-												<span class="text-xs opacity-60">{formatNewsDate(newsItem.date)}</span>
-												<span class="mt-1 line-clamp-2 font-medium text-pretty">
-													{newsItem.title}
-												</span>
-												<span class="mt-1 line-clamp-2 text-xs opacity-60">
-													{getPostSummary(newsItem)}
-												</span>
-											</span>
-										</button>
-									</li>
-								{:else}
-									<div class="p-3">
-										<div class="alert alert-info alert-soft">
-											<Icon icon="info" />
-											<span>Steam has not returned news for this game.</span>
-										</div>
-									</div>
-								{/each}
-							</ul>
-						</nav>
-					</div>
-				</aside>
+				<UpdateFeedPostList
+					title="Posts"
+					description="Newest Steam news from this app."
+					ariaLabel="Steam news"
+					items={navItems}
+					emptyMessage="Steam has not returned news for this game."
+					onselect={(id) => (selectedId = id)}
+				/>
 
 				<section class="min-w-0">
 					{#if selectedNews}
-						<article class="card bg-base-200 border-base-300 border shadow-sm">
-							<div class="card-body gap-6 p-4 sm:p-6 lg:p-8">
-								<header class="border-base-300 border-b pb-6">
-									<div class="mb-3 flex flex-wrap items-center gap-2">
-										<span class="badge badge-ghost gap-1">
-											<Icon icon="calendar_month" size="xs" />
-											{formatNewsDate(selectedNews.date)}
-										</span>
-										{#if selectedNews.author}
-											<span class="badge badge-ghost gap-1">
-												<Icon icon="person" size="xs" />
-												{selectedNews.author}
-											</span>
-										{/if}
-										{#if selectedNews.feedlabel}
-											<span class="badge badge-outline">{selectedNews.feedlabel}</span>
-										{/if}
-									</div>
+						{#snippet articleBadges()}
+							<span class="badge badge-ghost gap-1">
+								<Icon icon="calendar_month" size="xs" />
+								{formatNewsDate(selectedNews.date)}
+							</span>
+							{#if selectedNews.author}
+								<span class="badge badge-ghost gap-1">
+									<Icon icon="person" size="xs" />
+									{selectedNews.author}
+								</span>
+							{/if}
+							{#if selectedNews.feedlabel}
+								<span class="badge badge-outline">{selectedNews.feedlabel}</span>
+							{/if}
+						{/snippet}
 
-									<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-										<h2 class="max-w-4xl text-2xl leading-tight font-bold text-pretty md:text-4xl">
-											{selectedNews.title}
-										</h2>
-										{#if selectedNews.url}
-											<button
-												type="button"
-												class="btn btn-primary btn-sm shrink-0 gap-2"
-												onclick={() => openSteamNews(selectedNews.url)}
-											>
-												<Icon icon="open_in_new" size="sm" />
-												Steam
-											</button>
-										{/if}
-									</div>
-								</header>
-
-								<div
-									class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
-								>
-									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-									{@html sanitizeHtml(selectedNews.contents)}
-								</div>
+						<UpdateFeedArticle
+							title={selectedNews.title}
+							sourceLabel="Steam"
+							sourceUrl={selectedNews.url}
+							badges={articleBadges}
+						>
+							<div
+								class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
+							>
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+								{@html sanitizeHtml(selectedNews.contents)}
 							</div>
-						</article>
+						</UpdateFeedArticle>
 					{:else}
-						<div class="hero bg-base-200 border-base-300 rounded-box min-h-96 border">
-							<div class="hero-content text-center">
-								<div class="max-w-md">
-									<Icon icon="article" size="xl" class="text-base-content/40" />
-									<h2 class="mt-4 text-xl font-semibold">No Steam posts found</h2>
-									<p class="text-base-content/60 mt-2">
-										Steam did not return announcements or update posts for this app.
-									</p>
-								</div>
-							</div>
-						</div>
+						<UpdateFeedEmptyState
+							title="No Steam posts found"
+							description="Steam did not return announcements or update posts for this app."
+						/>
 					{/if}
 				</section>
 			</div>
