@@ -13,6 +13,7 @@
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 	import { flip, offset, size } from '@floating-ui/dom';
 	import { useDebounce } from 'runed';
+	import { onDestroy } from 'svelte';
 
 	let dropdownOpen = $state(false);
 	let searchInput = $state('');
@@ -23,6 +24,7 @@
 	let internalLoading = $state(false);
 	let searchRequestId = 0;
 	let keepOpenForDropdownPointerUntil = 0;
+	let destroyed = false;
 	const searchId = $props.id();
 	const listboxId = `${searchId}-listbox`;
 	const activeOptionId = $derived(
@@ -67,7 +69,14 @@
 		selectedIndex = undefined;
 	}
 
+	function cancelPendingSearch() {
+		searchRequestId += 1;
+		debouncedSearch.cancel();
+	}
+
 	async function performSearch(query: string, requestId: number) {
+		if (destroyed) return;
+
 		if (query.length < 3) {
 			if (requestId === searchRequestId) {
 				clearResults();
@@ -79,6 +88,7 @@
 		internalLoading = true;
 		try {
 			const results = await searchGames(query);
+			if (destroyed) return;
 			if (requestId !== searchRequestId) return;
 
 			searchResults = results;
@@ -86,13 +96,15 @@
 		} catch {
 			console.error('Failed to retrieve search results');
 		} finally {
-			if (requestId === searchRequestId) {
+			if (!destroyed && requestId === searchRequestId) {
 				internalLoading = false;
 			}
 		}
 	}
 
 	function scheduleSearch() {
+		if (destroyed) return;
+
 		openSearchDropdown();
 		const query = searchInput;
 		const requestId = ++searchRequestId;
@@ -111,10 +123,16 @@
 	}
 
 	function submitResult(result: ISteamApp) {
+		cancelPendingSearch();
 		closeSearchDropdown();
 		searchInput = '';
 		goto(resolve(getSteamGamePath(result) as `/${string}/${string}/${string}`));
 	}
+
+	onDestroy(() => {
+		destroyed = true;
+		cancelPendingSearch();
+	});
 
 	function attachContainer(node: HTMLDivElement) {
 		container = node;
