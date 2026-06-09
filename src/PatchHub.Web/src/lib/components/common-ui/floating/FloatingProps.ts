@@ -1,36 +1,43 @@
-import type {
-	OpenChangeReason,
-	UseFloatingOptions,
-	UseFloatingReturn,
-	UseInteractionsReturn
-} from '@skeletonlabs/floating-ui-svelte';
 import type { Snippet } from 'svelte';
 import type { ClassValue } from 'svelte/elements';
-
-export type FloatingOptions = Omit<
-	UseFloatingOptions,
-	'whileElementsMounted' | 'onOpenChange' | 'elements' | 'transform'
->;
+import type {
+	FloatingInstance,
+	FloatingOptions,
+	OpenChangeReason,
+	UseClickOptions
+} from './floating.svelte';
+export type { FloatingOptions } from './floating.svelte';
 
 export type FloatingPropsBase = {
-	reference: Snippet<[UseFloatingReturn, UseInteractionsReturn]>;
+	reference: Snippet<[FloatingInstance]>;
 	children: Snippet;
 	opts?: FloatingOptions;
 	floatingClass?: ClassValue;
+	portal?: boolean;
 };
 
-export type TooltipProps = { arrowClass?: ClassValue; delay?: number } & FloatingPropsBase;
+export type TooltipProps = {
+	arrowClass?: ClassValue;
+	arrowBorderClass?: ClassValue;
+	arrowPadding?: number;
+	delay?: number;
+} & FloatingPropsBase;
 
 export type PopoverProps = {
 	open?: boolean;
 	closeOn?: OpenChangeReason[];
 	openOn?: OpenChangeReason[];
-} & Omit<FloatingPropsBase, 'arrowClass'>;
+	clickOpts?: UseClickOptions;
+	arrowClass?: ClassValue;
+	arrowBorderClass?: ClassValue;
+} & FloatingPropsBase;
 
 export type DropdownProps = {
-	activator: Snippet<[UseFloatingReturn, UseInteractionsReturn]>;
+	activator: Snippet<[FloatingInstance]>;
 	children: Snippet;
 	tip?: Snippet;
 	opts?: FloatingOptions;
+	clickOpts?: UseClickOptions;
 	open?: boolean;
+	portal?: boolean;
 };

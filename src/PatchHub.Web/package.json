@@ -59,7 +59,7 @@
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
 		"@rowanmanning/feed-parser": "^2.1.1",
-		"@skeletonlabs/floating-ui-svelte": "^0.3.9",
+		"@floating-ui/dom": "^1.7.4",
 		"@tailwindcss/vite": "^4.1.17",
 		"@tiptap/core": "^3.10.4",
 		"@tiptap/extension-image": "^3.10.4",

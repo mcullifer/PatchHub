@@ -22,13 +22,8 @@
 
 {#if tip !== undefined}
 	<Tooltip>
-		{#snippet reference(floating, interactions)}
-			<button
-				bind:this={floating.elements.reference}
-				{...interactions.getReferenceProps()}
-				class="btn {classNames}"
-				{...restProps}
-			>
+		{#snippet reference(floating)}
+			<button {...floating.reference({ class: ['btn', classNames] })} {...restProps}>
 				{#if icon}
 					<Icon {icon} />
 				{/if}

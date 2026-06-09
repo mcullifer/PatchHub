@@ -9,9 +9,17 @@
 	let { game, isFavorited }: { game: INamedSteamGame; isFavorited: boolean } = $props();
 
 	let defaultHeaderImageUrl = $derived(getDefaultHeaderImageUrl(game.appid));
-	let imageSrc = $state('');
-	let triedResolvedHeaderImage = $state(false);
-	let showImagePlaceholder = $state(false);
+	let resolvedHeaderImage = $state<{ appid: number; url: string } | null>(null);
+	let loadedHeaderImage = $state<{ appid: number; url: string } | null>(null);
+	let triedResolvedHeaderImageAppId = $state<number | null>(null);
+	let placeholderImageAppId = $state<number | null>(null);
+	let imageSrc = $derived(
+		resolvedHeaderImage?.appid === game.appid ? resolvedHeaderImage.url : defaultHeaderImageUrl
+	);
+	let imageLoaded = $derived(
+		loadedHeaderImage?.appid === game.appid && loadedHeaderImage.url === imageSrc
+	);
+	let showImagePlaceholder = $derived(placeholderImageAppId === game.appid);
 
 	function getDefaultHeaderImageUrl(appId: number): string {
 		return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
@@ -19,30 +27,27 @@
 
 	let steamPath = $derived(getSteamGamePath(game));
 
-	$effect(() => {
-		imageSrc = defaultHeaderImageUrl;
-		triedResolvedHeaderImage = false;
-		showImagePlaceholder = false;
-	});
-
 	async function resolveHeaderImage(): Promise<void> {
-		if (triedResolvedHeaderImage) {
-			showImagePlaceholder = true;
+		const appid = game.appid;
+		const failedImageSrc = imageSrc;
+
+		if (triedResolvedHeaderImageAppId === appid) {
+			placeholderImageAppId = appid;
 			return;
 		}
 
-		triedResolvedHeaderImage = true;
+		triedResolvedHeaderImageAppId = appid;
 
 		try {
-			const headerImageUrl = await getSteamHeaderImage(game.appid);
-			if (!headerImageUrl || headerImageUrl === imageSrc) {
-				showImagePlaceholder = true;
+			const headerImageUrl = await getSteamHeaderImage(appid);
+			if (!headerImageUrl || headerImageUrl === failedImageSrc) {
+				placeholderImageAppId = appid;
 				return;
 			}
 
-			imageSrc = headerImageUrl;
+			resolvedHeaderImage = { appid, url: headerImageUrl };
 		} catch {
-			showImagePlaceholder = true;
+			placeholderImageAppId = appid;
 		}
 	}
 
@@ -63,19 +68,31 @@
 		<a
 			data-sveltekit-preload-data="off"
 			href={resolve(steamPath as `/${string}/${string}/${string}`)}
+			class="block w-full overflow-hidden"
 		>
-			{#if showImagePlaceholder}
-				<div class="bg-base-300 flex aspect-[460/215] w-full items-center justify-center">
+			<div
+				class="bg-base-300 relative flex aspect-[460/215] w-full items-center justify-center overflow-hidden"
+			>
+				{#if showImagePlaceholder}
 					<Icon icon="sports_esports" size="xl" class="text-base-content/30" />
-				</div>
-			{:else}
-				<img
-					class="aspect-[460/215] w-full object-cover duration-500 hover:scale-125"
-					src={imageSrc}
-					alt=""
-					onerror={resolveHeaderImage}
-				/>
-			{/if}
+				{:else}
+					{#if !imageLoaded}
+						<div class="skeleton absolute inset-0 rounded-none"></div>
+					{/if}
+					{#if imageSrc}
+						<img
+							class={[
+								'absolute inset-0 h-full w-full object-cover hover:scale-125',
+								!imageLoaded && 'invisible'
+							]}
+							src={imageSrc}
+							alt=""
+							onload={() => (loadedHeaderImage = { appid: game.appid, url: imageSrc })}
+							onerror={resolveHeaderImage}
+						/>
+					{/if}
+				{/if}
+			</div>
 		</a>
 	{/snippet}
 	{#snippet title()}

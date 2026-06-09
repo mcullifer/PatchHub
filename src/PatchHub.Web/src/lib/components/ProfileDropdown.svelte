@@ -20,12 +20,8 @@
 </script>
 
 <Popover bind:open opts={{ placement: 'bottom-end' }}>
-	{#snippet reference(floating, interactions)}
-		<button
-			class="avatar btn btn-ghost btn-square"
-			bind:this={floating.elements.reference}
-			{...interactions.getReferenceProps()}
-		>
+	{#snippet reference(floating)}
+		<button {...floating.reference({ class: 'avatar btn btn-ghost btn-square' })}>
 			<div class={classNames}>
 				{#if user.profilePictureUrl}
 					<img src={user.profilePictureUrl} alt="Profile" />

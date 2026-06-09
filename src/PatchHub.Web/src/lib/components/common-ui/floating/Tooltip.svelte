@@ -1,75 +1,86 @@
 <script lang="ts">
-	import type { TooltipProps } from '$lib/components/common-ui/floating/FloatingProps';
-	import {
-		FloatingArrow,
-		arrow,
-		autoUpdate,
-		flip,
-		offset,
-		useDismiss,
-		useFloating,
-		useHover,
-		useId,
-		useInteractions,
-		useRole
-	} from '@skeletonlabs/floating-ui-svelte';
+	import type { TooltipProps } from '$lib/components/common-ui/floating';
+	import { arrow, flip, offset } from '@floating-ui/dom';
+	import { onDestroy } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { scale } from 'svelte/transition';
+	import Portal from '../Portal.svelte';
+	import FloatingArrow from './FloatingArrow.svelte';
+	import {
+		createFloating,
+		useFloatingGroup,
+		useHover,
+		useInteractions,
+		useRole,
+		withInteractions
+	} from './floating.svelte';
 
 	const {
 		reference,
 		children,
 		opts,
 		floatingClass = '',
-		arrowClass = '',
-		delay = 0
+		arrowClass = 'fill-neutral',
+		arrowBorderClass = '',
+		arrowPadding = 0,
+		delay = 100,
+		portal = true
 	}: TooltipProps = $props();
 
-	let open = $state(false);
-	let elemArrow: HTMLElement | null = $state(null);
-	const id = useId();
+	const group = useFloatingGroup('tooltip');
+	const id = $props.id();
+	let requestedOpen = $state(false);
+	let open = $derived(requestedOpen && group.activeId === id);
+	let elemArrow: SVGSVGElement | null = $state(null);
 
-	const floating = useFloating({
-		whileElementsMounted: autoUpdate,
-		get open() {
-			return open;
-		},
-		onOpenChange: (val) => {
-			open = val;
-		},
-		nodeId: id,
-		placement: 'top',
-		...opts,
-		get middleware() {
-			return [
-				offset(10),
+	const base = createFloating({
+		open: () => open,
+		opts: () => ({
+			placement: 'top',
+			...opts,
+			middleware: [
+				offset(6),
 				...(opts?.middleware ?? [flip()]),
-				elemArrow && arrow({ element: elemArrow })
-			];
+				elemArrow && arrow({ element: elemArrow, padding: arrowPadding })
+			]
+		}),
+		defaultPlacement: 'top',
+		onOpenChange: (value) => {
+			requestedOpen = value;
+			if (value) {
+				group.activate(id);
+			} else {
+				group.clear(id);
+			}
 		}
 	});
+	const tooltip = withInteractions(
+		base,
+		useInteractions([
+			useHover(base.floatingContext, { openDelay: () => delay }),
+			useRole(base.floatingContext, { role: 'tooltip' })
+		])
+	);
 
-	const role = useRole(floating.context);
-	const hover = useHover(floating.context, { move: true, restMs: delay });
-	const dismiss = useDismiss(floating.context);
-	const interactions = useInteractions([role, hover, dismiss]);
+	onDestroy(() => {
+		open = false;
+	});
 </script>
 
-{@render reference(floating, interactions)}
-{#if open}
-	<div
-		bind:this={floating.elements.floating}
-		style={floating.floatingStyles}
-		{...interactions.getFloatingProps()}
-		class={['floating z-50', floatingClass]}
-	>
-		<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
+{@render reference(tooltip)}
+<Portal disabled={!portal}>
+	{#if tooltip.isOpen()}
+		<div
+			{...tooltip.floating({ class: ['floating z-50 drop-shadow-lg', floatingClass] })}
+			transition:scale={{ easing: cubicOut, duration: 150 }}
+		>
 			{@render children()}
 			<FloatingArrow
 				bind:ref={elemArrow}
-				context={floating.context}
-				class={['fill-neutral', arrowClass]}
+				context={tooltip.context}
+				class={arrowClass}
+				borderClass={arrowBorderClass}
 			/>
 		</div>
-	</div>
-{/if}
+	{/if}
+</Portal>

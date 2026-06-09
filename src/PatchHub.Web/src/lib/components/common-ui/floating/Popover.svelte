@@ -1,25 +1,20 @@
-<script lang="ts" module>
-	let openedPopoverId = $state<string>();
-</script>
-
 <script lang="ts">
-	import type { PopoverProps } from '$lib/components/common-ui/floating/FloatingProps';
-	import {
-		FloatingArrow,
-		arrow,
-		autoUpdate,
-		flip,
-		offset,
-		useClick,
-		useDismiss,
-		useFloating,
-		useHover,
-		useId,
-		useInteractions,
-		useRole
-	} from '@skeletonlabs/floating-ui-svelte';
+	import type { PopoverProps } from '$lib/components/common-ui/floating';
+	import { arrow, flip, offset } from '@floating-ui/dom';
 	import { cubicOut } from 'svelte/easing';
 	import { scale } from 'svelte/transition';
+	import Portal from '../Portal.svelte';
+	import FloatingArrow from './FloatingArrow.svelte';
+	import {
+		createFloating,
+		useClick,
+		useDismiss,
+		useFloatingGroup,
+		useHover,
+		useInteractions,
+		useRole,
+		withInteractions
+	} from './floating.svelte';
 
 	let {
 		reference,
@@ -28,71 +23,68 @@
 		openOn = ['click'],
 		closeOn = ['outside-press', 'escape-key', 'click'],
 		opts,
-		floatingClass = ''
+		clickOpts,
+		floatingClass = '',
+		arrowClass = 'fill-base-100',
+		arrowBorderClass = '',
+		portal = true
 	}: PopoverProps = $props();
 
-	// State
-	let elemArrow: HTMLElement | null = $state(null);
-	const id = useId();
+	let elemArrow: SVGSVGElement | null = $state(null);
+	const group = useFloatingGroup('popover');
+	const id = $props.id();
+	const effectiveOpen = $derived(open && group.activeId === id);
 
-	// Use Floating
-	const floating = useFloating({
-		whileElementsMounted: autoUpdate,
-		get open() {
-			return open;
-		},
-		onOpenChange: (val, event, reason) => {
-			if (!reason) return;
-			const shouldOpen = val && openOn.includes(reason);
-			const shouldClose = !val && closeOn.includes(reason);
-			if (shouldOpen || shouldClose) {
-				open = val;
-				openedPopoverId = val ? id : undefined;
-			}
-		},
-		nodeId: id,
-		placement: 'top',
-		...opts,
-		get middleware() {
-			return [
+	const base = createFloating({
+		open: () => effectiveOpen,
+		opts: () => ({
+			placement: 'top',
+			...opts,
+			middleware: [
 				offset(10),
 				...(opts?.middleware ?? [flip()]),
 				elemArrow && arrow({ element: elemArrow })
-			];
+			]
+		}),
+		defaultPlacement: 'top',
+		onOpenChange: (value, event, reason) => {
+			const shouldOpen = value && openOn.includes(reason);
+			const shouldClose = !value && closeOn.includes(reason);
+			if (shouldOpen || shouldClose) {
+				open = value;
+				if (value) {
+					group.activate(id);
+				} else {
+					group.clear(id);
+				}
+			}
 		}
 	});
-
-	// Interactions
-	const role = useRole(floating.context);
-	const hover = useHover(floating.context, { move: true, restMs: 200 });
-	const click = useClick(floating.context);
-	const dismiss = useDismiss(floating.context);
-	const interactions = useInteractions(
-		openOn.includes('hover') ? [role, hover, click, dismiss] : [role, click, dismiss]
+	const popover = withInteractions(
+		base,
+		useInteractions([
+			useHover(base.floatingContext, { enabled: () => openOn.includes('hover') }),
+			useClick(base.floatingContext, { enabled: true, options: () => clickOpts }),
+			useDismiss(base.floatingContext),
+			useRole(base.floatingContext, { role: 'dialog' })
+		])
 	);
-
-	export function setBoundElement(elem: HTMLElement) {
-		floating.elements.reference = elem;
-	}
-	$effect(() => {
-		if (openedPopoverId !== id) {
-			open = false;
-		}
-	});
 </script>
 
-{@render reference(floating, interactions)}
-<!-- Floating Element -->
-{#if open}
-	<div
-		bind:this={floating.elements.floating}
-		style={floating.floatingStyles}
-		{...interactions.getFloatingProps()}
-		class={['floating z-50', floatingClass]}
-	>
-		<div transition:scale={{ easing: cubicOut, duration: 150 }} class="drop-shadow-lg">
+{@render reference(popover)}
+<Portal disabled={!portal}>
+	{#if popover.isOpen()}
+		<div
+			{...popover.floating({ class: ['floating z-50 drop-shadow-lg', floatingClass] })}
+			transition:scale={{ easing: cubicOut, duration: 150 }}
+		>
 			{@render children()}
-			<FloatingArrow bind:ref={elemArrow} context={floating.context} class="fill-base-100" />
+			<FloatingArrow
+				bind:ref={elemArrow}
+				context={popover.context}
+				class={arrowClass}
+				borderClass={arrowBorderClass}
+			/>
 		</div>
-	</div>
-{/if}
+	{/if}
+</Portal>
