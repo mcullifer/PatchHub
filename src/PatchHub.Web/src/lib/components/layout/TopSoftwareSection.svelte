@@ -7,7 +7,6 @@
 
 	let { class: classNames }: { class?: ClassValue } = $props();
 
-	const software = getSoftwareSourceSummaries();
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
 		day: 'numeric',
@@ -48,16 +47,8 @@
 		</div>
 	</div>
 
-	{#await software}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			<div class="card bg-base-200 border-base-300 border shadow-sm">
-				<div class="card-body gap-4">
-					<span class="loading loading-spinner loading-md text-primary"></span>
-					<p class="text-base-content/70 text-sm">Loading software sources</p>
-				</div>
-			</div>
-		</div>
-	{:then summaries}
+	<svelte:boundary>
+		{@const summaries = await getSoftwareSourceSummaries()}
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each summaries as summary (summary.source.id)}
 				<article class="card bg-base-200 border-base-300 card-sm border shadow-md">
@@ -165,10 +156,11 @@
 				onInviewChange={(e) => e.detail.observer.disconnect()}
 			/>
 		</div>
-	{:catch}
-		<div class="alert alert-error shadow-sm">
-			<Icon icon="error" />
-			<span>Software sources could not be loaded.</span>
-		</div>
-	{/await}
+		{#snippet failed()}
+			<div class="alert alert-error shadow-sm">
+				<Icon icon="error" />
+				<span>Software sources could not be loaded.</span>
+			</div>
+		{/snippet}
+	</svelte:boundary>
 </section>

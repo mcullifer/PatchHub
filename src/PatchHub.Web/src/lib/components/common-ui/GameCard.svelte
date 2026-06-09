@@ -82,7 +82,7 @@
 					{#if imageSrc}
 						<img
 							class={[
-								'absolute inset-0 h-full w-full object-cover hover:scale-125',
+								'absolute inset-0 h-full w-full object-cover duration-500 hover:scale-110',
 								!imageLoaded && 'invisible'
 							]}
 							src={imageSrc}

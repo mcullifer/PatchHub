@@ -4,13 +4,12 @@
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
 	import { getFavorites } from '$lib/remote/favorites.remote';
 
-	const favorites = getFavorites();
+	const favorites = await getFavorites();
 
-	const isFavorited = (gameId: number) => {
-		if (!favorites.current) return false;
+	const isFavorited = (favorites: Awaited<ReturnType<typeof getFavorites>>, gameId: number) => {
 		return (
-			favorites.current.externalItems.some((f) => gameId.toString() === f.externalId) ||
-			favorites.current.projects.some((f) => gameId.toString() === f.id.toString())
+			favorites.externalItems.some((f) => gameId.toString() === f.externalId) ||
+			favorites.projects.some((f) => gameId.toString() === f.id.toString())
 		);
 	};
 </script>
@@ -23,7 +22,7 @@
 	<TopGamesSection>
 		{#snippet item(game)}
 			<svelte:boundary>
-				<GameCard {game} isFavorited={isFavorited(game.appid)} />
+				<GameCard {game} isFavorited={isFavorited(favorites, game.appid)} />
 				{#snippet failed()}
 					<Card class="bg-base-200 text-center">
 						<Icon icon="error" class="text-error self-center pt-8" size="xl" />

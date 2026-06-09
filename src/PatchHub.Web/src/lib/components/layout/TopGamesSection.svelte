@@ -41,13 +41,8 @@
 		</div>
 	</div>
 	<div class="grow gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
-		{#await getMostPopularGames()}
-			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
-			{#each Array(6) as _, i (i)}
-				<!-- TODO: Wtf is going on here like just grow my boy pls -->
-				<div class="skeleton flex min-h-64 min-w-72 grow"></div>
-			{/each}
-		{:then games}
+		<svelte:boundary>
+			{@const games = await getMostPopularGames()}
 			<VisibleWhenInView
 				bind:this={inview}
 				items={games}
@@ -59,7 +54,7 @@
 					{@render item(game)}
 				{/snippet}
 			</VisibleWhenInView>
-		{/await}
+		</svelte:boundary>
 	</div>
 	{#if !showMore}
 		<div class="mt-8 flex w-full justify-center">

@@ -37,7 +37,7 @@ export function useHover(
 
 		return Boolean(
 			(context.elements.reference instanceof Node && context.elements.reference.contains(target)) ||
-				context.elements.floating?.contains(target)
+			context.elements.floating?.contains(target)
 		);
 	}
 

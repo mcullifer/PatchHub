@@ -1,6 +1,6 @@
 <script lang="ts" generics="T">
 	import { useIntersectionObserver, type UseIntersectionObserverOptions } from 'runed';
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 
 	interface IVisibleWhenInViewProps<T> {
 		items: T[];
@@ -22,7 +22,14 @@
 		fallback
 	}: IVisibleWhenInViewProps<T> = $props();
 
-	let max = $state(visibleOnStart);
+	const initialVisibleCount = untrack(() => visibleOnStart);
+	const defaultObserverOptions = {
+		root: () => null,
+		threshold: 0.1
+	} satisfies UseIntersectionObserverOptions;
+	const observerOptions = untrack(() => opts ?? defaultObserverOptions);
+
+	let max = $state(initialVisibleCount);
 	let inviewTarget = $state<HTMLElement | null>(null);
 	const observer = useIntersectionObserver(
 		() => inviewTarget,
@@ -35,7 +42,7 @@
 				observer.stop();
 			}
 		},
-		opts ?? { root: () => null, threshold: 0.1 }
+		observerOptions
 	);
 
 	export function resume() {

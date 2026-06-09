@@ -2,9 +2,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { SteamAppIngestionService } = await import(
-	'../src/lib/server/steam/SteamAppIngestionService'
-);
+const { SteamAppIngestionService } =
+	await import('../src/lib/server/steam/SteamAppIngestionService');
 
 const maxPages = parseNumberArg('--pages', 1);
 const classifyLimit = parseNumberArg('--classify', 0);

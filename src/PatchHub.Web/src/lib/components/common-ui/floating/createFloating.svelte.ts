@@ -154,7 +154,7 @@ export function createFloating(options: CreateFloatingOptions): FloatingInstance
 
 		return Boolean(
 			(elements.reference instanceof Node && elements.reference.contains(target)) ||
-				elements.floating?.contains(target)
+			elements.floating?.contains(target)
 		);
 	}
 
