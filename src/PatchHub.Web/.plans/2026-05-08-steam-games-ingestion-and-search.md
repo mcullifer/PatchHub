@@ -63,14 +63,14 @@ Steam search should prefer actual games and trackable apps that produce useful u
 
 ## Decisions
 
-| Date       | Decision                                                                                                      | Reason                                                                                                    |
-| ---------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| 2026-05-08 | Use `IStoreService/GetAppList` as the primary Steam app list source.                                          | Steam documents the older `ISteamApps/GetAppList` endpoint as deprecated.                                 |
-| 2026-05-08 | Treat ingestion as a server-side scheduled job or script, not page-load work.                                 | A full Steam sync can be long-running, rate-limited, and should not depend on user traffic.               |
-| 2026-05-08 | Store ingestion checkpoint state in the DB, not only in generated JSON seed files.                            | Checkpoints need to reflect successfully imported data, not merely fetched files.                         |
-| 2026-05-08 | Use source-scoped unique constraints, such as `(source, externalId)`, instead of global external id/name ids. | External ids and names are only unique within a source and sometimes are not unique even within a source. |
-| 2026-05-08 | Do not use normalized names as stable external item identifiers.                                              | Non-Latin titles and duplicate game names make normalized name routes unreliable.                         |
-| 2026-05-08 | Separate raw Steam app discovery from PatchHub-searchable/trackable Steam titles.                             | Steam exposes many app ids that are not games or do not have useful patch notes.                          |
+| Date       | Decision                                                                                                      | Reason                                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-08 | Use `IStoreService/GetAppList` as the primary Steam app list source.                                          | Steam documents the older `ISteamApps/GetAppList` endpoint as deprecated.                                             |
+| 2026-05-08 | Treat ingestion as a server-side scheduled job or script, not page-load work.                                 | A full Steam sync can be long-running, rate-limited, and should not depend on user traffic.                           |
+| 2026-05-08 | Store ingestion checkpoint state in the DB, not only in generated JSON seed files.                            | Checkpoints need to reflect successfully imported data, not merely fetched files.                                     |
+| 2026-05-08 | Use source-scoped unique constraints, such as `(source, externalId)`, instead of global external id/name ids. | External ids and names are only unique within a source and sometimes are not unique even within a source.             |
+| 2026-05-08 | Do not use normalized names as stable external item identifiers.                                              | Non-Latin titles and duplicate game names make normalized name routes unreliable.                                     |
+| 2026-05-08 | Separate raw Steam app discovery from PatchHub-searchable/trackable Steam titles.                             | Steam exposes many app ids that are not games or do not have useful patch notes.                                      |
 | 2026-05-08 | Keep the existing `external_item.type = 'steam'` provider key while adding source-scoped uniqueness fields.   | Current routes and favorites already use `type` as the source key; provider-specific app kind now lives in `appType`. |
 
 ## Implementation Progress

@@ -72,7 +72,11 @@ export class SteamBBCodeAstParser {
 
 		const index = findOpenTag(stack, token.tag.name);
 		if (index === -1) {
-			this.addIssue('invalid_tag', `Unmatched closing BBCode tag: ${token.tag.name}`, token.position);
+			this.addIssue(
+				'invalid_tag',
+				`Unmatched closing BBCode tag: ${token.tag.name}`,
+				token.position
+			);
 			current(stack).children.push({ type: 'text', value: token.tag.raw });
 			return;
 		}

@@ -1,5 +1,5 @@
 // Game remote functions
-export { getGameNews, getMostPopularGames, searchGames } from './games.remote';
+export { getGameNews, getMostPopularGames, getSteamHeaderImage, searchGames } from './games.remote';
 
 // Software remote functions
 export { getSoftwareSourceSummaries } from './software.remote';

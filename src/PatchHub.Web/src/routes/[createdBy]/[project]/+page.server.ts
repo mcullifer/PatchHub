@@ -2,8 +2,9 @@ import { db } from '$lib/server/db/index.js';
 import { organization, project as projectTable, user } from '$lib/server/db/schema.js';
 import { error } from '@sveltejs/kit';
 import { and, eq, isNull, or } from 'drizzle-orm';
+import type { PageServerLoad } from './$types';
 
-export async function load({ params }) {
+export const load: PageServerLoad = async ({ params }) => {
 	const { createdBy, project } = params;
 	const item = await getProject(createdBy, project);
 	if (!item) error(404, 'Not found');
@@ -11,7 +12,7 @@ export async function load({ params }) {
 	return {
 		item
 	};
-}
+};
 
 async function getProject(createdBy: string, projectName: string) {
 	// Query with left joins to both user and organization tables

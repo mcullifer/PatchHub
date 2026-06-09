@@ -21,6 +21,7 @@
 			{@render children()}
 		</button>
 	{:else if href != undefined}
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 		<a class={classNames} {href}>
 			{@render children()}
 		</a>

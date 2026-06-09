@@ -1,7 +1,8 @@
-import { query } from '$app/server';
+import { getRequestEvent, query } from '$app/server';
 import type { INamedSteamGame, IRankedSteamGame, ISteamApp } from '$lib/models/Steam';
 import * as steam from '$lib/server/apis/steam';
 import { SteamGameService } from '$lib/server/SteamGameService';
+import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService';
 import * as v from 'valibot';
 
 export const getGameNews = query(
@@ -47,6 +48,13 @@ export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> =>
 export const searchGames = query(v.string(), async (searchQuery): Promise<ISteamApp[]> => {
 	if (!searchQuery || searchQuery.trim() === '') return [];
 	return await SteamGameService.search(searchQuery);
+});
+
+export const getSteamHeaderImage = query(v.number(), async (appid): Promise<string | null> => {
+	if (!Number.isInteger(appid)) return null;
+
+	const event = getRequestEvent();
+	return await getSteamHeaderImageUrl(event.fetch, appid);
 });
 
 async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteamGame[]> {

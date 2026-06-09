@@ -6,13 +6,10 @@
 	import NavbarSearch from '$lib/components/common-ui/NavbarSearch.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
-	import { setApiContext } from '$lib/contexts/ApiContext.svelte';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
-
-	setApiContext();
 
 	let lightModeEnabled = $state(false);
 	let theme = $derived(lightModeEnabled ? 'light' : 'dark');

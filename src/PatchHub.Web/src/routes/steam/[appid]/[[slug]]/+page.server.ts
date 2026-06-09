@@ -1,10 +1,11 @@
 import { SteamGameService } from '$lib/server/SteamGameService.js';
+import * as steam from '$lib/server/apis/steam';
 import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService.js';
-import { ApiService } from '$lib/services/ApiService.js';
 import { getSteamGamePath } from '$lib/util/SteamRoute.js';
 import { error, redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 
-export async function load({ fetch, params, url }) {
+export const load: PageServerLoad = async ({ fetch, params, url }) => {
 	const appid = Number.parseInt(params.appid, 10);
 	if (!Number.isInteger(appid)) error(404, 'Steam game not found');
 
@@ -21,7 +22,7 @@ export async function load({ fetch, params, url }) {
 		redirect(308, canonicalPath);
 	}
 
-	const api = new ApiService(fetch);
+	const news = steam.news(appid.toString(), '10').then((response) => response?.appnews ?? null);
 
 	return {
 		game: {
@@ -30,6 +31,6 @@ export async function load({ fetch, params, url }) {
 			slug: app.slug,
 			headerImageUrl: await getSteamHeaderImageUrl(fetch, appid)
 		},
-		news: api.games.news(appid, 10)
+		news
 	};
-}
+};

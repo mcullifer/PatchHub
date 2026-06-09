@@ -1,4 +1,9 @@
-import { createSlug, getSearchTokens, normalizeName, normalizeSearchName } from '$lib/util/StringUtils';
+import {
+	createSlug,
+	getSearchTokens,
+	normalizeName,
+	normalizeSearchName
+} from '$lib/util/StringUtils';
 import { describe, expect, it } from 'vitest';
 
 describe('UtilTests', () => {

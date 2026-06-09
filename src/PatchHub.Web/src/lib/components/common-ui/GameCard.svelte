@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { Card, Icon, Label } from '$lib/components/common-ui';
 	import type { INamedSteamGame } from '$lib/models/Steam';
+	import { getSteamHeaderImage } from '$lib/remote/games.remote';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 
 	let { game, isFavorited }: { game: INamedSteamGame; isFavorited: boolean } = $props();
@@ -33,19 +34,13 @@
 		triedResolvedHeaderImage = true;
 
 		try {
-			const response = await fetch(resolve(`/api/steam/apps/${game.appid}/header-image`));
-			if (!response.ok) {
+			const headerImageUrl = await getSteamHeaderImage(game.appid);
+			if (!headerImageUrl || headerImageUrl === imageSrc) {
 				showImagePlaceholder = true;
 				return;
 			}
 
-			const body = (await response.json()) as { headerImageUrl?: unknown };
-			if (typeof body.headerImageUrl !== 'string' || body.headerImageUrl === imageSrc) {
-				showImagePlaceholder = true;
-				return;
-			}
-
-			imageSrc = body.headerImageUrl;
+			imageSrc = headerImageUrl;
 		} catch {
 			showImagePlaceholder = true;
 		}

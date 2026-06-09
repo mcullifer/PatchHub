@@ -61,13 +61,13 @@ The implementation should follow WorkOS AuthKit's hosted authentication flow whi
 
 ## Decisions
 
-| Date       | Decision | Reason |
-| ---------- | -------- | ------ |
-| 2026-05-09 | Keep `@workos/authkit-sveltekit` for now, but treat it as alpha and wrap usage carefully. | The current code already uses it and its API matches the desired SvelteKit flow, but future package churn is likely. |
-| 2026-05-09 | Use app-owned auth routes for login, callback, logout, and setup. | WorkOS docs expect sign-in to originate in the application and the SvelteKit SDK exposes route handlers for callback/logout. |
-| 2026-05-09 | Keep PatchHub's database user as the source of truth for username and internal id. | WorkOS external IDs/metadata are integration fields, not the app profile store. |
-| 2026-05-09 | Prefer resolving internal user id from the DB when possible, not only from `locals.auth.user.externalId`. | `externalId` may be absent immediately after callback or stale until the session refreshes. |
-| 2026-05-09 | Add a narrow server auth helper instead of repeating WorkOS/DB user lookup in every route/remote function. | Favorites and future authenticated features need consistent behavior and error handling. |
+| Date       | Decision                                                                                                   | Reason                                                                                                                       |
+| ---------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-09 | Keep `@workos/authkit-sveltekit` for now, but treat it as alpha and wrap usage carefully.                  | The current code already uses it and its API matches the desired SvelteKit flow, but future package churn is likely.         |
+| 2026-05-09 | Use app-owned auth routes for login, callback, logout, and setup.                                          | WorkOS docs expect sign-in to originate in the application and the SvelteKit SDK exposes route handlers for callback/logout. |
+| 2026-05-09 | Keep PatchHub's database user as the source of truth for username and internal id.                         | WorkOS external IDs/metadata are integration fields, not the app profile store.                                              |
+| 2026-05-09 | Prefer resolving internal user id from the DB when possible, not only from `locals.auth.user.externalId`.  | `externalId` may be absent immediately after callback or stale until the session refreshes.                                  |
+| 2026-05-09 | Add a narrow server auth helper instead of repeating WorkOS/DB user lookup in every route/remote function. | Favorites and future authenticated features need consistent behavior and error handling.                                     |
 
 ## Open Questions
 
@@ -79,14 +79,14 @@ The implementation should follow WorkOS AuthKit's hosted authentication flow whi
 
 ## Risks
 
-| Risk | Impact | Mitigation |
-| ---- | ------ | ---------- |
-| Alpha SvelteKit SDK behavior changes | Future package upgrades may break auth handlers or types. | Centralize imports/usage and add auth smoke tests around routes. |
-| Missing WorkOS dashboard redirects | Users cannot complete login/logout even if code is correct. | Document exact dashboard values and verify locally against `.env`. |
-| `externalId` not present in the current session after setup | Favorites and authenticated features can still return unauthorized. | Resolve internal user by `authProviderId` in server helpers and optionally refresh session after updating WorkOS. |
-| Setup race or duplicate creation | Double submit could violate unique constraints or show a generic 500. | Make `createUser` idempotent around `authProviderId` and username uniqueness handling. |
-| Redirect loop around `/auth/setup` | Authenticated users could be trapped if DB lookup fails. | Exclude auth routes intentionally and fail with a visible setup error instead of silent continuation. |
-| Secrets or static env assumptions fail in deployment | Build/runtime can fail or secrets can be baked incorrectly. | Prefer `$env/dynamic/private` if deployment injects secrets at runtime; validate env at startup. |
+| Risk                                                        | Impact                                                                | Mitigation                                                                                                        |
+| ----------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Alpha SvelteKit SDK behavior changes                        | Future package upgrades may break auth handlers or types.             | Centralize imports/usage and add auth smoke tests around routes.                                                  |
+| Missing WorkOS dashboard redirects                          | Users cannot complete login/logout even if code is correct.           | Document exact dashboard values and verify locally against `.env`.                                                |
+| `externalId` not present in the current session after setup | Favorites and authenticated features can still return unauthorized.   | Resolve internal user by `authProviderId` in server helpers and optionally refresh session after updating WorkOS. |
+| Setup race or duplicate creation                            | Double submit could violate unique constraints or show a generic 500. | Make `createUser` idempotent around `authProviderId` and username uniqueness handling.                            |
+| Redirect loop around `/auth/setup`                          | Authenticated users could be trapped if DB lookup fails.              | Exclude auth routes intentionally and fail with a visible setup error instead of silent continuation.             |
+| Secrets or static env assumptions fail in deployment        | Build/runtime can fail or secrets can be baked incorrectly.           | Prefer `$env/dynamic/private` if deployment injects secrets at runtime; validate env at startup.                  |
 
 ## Implementation Steps
 

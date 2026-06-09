@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button, Icon, VisibleWhenInView } from '$lib/components/common-ui';
 	import type { INamedSteamGame } from '$lib/models/Steam';
-	import { getTopGames } from '$lib/remote/topgames.remote';
+	import { getMostPopularGames } from '$lib/remote/games.remote';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 
@@ -41,7 +41,7 @@
 		</div>
 	</div>
 	<div class="grow gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
-		{#await getTopGames()}
+		{#await getMostPopularGames()}
 			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 			{#each Array(6) as _, i (i)}
 				<!-- TODO: Wtf is going on here like just grow my boy pls -->

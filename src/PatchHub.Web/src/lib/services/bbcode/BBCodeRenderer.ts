@@ -119,7 +119,8 @@ export class BBCodeRenderer {
 	private renderImage(node: ElementNode, textContent: string): string {
 		const rawSource = node.tag.attributes.src || node.tag.value || textContent.trim();
 		const src = this.resolveSteamImageUrl(rawSource);
-		if (!isSafeUrl(src, true)) return escapeHtml(node.tag.raw + textContent + `[/${node.tag.name}]`);
+		if (!isSafeUrl(src, true))
+			return escapeHtml(node.tag.raw + textContent + `[/${node.tag.name}]`);
 
 		const alt = node.tag.attributes.alt ?? '';
 		return `<img src="${escapeAttribute(src)}" alt="${escapeAttribute(alt)}" />`;
@@ -127,7 +128,10 @@ export class BBCodeRenderer {
 
 	private resolveSteamImageUrl(source: string): string {
 		if (source.startsWith('{STEAM_CLAN_IMAGE}')) {
-			return this.options.steamClanImageUrl + source.replace('{STEAM_CLAN_IMAGE}', '').replace(/^\/+/, '');
+			return (
+				this.options.steamClanImageUrl +
+				source.replace('{STEAM_CLAN_IMAGE}', '').replace(/^\/+/, '')
+			);
 		}
 
 		return source;
@@ -170,7 +174,8 @@ function renderVideo(node: ElementNode): string {
 	if (!sources) return escapeHtml(node.tag.raw);
 
 	const poster = node.tag.attributes.poster;
-	const posterAttribute = poster && isSafeUrl(poster, true) ? ` poster="${escapeAttribute(poster)}"` : '';
+	const posterAttribute =
+		poster && isSafeUrl(poster, true) ? ` poster="${escapeAttribute(poster)}"` : '';
 	const autoplay = node.tag.attributes.autoplay === 'true' ? ' autoplay muted' : '';
 	const loop = node.tag.attributes.loop === 'true' ? ' loop' : '';
 	return `<video controls playsinline${posterAttribute}${autoplay}${loop}>${sources}</video>`;
@@ -184,14 +189,18 @@ function renderColor(node: ElementNode, content: string): string {
 
 function renderSize(node: ElementNode, content: string): string {
 	const size = (node.tag.value || node.tag.attributes.size || '').toLowerCase();
-	if (/^\d{1,2}px$/.test(size)) return `<span style="font-size: ${escapeAttribute(size)}">${content}</span>`;
+	if (/^\d{1,2}px$/.test(size))
+		return `<span style="font-size: ${escapeAttribute(size)}">${content}</span>`;
 	const className = sizeClasses[size];
 	if (!className) return content;
 	return `<span class="${className}">${content}</span>`;
 }
 
 function sanitizeYouTubeId(value: string): string {
-	const id = value.split(';')[0].replace(/^["']|["']$/g, '').trim();
+	const id = value
+		.split(';')[0]
+		.replace(/^["']|["']$/g, '')
+		.trim();
 	return /^[a-zA-Z0-9_-]{6,32}$/.test(id) ? id : '';
 }
 
@@ -206,7 +215,8 @@ function isSafeUrl(value: string, allowRelative = false): boolean {
 
 	try {
 		const url = new URL(trimmed, allowRelative ? 'https://patchhub.local' : undefined);
-		if (allowRelative && url.origin === 'https://patchhub.local') return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+		if (allowRelative && url.origin === 'https://patchhub.local')
+			return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
 		return allowedSchemes.has(url.protocol);
 	} catch {
 		return false;

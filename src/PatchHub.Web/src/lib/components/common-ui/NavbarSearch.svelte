@@ -5,6 +5,7 @@
 	import { Icon, Menu, MenuItem } from '$lib/components/common-ui';
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import type { ISteamApp } from '$lib/models/Steam';
+	import { searchGames } from '$lib/remote/games.remote';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 	import { useDebounce } from 'runed';
 
@@ -22,11 +23,8 @@
 			selectedIndex = 0;
 			return;
 		}
-		const searchParams = new URLSearchParams({ query: searchInput });
 		try {
-			const response = await fetch('/api/games/search?' + searchParams.toString());
-			const results = await response.json();
-			searchResults = results;
+			searchResults = await searchGames(searchInput);
 			selectedIndex = 0; // Reset to first item when results arrive
 		} catch {
 			console.error('Failed to retrieve search results');
@@ -59,7 +57,11 @@
 				if (searchResults[selectedIndex]) {
 					dropdownOpen = false;
 					searchInput = '';
-					goto(resolve(getSteamGamePath(searchResults[selectedIndex]) as `/${string}/${string}/${string}`));
+					goto(
+						resolve(
+							getSteamGamePath(searchResults[selectedIndex]) as `/${string}/${string}/${string}`
+						)
+					);
 				}
 				break;
 			case 'Escape':
