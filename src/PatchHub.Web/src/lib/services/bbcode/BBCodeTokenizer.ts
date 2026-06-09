@@ -76,19 +76,24 @@ function parseTag(content: string, raw: string): BBCodeTag | null {
 	const rest = trimmed.slice(match[0].length).trim();
 	const attributes: Record<string, string> = {};
 	let value: string | undefined;
-	let isSelfClosing = false;
+	const isSelfClosing = rest === '/' || /\s\/$/.test(rest);
 
-	if (rest.endsWith('/')) {
-		isSelfClosing = true;
+	if (isClosing && rest.length > 0) {
+		return null;
 	}
 
 	if (!isClosing) {
-		const cleanedRest = isSelfClosing ? rest.slice(0, -1).trim() : rest;
+		const cleanedRest = isSelfClosing ? rest.replace(/\s*\/$/, '').trim() : rest;
 		if (cleanedRest.startsWith('=')) {
 			value = unquote(cleanedRest.slice(1).trim());
 			attributes[name] = value;
 		} else if (cleanedRest.length > 0) {
-			for (const attr of parseAttributes(cleanedRest)) {
+			const parsedAttributes = parseAttributes(cleanedRest);
+			if (!parsedAttributes) {
+				return null;
+			}
+
+			for (const attr of parsedAttributes) {
 				attributes[attr.name] = attr.value;
 			}
 		}
@@ -104,16 +109,25 @@ function parseTag(content: string, raw: string): BBCodeTag | null {
 	};
 }
 
-function parseAttributes(input: string): { name: string; value: string }[] {
+function parseAttributes(input: string): { name: string; value: string }[] | null {
 	const attributes: { name: string; value: string }[] = [];
-	const pattern = /([a-z][a-z0-9_-]*)\s*=\s*("[^"]*"|'[^']*'|[^\s]+)/gi;
-	let match: RegExpExecArray | null;
+	const pattern = /([a-z][a-z0-9_-]*)\s*=\s*("[^"]*"|'[^']*'|[^\s]+)/iy;
+	let position = 0;
 
-	while ((match = pattern.exec(input)) !== null) {
+	while (position < input.length) {
+		while (/\s/.test(input[position] ?? '')) {
+			position += 1;
+		}
+
+		pattern.lastIndex = position;
+		const match = pattern.exec(input);
+		if (!match) return null;
+
 		attributes.push({
 			name: match[1].toLowerCase(),
 			value: unquote(match[2])
 		});
+		position = pattern.lastIndex;
 	}
 
 	return attributes;

@@ -1,5 +1,4 @@
 import { SteamGameService } from '$lib/server/SteamGameService.js';
-import * as steam from '$lib/server/apis/steam';
 import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService.js';
 import { getSteamGamePath } from '$lib/util/SteamRoute.js';
 import { error, redirect } from '@sveltejs/kit';
@@ -22,15 +21,12 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
 		redirect(308, canonicalPath);
 	}
 
-	const news = steam.news(appid.toString(), '10').then((response) => response?.appnews ?? null);
-
 	return {
 		game: {
 			appid,
 			name: app.name,
 			slug: app.slug,
 			headerImageUrl: await getSteamHeaderImageUrl(fetch, appid)
-		},
-		news
+		}
 	};
 };

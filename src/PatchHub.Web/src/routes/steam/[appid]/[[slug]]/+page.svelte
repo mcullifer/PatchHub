@@ -9,6 +9,7 @@
 		type UpdateFeedStat
 	} from '$lib/components/update-feed';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
+	import { getGameNews } from '$lib/remote/games.remote';
 	import { BBCodeService } from '$lib/services/BBCodeService';
 	import DOMPurify from 'dompurify';
 	import type { PageData } from './$types';
@@ -30,6 +31,7 @@
 		].filter((url): url is string => typeof url === 'string' && url.length > 0)
 	);
 	const headerImageUrl = $derived(headerImageUrls[headerImageIndex] ?? null);
+	const newsQuery = $derived(getGameNews({ appid: data.game.appid, count: 10 }));
 
 	function parseNews(news: ISteamAppNews | null): ISteamAppNews {
 		if (!news) {
@@ -109,7 +111,7 @@
 </svelte:head>
 
 <div class="bg-base-100 min-h-full">
-	{#await data.news}
+	{#await newsQuery}
 		<div class="flex h-full items-center justify-center p-6">
 			<div class="card bg-base-200 border-base-300 w-full max-w-md border shadow-sm">
 				<div class="card-body items-center gap-4 text-center">

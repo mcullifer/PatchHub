@@ -21,7 +21,11 @@ type CacheEntry = {
 const sourceCache = new Map<string, CacheEntry>();
 
 export class SoftwareUpdateService {
-	static async getSourceDetail(slug: string, limit = 25): Promise<SoftwareSourceDetail | null> {
+	static async getSourceDetail(
+		slug: string,
+		limit = 25,
+		fetchFn: typeof fetch = fetch
+	): Promise<SoftwareSourceDetail | null> {
 		const source = getSoftwareSource(slug);
 		if (!source) return null;
 
@@ -39,7 +43,7 @@ export class SoftwareUpdateService {
 
 		try {
 			const checkedAt = new Date();
-			const entries = (await fetchEntries(source)).sort(compareEntriesByDate);
+			const entries = (await fetchEntries(source, fetchFn)).sort(compareEntriesByDate);
 			const latestItemAt = getEntryDate(entries[0]) ?? null;
 			const detail: SoftwareSourceDetail = {
 				source,
@@ -93,13 +97,16 @@ export class SoftwareUpdateService {
 		}
 	}
 
-	static async getSourceSummaries(limit = 6): Promise<SoftwareSourceSummary[]> {
+	static async getSourceSummaries(
+		limit = 6,
+		fetchFn: typeof fetch = fetch
+	): Promise<SoftwareSourceSummary[]> {
 		const sources = getSoftwareSources().slice(0, limit);
 
 		return Promise.all(
 			sources.map(async (source) => {
 				const [detail, externalItemId] = await Promise.all([
-					this.getSourceDetail(source.slug, 10),
+					this.getSourceDetail(source.slug, 10, fetchFn),
 					SoftwareCatalogService.getExternalItemId(source.slug)
 				]);
 
@@ -116,22 +123,23 @@ export class SoftwareUpdateService {
 }
 
 async function fetchEntries(
-	source: NonNullable<ReturnType<typeof getSoftwareSource>>
+	source: NonNullable<ReturnType<typeof getSoftwareSource>>,
+	fetchFn: typeof fetch
 ): Promise<SoftwareUpdateEntry[]> {
 	switch (source.adapter) {
 		case 'atom-feed':
-			return fetchAtomEntries(source.feedUrl, source.slug);
+			return fetchAtomEntries(source.feedUrl, source.slug, fetchFn);
 		case 'nvidia-driver-search':
-			return fetchNvidiaGameReadyDrivers(source);
+			return fetchNvidiaGameReadyDrivers(source, fetchFn);
 	}
 }
 
-async function fetchAtomEntries(feedUrl: string | null, sourceSlug: string) {
+async function fetchAtomEntries(feedUrl: string | null, sourceSlug: string, fetchFn: typeof fetch) {
 	if (!feedUrl) {
 		throw new Error('Atom source is missing a feed URL');
 	}
 
-	const response = await fetch(feedUrl, {
+	const response = await fetchFn(feedUrl, {
 		headers: {
 			accept: 'application/atom+xml, application/rss+xml, application/xml, text/xml'
 		}

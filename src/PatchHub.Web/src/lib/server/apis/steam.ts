@@ -11,11 +11,11 @@ function getSteamApiUrl(): string {
 	return apiUrl;
 }
 
-export async function popular(): Promise<ITopSteamGames | undefined> {
+export async function popular(fetchFn: typeof fetch = fetch): Promise<ITopSteamGames | undefined> {
 	const MOST_PLAYED_ROUTE = '/ISteamChartsService/GetGamesByConcurrentPlayers/v1/';
 	const url = getSteamApiUrl() + MOST_PLAYED_ROUTE;
 	try {
-		const response = await fetch(url);
+		const response = await fetchFn(url);
 		const responseJson = await response.json();
 		const rankedGames = responseJson.response as ITopSteamGames;
 		return rankedGames;
@@ -26,7 +26,8 @@ export async function popular(): Promise<ITopSteamGames | undefined> {
 
 export async function news(
 	appid: string,
-	count: string = '10'
+	count: string = '10',
+	fetchFn: typeof fetch = fetch
 ): Promise<ISteamAppNewsResponse | undefined> {
 	const NEWS_ROUTE = '/ISteamNews/GetNewsForApp/v2/';
 	const params: Record<string, string> = {
@@ -37,7 +38,7 @@ export async function news(
 	const searchParams = new URLSearchParams(params);
 	const URL = `${getSteamApiUrl()}${NEWS_ROUTE}?${searchParams.toString()}`;
 	try {
-		const response = await fetch(URL);
+		const response = await fetchFn(URL);
 		const data = (await response.json()) as ISteamAppNewsResponse;
 		return data;
 	} catch {
@@ -47,10 +48,12 @@ export async function news(
 
 export async function getAppListPage({
 	apiKey,
-	lastAppId
+	lastAppId,
+	fetchFn = fetch
 }: {
 	apiKey: string;
 	lastAppId?: number;
+	fetchFn?: typeof fetch;
 }): Promise<ISteamAppListResponse | undefined> {
 	const APP_LIST_ROUTE = '/IStoreService/GetAppList/v1/';
 	const params = new URLSearchParams({
@@ -63,7 +66,7 @@ export async function getAppListPage({
 	}
 
 	try {
-		const response = await fetch(`${getSteamApiUrl()}${APP_LIST_ROUTE}?${params.toString()}`);
+		const response = await fetchFn(`${getSteamApiUrl()}${APP_LIST_ROUTE}?${params.toString()}`);
 		if (!response.ok) return undefined;
 		const data = (await response.json()) as unknown;
 		if (!isSteamAppListResponse(data)) return undefined;

@@ -97,6 +97,8 @@ export class BBCodeRenderer {
 				return `<td>${content}</td>`;
 			case 'th':
 				return `<th>${content}</th>`;
+			case 'expand':
+				return renderExpand(node, content);
 			case 'url':
 				return renderLink(node, content, textContent);
 			case 'img':
@@ -110,7 +112,7 @@ export class BBCodeRenderer {
 			case 'size':
 				return renderSize(node, content);
 			case 'spoiler':
-				return `<details><summary>Spoiler</summary>${content}</details>`;
+				return renderDisclosure('Spoiler', content);
 			default:
 				return escapeHtml(node.tag.raw) + content;
 		}
@@ -144,6 +146,20 @@ function renderLink(node: ElementNode, content: string, textContent: string): st
 
 	const label = content || escapeHtml(href);
 	return `<a href="${escapeAttribute(href)}">${label}</a>`;
+}
+
+function renderExpand(node: ElementNode, content: string): string {
+	const summary =
+		node.tag.attributes.title || node.tag.attributes.summary || node.tag.attributes.label;
+	const summaryText = summary && summary.trim().length > 0 ? summary.trim() : null;
+	return renderDisclosure(summaryText, content);
+}
+
+function renderDisclosure(summary: string | null, content: string): string {
+	const summaryContent = summary
+		? escapeHtml(summary)
+		: '<span class="sr-only">Toggle expanded content</span>';
+	return `<details class="collapse collapse-arrow bg-base-300 border-base-content/10 not-prose my-4 border shadow-md"><summary class="collapse-title min-h-10 px-4 py-2 text-base font-medium">${summaryContent}</summary><div class="collapse-content text-base leading-7 text-base-content/80">${content}</div></details>`;
 }
 
 function renderYouTubePreview(node: ElementNode): string {

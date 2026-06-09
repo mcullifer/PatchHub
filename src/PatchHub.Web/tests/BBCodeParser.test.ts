@@ -87,6 +87,13 @@ describe('BBCodeParser - Lists', () => {
 		);
 		expect(result.errors).toHaveLength(0);
 	});
+
+	it('should close the current list item when the list closes', () => {
+		const result = parser.parse('[list][*]Item 1[*]Item 2[/list]');
+		expect(result.html).toBe('<ul><li>Item 1</li><li>Item 2</li></ul>');
+		expect(result.errors).toHaveLength(0);
+		expect(result.warnings).toHaveLength(0);
+	});
 });
 
 describe('BBCodeParser - URLs and Links', () => {
@@ -107,6 +114,12 @@ describe('BBCodeParser - URLs and Links', () => {
 	it('should parse URL with special characters', () => {
 		const result = parser.parse('[url=https://example.com?param=value&other=123]Link[/url]');
 		expect(result.html).toContain('href="https://example.com?param=value');
+		expect(result.errors).toHaveLength(0);
+	});
+
+	it('should preserve trailing slashes in URL values', () => {
+		const result = parser.parse('[url=https://example.com/]Example[/url]');
+		expect(result.html).toBe('<a href="https://example.com/">Example</a>');
 		expect(result.errors).toHaveLength(0);
 	});
 });
@@ -254,10 +267,32 @@ describe('BBCodeParser - Quotes and Code', () => {
 
 	it('should parse spoiler tag', () => {
 		const result = parser.parse('[spoiler]Hidden content[/spoiler]');
-		expect(result.html).toContain('<details>');
-		expect(result.html).toContain('<summary>Spoiler</summary>');
+		expect(result.html).toContain(
+			'<details class="collapse collapse-arrow bg-base-300 border-base-content/10 not-prose my-4 border shadow-md">'
+		);
+		expect(result.html).toContain(
+			'<summary class="collapse-title min-h-10 px-4 py-2 text-base font-medium">Spoiler</summary>'
+		);
 		expect(result.html).toContain('Hidden content');
 		expect(result.errors).toHaveLength(0);
+	});
+
+	it('should parse Steam expand details', () => {
+		const result = parser.parse('[expand type=details]Hidden roster[/expand]');
+		expect(result.html).toBe(
+			'<details class="collapse collapse-arrow bg-base-300 border-base-content/10 not-prose my-4 border shadow-md"><summary class="collapse-title min-h-10 px-4 py-2 text-base font-medium"><span class="sr-only">Toggle expanded content</span></summary><div class="collapse-content text-base leading-7 text-base-content/80">Hidden roster</div></details>'
+		);
+		expect(result.errors).toHaveLength(0);
+		expect(result.warnings).toHaveLength(0);
+	});
+
+	it('should parse Steam expand details with a custom summary', () => {
+		const result = parser.parse('[expand type=details title="Roster"]Hidden roster[/expand]');
+		expect(result.html).toBe(
+			'<details class="collapse collapse-arrow bg-base-300 border-base-content/10 not-prose my-4 border shadow-md"><summary class="collapse-title min-h-10 px-4 py-2 text-base font-medium">Roster</summary><div class="collapse-content text-base leading-7 text-base-content/80">Hidden roster</div></details>'
+		);
+		expect(result.errors).toHaveLength(0);
+		expect(result.warnings).toHaveLength(0);
 	});
 });
 
@@ -316,7 +351,32 @@ describe('BBCodeParser - Error Handling', () => {
 	it('should handle unknown tags in non-strict mode', () => {
 		const parser = new BBCodeParser({ strictMode: false });
 		const result = parser.parse('[unknown]text[/unknown]');
-		expect(result.warnings.length).toBeGreaterThan(0);
+		expect(result.html).toBe('[unknown]text[/unknown]');
+		expect(result.warnings).toHaveLength(0);
+	});
+
+	it('should preserve unknown tag contents without parsing inner tags in non-strict mode', () => {
+		const parser = new BBCodeParser({ strictMode: false });
+		const result = parser.parse('[unknown]Use [*] as plain text[/unknown]');
+		expect(result.html).toBe('[unknown]Use [*] as plain text[/unknown]');
+		expect(result.errors).toHaveLength(0);
+		expect(result.warnings).toHaveLength(0);
+	});
+
+	it('should leave malformed bracketed text untouched', () => {
+		const parser = new BBCodeParser();
+		const result = parser.parse('Use [expand section] as plain text');
+		expect(result.html).toBe('Use [expand section] as plain text');
+		expect(result.errors).toHaveLength(0);
+		expect(result.warnings).toHaveLength(0);
+	});
+
+	it('should leave Steam post section headings untouched', () => {
+		const parser = new BBCodeParser();
+		const result = parser.parse('[SPECTATING]\nChanged camera behavior\n\n[MISC]\nFixed crash');
+		expect(result.html).toBe('[SPECTATING] Changed camera behavior <br>[MISC] Fixed crash');
+		expect(result.errors).toHaveLength(0);
+		expect(result.warnings).toHaveLength(0);
 	});
 
 	it('should handle empty input', () => {

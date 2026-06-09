@@ -15,6 +15,7 @@ export const steamBlockTags = new Set([
 	'tr',
 	'td',
 	'th',
+	'expand',
 	'url',
 	'img',
 	'previewyoutube',

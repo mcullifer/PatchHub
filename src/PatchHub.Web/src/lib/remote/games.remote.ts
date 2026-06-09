@@ -12,13 +12,15 @@ export const getGameNews = query(
 	}),
 	async ({ appid, count }) => {
 		if (!appid) return null;
-		const response = await steam.news(appid.toString(), count.toString());
+		const event = getRequestEvent();
+		const response = await steam.news(appid.toString(), count.toString(), event.fetch);
 		if (!response) return null;
 		return response.appnews;
 	}
 );
 
 export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> => {
+	const event = getRequestEvent();
 	const oneHour = 60 * 60 * 1000;
 	const now = Date.now() / 1000;
 	const outOfDate = SteamGameService.popularGames.last_update + oneHour < now;
@@ -27,7 +29,7 @@ export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> =>
 		return SteamGameService.popularGames.ranks;
 	}
 
-	const rankedGames = await steam.popular();
+	const rankedGames = await steam.popular(event.fetch);
 	if (!rankedGames) {
 		SteamGameService.popularGames = { last_update: 0, ranks: [] };
 		return [];

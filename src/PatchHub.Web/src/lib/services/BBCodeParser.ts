@@ -86,6 +86,7 @@ export class BBCodeParser {
 			'tr',
 			'td',
 			'th',
+			'expand',
 			'color',
 			'size',
 			'spoiler'
