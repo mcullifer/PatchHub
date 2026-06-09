@@ -10,9 +10,23 @@ Agents should optimize for a product that is fast to scan, trustworthy, and easy
 - `.docs/svelte-guidelines.md`
 - `.docs/remote-functions-guidelines.md`
 - `.docs/auth-and-organizations.md`
-- `.docs/ui-guidelines.md`
+- `.docs/style-guidelines.md`
 - `.docs/testing-and-verification.md`
+- `.docs/scripts.md`
+- `.docs/workspace-layout.md`
 - Any active plan in `.plans/`
+
+## Documentation Map
+
+- `.docs/development-guidelines.md` — product principles, TypeScript standards, SvelteKit boundaries, service patterns, source integration guidance, and error handling.
+- `.docs/svelte-guidelines.md` — Svelte 5 runes, props, events, markup, component boundaries, and styling conventions.
+- `.docs/remote-functions-guidelines.md` — when and how to use SvelteKit remote functions instead of app-internal JSON routes.
+- `.docs/auth-and-organizations.md` — WorkOS, PatchHub user ownership, organization membership, and authorization boundaries.
+- `.docs/style-guidelines.md` — PatchHub UI priorities, DaisyUI/Tailwind usage, accessibility, and layout expectations.
+- `.docs/testing-and-verification.md` — risk-based testing guidance and manual verification expectations.
+- `.docs/scripts.md` — package scripts and validation commands.
+- `.docs/workspace-layout.md` — project folders and ownership boundaries.
+- `.docs/agentic-workflow.md` — multi-session workflow, planning, handoff, and baseline-failure handling.
 
 ## Default Workflow
 

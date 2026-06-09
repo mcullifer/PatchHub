@@ -31,9 +31,9 @@ Examples:
 ## Lifecycle
 
 1. Copy `.plans/templates/feature-plan.md`.
-2. Fill in the goal, current understanding, assumptions, risks, and task breakdown.
+2. Fill in the goal, non-goals, scope, invariants, work items, and validation expectations.
 3. Keep the plan updated while implementing.
-4. Add handoff notes before stopping if anything remains unfinished.
+4. Keep the Agent Handoff section current before stopping if anything remains unfinished.
 5. Move completed plans into `.plans/archive/` only after the work is merged or intentionally abandoned.
 
 Plans should be concise, but they must preserve the reasoning future agents need to continue confidently.

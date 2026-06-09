@@ -1,69 +1,42 @@
-# Plan: <Feature or Fix Name>
-
-Status: Draft | Active | Blocked | Complete
-Owner: <agent/person>
-Created: YYYY-MM-DD
-Last Updated: YYYY-MM-DD
+# Plan: Name
 
 ## Goal
 
-Describe the user-facing outcome in one or two paragraphs. Include why the work matters for PatchHub.
+Describe the durable end state. This should be broader than the next mechanical edit.
 
 ## Non-Goals
 
-List related work that is intentionally out of scope.
+- Item
 
-## Current Understanding
+## Agent Handoff
 
-- Product behavior:
-- Relevant routes/components:
-- Relevant services/server modules:
-- Relevant data models/schema:
-- External APIs or integrations:
+- Current status:
+- Next action:
+- Blockers:
+- Latest validation:
 
-## Decisions
+Keep this section short and current. A new session should be able to read this first and know what to do next.
 
-Record decisions as they are made. Include the reason and the date.
+## Scope
 
-| Date       | Decision | Reason |
-| ---------- | -------- | ------ |
-| YYYY-MM-DD |          |        |
+- `src/...`
+- `tests/...`
 
-## Open Questions
+## Invariants
 
-- [ ] Question that must be answered before or during implementation.
+- Behavior that must remain unchanged.
+- Public APIs or component contracts that must remain compatible.
+- Validation commands that must pass before completion.
 
-## Risks
+## Work Items
 
-| Risk | Impact | Mitigation |
-| ---- | ------ | ---------- |
-|      |        |            |
+- [ ] Item
 
-## Implementation Steps
+## Validation
 
-Keep steps small enough that another agent can pick up from any checkbox.
+- [ ] Format touched files
+- [ ] `npm run validate`
 
-- [ ] Step 1
-- [ ] Step 2
-- [ ] Step 3
+## Notes
 
-## Verification
-
-List the exact checks expected for this work.
-
-- [ ] `npm run check`
-- [ ] `npm run lint`
-- [ ] `npm run test:unit -- --run`
-- [ ] `npm run test:e2e` when route behavior or browser workflows change
-- [ ] Manual browser check for changed UI
-
-## Handoff Notes
-
-Use this section before stopping mid-work.
-
-- Completed:
-- In progress:
-- Next best step:
-- Files changed:
-- Known issues:
-- Commands already run:
+Keep durable architecture notes in `docs/` or `.docs/`. Keep historical implementation logs brief, and prefer updating the handoff/status over appending long session transcripts.
