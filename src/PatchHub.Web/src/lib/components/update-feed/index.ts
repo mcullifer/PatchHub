@@ -4,4 +4,4 @@ import UpdateFeedHero from './UpdateFeedHero.svelte';
 import UpdateFeedPostList from './UpdateFeedPostList.svelte';
 
 export { UpdateFeedArticle, UpdateFeedEmptyState, UpdateFeedHero, UpdateFeedPostList };
-export type { UpdateFeedPostListItem, UpdateFeedStat } from './UpdateFeedTypes';
+export type { UpdateFeedMetaItem, UpdateFeedPostListItem, UpdateFeedStat } from './UpdateFeedTypes';

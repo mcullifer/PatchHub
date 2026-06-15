@@ -5,19 +5,21 @@
 		UpdateFeedEmptyState,
 		UpdateFeedHero,
 		UpdateFeedPostList,
-		type UpdateFeedPostListItem,
-		type UpdateFeedStat
+		type UpdateFeedMetaItem,
+		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import { getGameNews } from '$lib/remote/games.remote';
 	import { BBCodeService } from '$lib/services/BBCodeService';
 	import DOMPurify from 'dompurify';
+	import { tick } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let selectedId = $state<string | null>(null);
 	let headerImageIndex = $state(0);
+	let articleSection = $state<HTMLElement | null>(null);
 
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
@@ -55,33 +57,18 @@
 		return news.newsitems.find((item) => item.gid === selectedId) ?? news.newsitems[0] ?? null;
 	}
 
-	function getHeroStats(selectedNews: ISteamNewsItem | null): UpdateFeedStat[] {
-		if (!selectedNews) return [];
-
-		return [
-			{ label: 'Latest selected', value: formatNewsDate(selectedNews.date) },
-			{ label: 'Source', value: selectedNews.feedlabel || 'Steam' },
-			{ label: 'Author', value: selectedNews.author || 'Steam' }
-		];
-	}
-
 	function getNavItems(news: ISteamAppNews): UpdateFeedPostListItem[] {
 		return news.newsitems.map((newsItem, index) => ({
 			id: newsItem.gid,
 			title: newsItem.title,
 			dateLabel: formatNewsDate(newsItem.date),
 			summary: getPostSummary(newsItem),
-			icon: getPostIcon(newsItem, index),
 			isSelected: isSelected(newsItem, index)
 		}));
 	}
 
 	function isSelected(newsItem: ISteamNewsItem, index: number): boolean {
 		return selectedId === newsItem.gid || (selectedId === null && index === 0);
-	}
-
-	function getPostIcon(newsItem: ISteamNewsItem, index: number): string {
-		return isSelected(newsItem, index) ? 'radio_button_checked' : 'article';
 	}
 
 	function getPostSummary(newsItem: ISteamNewsItem): string {
@@ -97,12 +84,22 @@
 		return dateFormatter.format(new Date(timestamp * 1000));
 	}
 
+	function getArticleMeta(newsItem: ISteamNewsItem): UpdateFeedMetaItem[] {
+		return [{ label: 'Published', value: formatNewsDate(newsItem.date) }];
+	}
+
 	function sanitizeHtml(html: string): string {
 		return DOMPurify.sanitize(html);
 	}
 
 	function useNextHeaderImage(): void {
 		headerImageIndex += 1;
+	}
+
+	async function selectNewsItem(id: string): Promise<void> {
+		selectedId = id;
+		await tick();
+		articleSection?.scrollIntoView({ block: 'start' });
 	}
 </script>
 
@@ -123,7 +120,6 @@
 	{:then rawNews}
 		{@const news = parseNews(rawNews)}
 		{@const selectedNews = getSelectedNews(news)}
-		{@const heroStats = getHeroStats(selectedNews)}
 		{@const navItems = getNavItems(news)}
 
 		<div class="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 lg:p-6">
@@ -131,26 +127,11 @@
 				<Icon icon="sports_esports" size="xl" class="text-base-content/30" />
 			{/snippet}
 
-			{#snippet heroBadges()}
-				<span class="badge badge-info badge-soft gap-1">
-					<Icon icon="sports_esports" size="xs" />
-					Steam
-				</span>
-				<span class="badge bg-base-100/95 border-base-300 text-base-content shadow-sm">
-					App {data.game.appid}
-				</span>
-				<span class="badge bg-base-100/95 border-base-300 text-base-content shadow-sm">
-					{news.count} posts
-				</span>
-			{/snippet}
-
 			<UpdateFeedHero
 				title={data.game.name}
 				description="Steam announcements and update posts collected into one readable feed."
 				imageUrl={headerImageUrl}
-				stats={heroStats}
 				{fallbackIcon}
-				badges={heroBadges}
 				onimageerror={useNextHeaderImage}
 			/>
 
@@ -161,32 +142,16 @@
 					ariaLabel="Steam news"
 					items={navItems}
 					emptyMessage="Steam has not returned news for this game."
-					onselect={(id) => (selectedId = id)}
+					onselect={selectNewsItem}
 				/>
 
-				<section class="min-w-0">
+				<section class="min-w-0 scroll-mt-24" bind:this={articleSection}>
 					{#if selectedNews}
-						{#snippet articleBadges()}
-							<span class="badge badge-ghost gap-1">
-								<Icon icon="calendar_month" size="xs" />
-								{formatNewsDate(selectedNews.date)}
-							</span>
-							{#if selectedNews.author}
-								<span class="badge badge-ghost gap-1">
-									<Icon icon="person" size="xs" />
-									{selectedNews.author}
-								</span>
-							{/if}
-							{#if selectedNews.feedlabel}
-								<span class="badge badge-outline">{selectedNews.feedlabel}</span>
-							{/if}
-						{/snippet}
-
 						<UpdateFeedArticle
 							title={selectedNews.title}
 							sourceLabel="Steam"
 							sourceUrl={selectedNews.url}
-							badges={articleBadges}
+							meta={getArticleMeta(selectedNews)}
 						>
 							<div
 								class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"

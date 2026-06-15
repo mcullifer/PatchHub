@@ -5,16 +5,18 @@
 		UpdateFeedEmptyState,
 		UpdateFeedHero,
 		UpdateFeedPostList,
-		type UpdateFeedPostListItem,
-		type UpdateFeedStat
+		type UpdateFeedMetaItem,
+		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
 	import type { SoftwareUpdateEntry } from '$lib/models/Software';
 	import DOMPurify from 'dompurify';
+	import { tick } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let selectedId = $state<string | null>(null);
+	let articleSection = $state<HTMLElement | null>(null);
 
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
@@ -22,19 +24,12 @@
 		year: 'numeric'
 	});
 	const selectedUpdate = $derived(getSelectedUpdate(data.detail.entries));
-	const latestUpdateDate = $derived(formatDate(data.detail.health.latestItemAt));
-	const heroStats = $derived<UpdateFeedStat[]>([
-		{ label: 'Latest update', value: latestUpdateDate },
-		{ label: 'Posts loaded', value: data.detail.entries.length },
-		{ label: 'Source', value: data.detail.source.provider }
-	]);
 	const navItems = $derived<UpdateFeedPostListItem[]>(
 		data.detail.entries.map((entry, index) => ({
 			id: entry.id,
 			title: entry.title,
 			dateLabel: formatDate(entry.publishedAt),
 			summary: entry.summary,
-			icon: isSelected(entry, index) ? 'radio_button_checked' : 'article',
 			isSelected: isSelected(entry, index)
 		}))
 	);
@@ -52,12 +47,34 @@
 		return dateFormatter.format(new Date(value));
 	}
 
+	function getArticleMeta(entry: SoftwareUpdateEntry): UpdateFeedMetaItem[] {
+		const meta: (UpdateFeedMetaItem | null)[] = [
+			{ label: 'Published', value: formatDate(entry.publishedAt) },
+			entry.metadata.driverVersion
+				? { label: 'Driver', value: entry.metadata.driverVersion }
+				: null,
+			entry.metadata.kbId ? { label: 'KB', value: entry.metadata.kbId } : null,
+			entry.metadata.windowsVersion
+				? { label: 'Windows', value: entry.metadata.windowsVersion }
+				: null,
+			entry.metadata.build ? { label: 'Build', value: entry.metadata.build } : null
+		];
+
+		return meta.filter((item): item is UpdateFeedMetaItem => item !== null);
+	}
+
 	function sanitizeHtml(html: string): string {
 		if (typeof DOMPurify.sanitize !== 'function') {
 			return html;
 		}
 
 		return DOMPurify.sanitize(html);
+	}
+
+	async function selectUpdate(id: string): Promise<void> {
+		selectedId = id;
+		await tick();
+		articleSection?.scrollIntoView({ block: 'start' });
 	}
 </script>
 
@@ -71,35 +88,12 @@
 			<Icon icon={data.detail.source.icon} size="xl" class="text-base-content/30" />
 		{/snippet}
 
-		{#snippet heroBadges()}
-			<span class="badge badge-info badge-soft gap-1">
-				<Icon icon={data.detail.source.icon} size="xs" />
-				{data.detail.source.vendor}
-			</span>
-			<span class="badge bg-base-100/95 border-base-300 text-base-content shadow-sm">
-				{data.detail.source.sourceType}
-			</span>
-			<span
-				class={[
-					'badge gap-1',
-					data.detail.health.status === 'unavailable'
-						? 'badge-error badge-soft'
-						: 'badge-success badge-soft'
-				]}
-			>
-				<Icon icon={data.detail.health.status === 'unavailable' ? 'cloud_off' : 'sync'} size="xs" />
-				{data.detail.health.status === 'fresh' ? 'Fresh' : data.detail.health.status}
-			</span>
-		{/snippet}
-
 		<UpdateFeedHero
 			title={data.detail.source.name}
 			description={data.detail.source.description}
 			imageUrl={data.detail.source.imageUrl}
 			imageAlt={data.detail.source.imageAlt}
-			stats={heroStats}
 			{fallbackIcon}
-			badges={heroBadges}
 		/>
 
 		{#if data.detail.health.error}
@@ -116,35 +110,16 @@
 				ariaLabel="Software updates"
 				items={navItems}
 				emptyMessage="This software source has no updates to show yet."
-				onselect={(id) => (selectedId = id)}
+				onselect={selectUpdate}
 			/>
 
-			<section class="min-w-0">
+			<section class="min-w-0 scroll-mt-24" bind:this={articleSection}>
 				{#if selectedUpdate}
-					{#snippet articleBadges()}
-						<span class="badge badge-ghost gap-1">
-							<Icon icon="calendar_month" size="xs" />
-							{formatDate(selectedUpdate.publishedAt)}
-						</span>
-						{#if selectedUpdate.metadata.driverVersion}
-							<span class="badge badge-outline">v{selectedUpdate.metadata.driverVersion}</span>
-						{/if}
-						{#if selectedUpdate.metadata.kbId}
-							<span class="badge badge-outline">{selectedUpdate.metadata.kbId}</span>
-						{/if}
-						{#if selectedUpdate.metadata.windowsVersion}
-							<span class="badge badge-outline">{selectedUpdate.metadata.windowsVersion}</span>
-						{/if}
-						{#if selectedUpdate.metadata.build}
-							<span class="badge badge-outline">Build {selectedUpdate.metadata.build}</span>
-						{/if}
-					{/snippet}
-
 					<UpdateFeedArticle
 						title={selectedUpdate.title}
 						sourceLabel="Source"
 						sourceUrl={selectedUpdate.sourceUrl}
-						badges={articleBadges}
+						meta={getArticleMeta(selectedUpdate)}
 					>
 						{#if selectedUpdate.contentHtml}
 							<div
