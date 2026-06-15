@@ -15,6 +15,10 @@ PatchHub is a SvelteKit / Svelte 5 / TypeScript web app for collecting patch not
 
 The product should be fast to scan, trustworthy about sources and timestamps, and easy to extend with new update providers.
 
+PatchHub includes external sources in the meantime until users begin creating their own projects they post patch notes to.
+Since the external sources require so many custom flows it's best to treat external sources separate from
+the main user generated projects/patch notes.
+
 ## Read First
 
 Before non-trivial work, read the relevant project docs:
@@ -34,7 +38,7 @@ If a tradeoff is required, choose type-safe, predictable behavior over short-ter
 
 ## Engineering Posture
 
-Act like a senior engineer editing production code. Prefer simple data flow, clear ownership, readable APIs, and minimal abstractions. Treat unnecessary wrappers, prop drilling, duplicated state, hidden coupling, brittle lifecycle code, and over-generic abstractions as design smells.
+Prefer simple data flow, clear ownership, readable APIs, and minimal abstractions. Treat unnecessary wrappers, prop drilling, duplicated state, hidden coupling, brittle lifecycle code, and over-generic abstractions as design smells.
 
 Preserve existing behavior unless the task explicitly changes it. Before finalizing, review the generated code for regressions, unclear boundaries, fragile lifecycle paths, missing error/loading/teardown handling, and tests needed for behavior that can regress.
 
