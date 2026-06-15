@@ -70,6 +70,6 @@ export interface ISteamAppListResponseBody {
 export interface ISteamAppListItem {
 	appid: number;
 	name: string;
-	last_modified: number;
-	price_change_number: number;
+	last_modified?: number;
+	price_change_number?: number;
 }

@@ -1,9 +1,18 @@
 import { getRequestEvent, query } from '$app/server';
 import type { INamedSteamGame, IRankedSteamGame, ISteamApp } from '$lib/models/Steam';
-import * as steam from '$lib/server/apis/steam';
-import { SteamGameService } from '$lib/server/SteamGameService';
+import { getAppNews, getPopularSteamGames } from '$lib/server/steam/SteamApiClient';
+import {
+	attachSteamAppNames,
+	getSteamAppNamesByAppIds,
+	searchSteamApps
+} from '$lib/server/steam/SteamCatalogRepository';
 import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService';
 import * as v from 'valibot';
+
+let popularGamesCache: { lastUpdate: number; ranks: INamedSteamGame[] } = {
+	lastUpdate: 0,
+	ranks: []
+};
 
 export const getGameNews = query(
 	v.object({
@@ -13,34 +22,42 @@ export const getGameNews = query(
 	async ({ appid, count }) => {
 		if (!appid) return null;
 		const event = getRequestEvent();
-		const response = await steam.news(appid.toString(), count.toString(), event.fetch);
-		if (!response) return null;
-		return response.appnews;
+		try {
+			const response = await getAppNews({
+				appid: appid.toString(),
+				count,
+				fetchFn: event.fetch
+			});
+			return response.appnews;
+		} catch {
+			return null;
+		}
 	}
 );
 
 export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> => {
 	const event = getRequestEvent();
-	const oneHour = 60 * 60 * 1000;
+	const oneHour = 60 * 60;
 	const now = Date.now() / 1000;
-	const outOfDate = SteamGameService.popularGames.last_update + oneHour < now;
+	const outOfDate = popularGamesCache.lastUpdate + oneHour < now;
 
-	if (!outOfDate && SteamGameService.popularGames.ranks.length > 0) {
-		return SteamGameService.popularGames.ranks;
+	if (!outOfDate && popularGamesCache.ranks.length > 0) {
+		return popularGamesCache.ranks;
 	}
 
-	const rankedGames = await steam.popular(event.fetch);
-	if (!rankedGames) {
-		SteamGameService.popularGames = { last_update: 0, ranks: [] };
+	let rankedGames;
+	try {
+		rankedGames = await getPopularSteamGames({ fetchFn: event.fetch });
+	} catch {
+		popularGamesCache = { lastUpdate: 0, ranks: [] };
 		return [];
 	}
 
 	const rankedGamesWithName = await getAppNames(rankedGames.ranks);
 	const filtered = rankedGamesWithName.filter((g) => g.name !== '' && g.name !== undefined);
 
-	// Update cache with named games
-	SteamGameService.popularGames = {
-		last_update: rankedGames.last_update,
+	popularGamesCache = {
+		lastUpdate: rankedGames.last_update,
 		ranks: filtered
 	};
 
@@ -49,7 +66,7 @@ export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> =>
 
 export const searchGames = query(v.string(), async (searchQuery): Promise<ISteamApp[]> => {
 	if (!searchQuery || searchQuery.trim() === '') return [];
-	return await SteamGameService.search(searchQuery);
+	return await searchSteamApps(searchQuery);
 });
 
 export const getSteamHeaderImage = query(v.number(), async (appid): Promise<string | null> => {
@@ -61,13 +78,6 @@ export const getSteamHeaderImage = query(v.number(), async (appid): Promise<stri
 
 async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteamGame[]> {
 	const appIds = rankedGames.map((g) => g.appid);
-	const appNames = await SteamGameService.getNamesForApps(appIds);
-	return rankedGames.map((game) => {
-		const app = appNames[game.appid.toString()];
-		return {
-			...game,
-			name: app?.name || '',
-			slug: app?.slug
-		};
-	});
+	const appNames = await getSteamAppNamesByAppIds(appIds);
+	return attachSteamAppNames(rankedGames, appNames);
 }

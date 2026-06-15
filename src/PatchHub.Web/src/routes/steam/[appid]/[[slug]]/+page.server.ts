@@ -1,5 +1,5 @@
-import { SteamGameService } from '$lib/server/SteamGameService.js';
 import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService.js';
+import { findSteamAppByAppId } from '$lib/server/steam/SteamCatalogRepository.js';
 import { getSteamGamePath } from '$lib/util/SteamRoute.js';
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
 	const appid = Number.parseInt(params.appid, 10);
 	if (!Number.isInteger(appid)) error(404, 'Steam game not found');
 
-	const app = await SteamGameService.getApp(appid);
+	const app = await findSteamAppByAppId(appid);
 	if (!app) error(404, 'Steam game not found');
 
 	const canonicalPath = getSteamGamePath({

@@ -1,6 +1,5 @@
 import { sql, type SQL } from 'drizzle-orm';
 import {
-	check,
 	integer,
 	sqliteTable,
 	text,
@@ -44,14 +43,7 @@ export const externalItem = sqliteTable(
 		appType: text('app_type').notNull().default('unknown'),
 		slug: text('slug').notNull().default(''),
 		searchName: text('search_name').notNull().default(''),
-		isSearchable: integer('is_searchable', { mode: 'boolean' }).notNull().default(false),
-		trackStatus: text('track_status').notNull().default('candidate'),
-		lastNewsCheckedAt: integer('last_news_checked_at', { mode: 'timestamp' }),
-		lastNewsItemAt: integer('last_news_item_at', { mode: 'timestamp' }),
 		metadataJson: text('metadata_json'),
-		firstSeenAt: integer('first_seen_at', { mode: 'timestamp' }),
-		lastSeenAt: integer('last_seen_at', { mode: 'timestamp' }),
-		lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 	},
@@ -66,68 +58,36 @@ export const externalItem = sqliteTable(
 	]
 );
 
-export const externalSyncState = sqliteTable(
-	'external_sync_state',
-	{
-		id: integer('id').primaryKey({ autoIncrement: true }),
-		source: text('source').notNull(),
-		syncKind: text('sync_kind').notNull(),
-		cursor: text('cursor'),
-		status: text('status').notNull().default('idle'),
-		startedAt: integer('started_at', { mode: 'timestamp' }),
-		finishedAt: integer('finished_at', { mode: 'timestamp' }),
-		lastError: text('last_error'),
-		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
-	},
-	(table) => [uniqueIndex('external_sync_state_source_kind_idx').on(table.source, table.syncKind)]
-);
+export const steamCatalogSyncState = sqliteTable('steam_catalog_sync_state', {
+	id: integer('id').primaryKey(),
+	lastAppId: text('last_app_id'),
+	status: text('status').notNull().default('idle'),
+	lastError: text('last_error'),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
 
 // Project table - user or org created projects
-export const project = sqliteTable(
-	'project',
-	{
-		id: integer('id').primaryKey({ autoIncrement: true }),
-		name: text('name').notNull(),
-		normalizedName: text('normalized_name').notNull(),
-		slug: text('slug').notNull(),
-		description: text('description'),
-		userId: integer('user_id').references(() => user.id),
-		orgId: integer('org_id').references(() => organization.id),
-		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
-		deletedAt: integer('deleted_at', { mode: 'timestamp' })
-	},
-	(table) => [
-		// Ensure exactly one of userId or orgId is set
-		check(
-			'project_owner_check',
-			sql`(
-		CASE WHEN ${table.userId} IS NOT NULL THEN 1 ELSE 0 END +
-		CASE WHEN ${table.orgId} IS NOT NULL THEN 1 ELSE 0 END
-	) = 1`
-		),
-		// Partial unique indexes for slug uniqueness per owner
-		uniqueIndex('project_user_slug_idx')
-			.on(table.userId, table.slug)
-			.where(sql`${table.userId} IS NOT NULL`),
-		uniqueIndex('project_org_slug_idx')
-			.on(table.orgId, table.slug)
-			.where(sql`${table.orgId} IS NOT NULL`)
-	]
-);
+export const project = sqliteTable('project', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	name: text('name').notNull(),
+	normalizedName: text('normalized_name').notNull(),
+	slug: text('slug').notNull(),
+	description: text('description'),
+	userId: integer('user_id'),
+	orgId: integer('org_id'),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+	deletedAt: integer('deleted_at', { mode: 'timestamp' })
+});
 
 // Patch note table - individual patch note entries
 export const patchNote = sqliteTable(
 	'patchnote',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		projectId: integer('project_id')
-			.notNull()
-			.references(() => project.id),
-		authorId: integer('author_id')
-			.notNull()
-			.references(() => user.id),
+		projectId: integer('project_id').notNull(),
+		authorId: integer('author_id').notNull(),
 		title: text('title').notNull(),
 		slug: text('slug').notNull(),
 		content: text('content').notNull(), // WYSIWYG HTML
@@ -138,8 +98,6 @@ export const patchNote = sqliteTable(
 		deletedAt: integer('deleted_at', { mode: 'timestamp' })
 	},
 	(table) => [
-		// Status validation
-		check('patchnote_status_check', sql`${table.status} IN ('draft', 'published', 'archived')`),
 		// Performance indexes
 		uniqueIndex('patchnote_project_slug_idx').on(table.projectId, table.slug),
 		uniqueIndex('patchnote_status_idx').on(table.status),
@@ -152,12 +110,8 @@ export const projectFavorite = sqliteTable(
 	'project_favorite',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		userId: integer('user_id')
-			.notNull()
-			.references(() => user.id),
-		projectId: integer('project_id')
-			.notNull()
-			.references(() => project.id),
+		userId: integer('user_id').notNull(),
+		projectId: integer('project_id').notNull(),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 	},
 	(table) => [unique().on(table.userId, table.projectId)]
@@ -168,12 +122,8 @@ export const externalItemFavorite = sqliteTable(
 	'external_item_favorite',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		userId: integer('user_id')
-			.notNull()
-			.references(() => user.id),
-		externalItemId: integer('external_item_id')
-			.notNull()
-			.references(() => externalItem.id),
+		userId: integer('user_id').notNull(),
+		externalItemId: integer('external_item_id').notNull(),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 	},
 	(table) => [unique().on(table.userId, table.externalItemId)]
@@ -183,7 +133,7 @@ export const externalItemFavorite = sqliteTable(
 export type User = typeof user.$inferSelect;
 export type Organization = typeof organization.$inferSelect;
 export type ExternalItem = typeof externalItem.$inferSelect;
-export type ExternalSyncState = typeof externalSyncState.$inferSelect;
+export type SteamCatalogSyncState = typeof steamCatalogSyncState.$inferSelect;
 export type Project = typeof project.$inferSelect;
 export type PatchNote = typeof patchNote.$inferSelect;
 export type ProjectFavorite = typeof projectFavorite.$inferSelect;

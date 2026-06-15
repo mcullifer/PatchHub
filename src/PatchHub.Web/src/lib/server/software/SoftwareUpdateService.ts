@@ -62,7 +62,6 @@ export class SoftwareUpdateService {
 			});
 
 			await SoftwareCatalogService.upsertSource(source.slug);
-			await SoftwareCatalogService.updateSourceFreshness(source.slug, checkedAt, latestItemAt);
 
 			return {
 				...detail,

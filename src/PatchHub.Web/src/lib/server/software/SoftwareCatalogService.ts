@@ -2,7 +2,6 @@ import { db } from '$lib/server/db';
 import { externalItem } from '$lib/server/db/schema';
 import { getSoftwareSource, getSoftwareSources } from '$lib/server/software/SoftwareSourceRegistry';
 import { normalizeSearchName } from '$lib/util/StringUtils';
-import { eq } from 'drizzle-orm';
 
 export class SoftwareCatalogService {
 	static async getExternalItemId(slug: string): Promise<number | null> {
@@ -33,8 +32,6 @@ export class SoftwareCatalogService {
 			appType: 'software',
 			slug: source.slug,
 			searchName: normalizeSearchName(`${source.name} ${source.vendor}`),
-			isSearchable: true,
-			trackStatus: 'trackable',
 			metadataJson: JSON.stringify({
 				vendor: source.vendor,
 				provider: source.provider,
@@ -46,9 +43,6 @@ export class SoftwareCatalogService {
 				supportUrl: source.supportUrl,
 				releaseInfoUrl: source.releaseInfoUrl
 			}),
-			firstSeenAt: now,
-			lastSeenAt: now,
-			lastSyncedAt: now,
 			createdAt: now,
 			updatedAt: now
 		};
@@ -65,25 +59,9 @@ export class SoftwareCatalogService {
 					appType: values.appType,
 					slug: values.slug,
 					searchName: values.searchName,
-					isSearchable: values.isSearchable,
-					trackStatus: values.trackStatus,
 					metadataJson: values.metadataJson,
-					lastSeenAt: values.lastSeenAt,
-					lastSyncedAt: values.lastSyncedAt,
 					updatedAt: values.updatedAt
 				}
 			});
-	}
-
-	static async updateSourceFreshness(slug: string, checkedAt: Date, latestItemAt: Date | null) {
-		await db
-			.update(externalItem)
-			.set({
-				lastNewsCheckedAt: checkedAt,
-				lastNewsItemAt: latestItemAt,
-				trackStatus: 'trackable',
-				updatedAt: checkedAt
-			})
-			.where(eq(externalItem.slug, slug));
 	}
 }
