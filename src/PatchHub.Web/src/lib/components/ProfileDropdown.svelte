@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Icon, MenuItem } from '$lib/components/common-ui';
-	import Popover from '$lib/components/common-ui/floating/Popover.svelte';
+	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import Menu from '$lib/components/common-ui/Menu.svelte';
 	import type { ClassValue } from 'svelte/elements';
 
@@ -15,42 +15,48 @@
 	let { class: classNames = '', user }: { class?: ClassValue; user: ProfileUser } = $props();
 	let open = $state(false);
 
-	let displayName = $derived(user.username ?? user.email);
-	let fullName = $derived([user.firstName, user.lastName].filter(Boolean).join(' '));
+	let username = $derived(user.username);
+	let primaryName = $derived(username ? `${username}` : user.email);
+	let secondaryText = $derived(username ? user.email : null);
 </script>
 
-<Popover bind:open opts={{ placement: 'bottom-end' }}>
-	{#snippet reference(floating)}
+{#snippet pfp(url: string | null)}
+	{#if url}
+		<img src={url} alt="Profile" />
+	{:else}
+		<Icon icon="person" />
+	{/if}
+{/snippet}
+
+<Dropdown bind:open opts={{ placement: 'bottom-end' }}>
+	{#snippet activator(floating)}
 		<button {...floating.reference({ class: 'avatar btn btn-ghost btn-square' })}>
 			<div class={classNames}>
-				{#if user.profilePictureUrl}
-					<img src={user.profilePictureUrl} alt="Profile" />
-				{:else}
-					<Icon icon="person" />
-				{/if}
+				{@render pfp(user.profilePictureUrl)}
 			</div>
 		</button>
 	{/snippet}
-	<Menu class="bg-base-100 rounded-box border-base-content/20 w-52 border">
-		<div class="flex items-center gap-2 p-2">
-			<div class="avatar">
-				<div class={classNames}>
-					{#if user.profilePictureUrl}
-						<img src={user.profilePictureUrl} alt="Profile" />
-					{:else}
-						<Icon icon="person" />
+	<Menu class="bg-base-100 rounded-box border-base-content/15 w-56 border">
+		<li class="menu-title">
+			<div class="flex items-center gap-3">
+				<div class="avatar {user.profilePictureUrl ? '' : 'avatar-placeholder'}">
+					<div class="bg-base-200 text-base-content/70 w-8 rounded">
+						{@render pfp(user.profilePictureUrl)}
+					</div>
+				</div>
+				<div class="flex min-w-0 flex-col">
+					<span class="text-base-content truncate text-sm font-semibold normal-case">
+						{primaryName}
+					</span>
+					{#if secondaryText}
+						<span class="text-base-content/60 truncate text-xs font-normal normal-case">
+							{secondaryText}
+						</span>
 					{/if}
 				</div>
 			</div>
-			<div class="space-y-0">
-				<div class="font-bold">
-					{displayName}
-				</div>
-				{#if fullName}
-					<div class="font-normal opacity-70">{fullName}</div>
-				{/if}
-			</div>
-		</div>
+		</li>
+		<li class="border-base-content/10 my-1 border-t" aria-hidden="true"></li>
 		<MenuItem href="/profile">
 			<Icon icon="person" size="sm" />
 			Profile
@@ -64,4 +70,4 @@
 			Logout
 		</MenuItem>
 	</Menu>
-</Popover>
+</Dropdown>
