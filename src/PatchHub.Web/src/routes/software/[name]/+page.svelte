@@ -10,14 +10,15 @@
 	} from '$lib/components/update-feed';
 	import type { SoftwareUpdateEntry } from '$lib/models/Software';
 	import DOMPurify from 'dompurify';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let selectedId = $state<string | null>(null);
-	let articleSection = $state<HTMLElement | null>(null);
+	let canRenderSanitizedHtml = $state(false);
 
+	const articleSectionId = 'software-update-article';
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
 		day: 'numeric',
@@ -33,6 +34,10 @@
 			isSelected: isSelected(entry, index)
 		}))
 	);
+
+	onMount(() => {
+		canRenderSanitizedHtml = true;
+	});
 
 	function getSelectedUpdate(entries: SoftwareUpdateEntry[]): SoftwareUpdateEntry | null {
 		return entries.find((entry) => entry.id === selectedId) ?? entries[0] ?? null;
@@ -63,18 +68,10 @@
 		return meta.filter((item): item is UpdateFeedMetaItem => item !== null);
 	}
 
-	function sanitizeHtml(html: string): string {
-		if (typeof DOMPurify.sanitize !== 'function') {
-			return html;
-		}
-
-		return DOMPurify.sanitize(html);
-	}
-
 	async function selectUpdate(id: string): Promise<void> {
 		selectedId = id;
 		await tick();
-		articleSection?.scrollIntoView({ block: 'start' });
+		document.getElementById(articleSectionId)?.scrollIntoView({ block: 'start' });
 	}
 </script>
 
@@ -113,7 +110,7 @@
 				onselect={selectUpdate}
 			/>
 
-			<section class="min-w-0 scroll-mt-24" bind:this={articleSection}>
+			<section id={articleSectionId} class="min-w-0 scroll-mt-24">
 				{#if selectedUpdate}
 					<UpdateFeedArticle
 						title={selectedUpdate.title}
@@ -122,12 +119,21 @@
 						meta={getArticleMeta(selectedUpdate)}
 					>
 						{#if selectedUpdate.contentHtml}
-							<div
-								class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
-							>
-								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-								{@html sanitizeHtml(selectedUpdate.contentHtml)}
-							</div>
+							{#if canRenderSanitizedHtml}
+								<div
+									class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
+								>
+									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+									{@html DOMPurify.sanitize(selectedUpdate.contentHtml)}
+								</div>
+							{:else}
+								<div class="space-y-3" role="status" aria-label="Loading article content">
+									<div class="skeleton h-4 w-full"></div>
+									<div class="skeleton h-4 w-11/12"></div>
+									<div class="skeleton h-4 w-10/12"></div>
+									<div class="skeleton mt-6 h-32 w-full"></div>
+								</div>
+							{/if}
 						{:else}
 							<div class="alert alert-info alert-soft">
 								<Icon icon="info" />

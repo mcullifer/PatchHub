@@ -12,15 +12,16 @@
 	import { getGameNews } from '$lib/remote/games.remote';
 	import { BBCodeService } from '$lib/services/BBCodeService';
 	import DOMPurify from 'dompurify';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let selectedId = $state<string | null>(null);
 	let headerImageIndex = $state(0);
-	let articleSection = $state<HTMLElement | null>(null);
+	let canRenderSanitizedHtml = $state(false);
 
+	const articleSectionId = 'steam-news-article';
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
 		day: 'numeric',
@@ -33,7 +34,10 @@
 		].filter((url): url is string => typeof url === 'string' && url.length > 0)
 	);
 	const headerImageUrl = $derived(headerImageUrls[headerImageIndex] ?? null);
-	const newsQuery = $derived(getGameNews({ appid: data.game.appid, count: 10 }));
+
+	onMount(() => {
+		canRenderSanitizedHtml = true;
+	});
 
 	function parseNews(news: ISteamAppNews | null): ISteamAppNews {
 		if (!news) {
@@ -88,10 +92,6 @@
 		return [{ label: 'Published', value: formatNewsDate(newsItem.date) }];
 	}
 
-	function sanitizeHtml(html: string): string {
-		return DOMPurify.sanitize(html);
-	}
-
 	function useNextHeaderImage(): void {
 		headerImageIndex += 1;
 	}
@@ -99,7 +99,7 @@
 	async function selectNewsItem(id: string): Promise<void> {
 		selectedId = id;
 		await tick();
-		articleSection?.scrollIntoView({ block: 'start' });
+		document.getElementById(articleSectionId)?.scrollIntoView({ block: 'start' });
 	}
 </script>
 
@@ -108,16 +108,8 @@
 </svelte:head>
 
 <div class="bg-base-100 min-h-full">
-	{#await newsQuery}
-		<div class="flex h-full items-center justify-center p-6">
-			<div class="card bg-base-200 border-base-300 w-full max-w-md border shadow-sm">
-				<div class="card-body items-center gap-4 text-center">
-					<span class="loading loading-spinner loading-lg text-primary"></span>
-					<p class="text-base-content/70 text-sm">Loading Steam posts for {data.game.name}</p>
-				</div>
-			</div>
-		</div>
-	{:then rawNews}
+	<svelte:boundary>
+		{@const rawNews = await getGameNews({ appid: data.game.appid, count: 10 })}
 		{@const news = parseNews(rawNews)}
 		{@const selectedNews = getSelectedNews(news)}
 		{@const navItems = getNavItems(news)}
@@ -145,7 +137,7 @@
 					onselect={selectNewsItem}
 				/>
 
-				<section class="min-w-0 scroll-mt-24" bind:this={articleSection}>
+				<section id={articleSectionId} class="min-w-0 scroll-mt-24">
 					{#if selectedNews}
 						<UpdateFeedArticle
 							title={selectedNews.title}
@@ -153,12 +145,21 @@
 							sourceUrl={selectedNews.url}
 							meta={getArticleMeta(selectedNews)}
 						>
-							<div
-								class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
-							>
-								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-								{@html sanitizeHtml(selectedNews.contents)}
-							</div>
+							{#if canRenderSanitizedHtml}
+								<div
+									class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
+								>
+									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+									{@html DOMPurify.sanitize(selectedNews.contents)}
+								</div>
+							{:else}
+								<div class="space-y-3" role="status" aria-label="Loading article content">
+									<div class="skeleton h-4 w-full"></div>
+									<div class="skeleton h-4 w-11/12"></div>
+									<div class="skeleton h-4 w-10/12"></div>
+									<div class="skeleton mt-6 h-32 w-full"></div>
+								</div>
+							{/if}
 						</UpdateFeedArticle>
 					{:else}
 						<UpdateFeedEmptyState
@@ -169,15 +170,28 @@
 				</section>
 			</div>
 		</div>
-	{:catch}
-		<div class="mx-auto max-w-3xl p-6">
-			<div class="alert alert-error shadow-sm">
-				<Icon icon="error" />
-				<div>
-					<h2 class="font-semibold">Steam news could not be loaded</h2>
-					<p class="text-sm">Try refreshing the page or opening another Steam app.</p>
+
+		{#snippet pending()}
+			<div class="flex h-full items-center justify-center p-6">
+				<div class="card bg-base-200 border-base-300 w-full max-w-md border shadow-sm">
+					<div class="card-body items-center gap-4 text-center">
+						<span class="loading loading-spinner loading-lg text-primary"></span>
+						<p class="text-base-content/70 text-sm">Loading Steam posts for {data.game.name}</p>
+					</div>
 				</div>
 			</div>
-		</div>
-	{/await}
+		{/snippet}
+
+		{#snippet failed()}
+			<div class="mx-auto max-w-3xl p-6">
+				<div class="alert alert-error shadow-sm">
+					<Icon icon="error" />
+					<div>
+						<h2 class="font-semibold">Steam news could not be loaded</h2>
+						<p class="text-sm">Try refreshing the page or opening another Steam app.</p>
+					</div>
+				</div>
+			</div>
+		{/snippet}
+	</svelte:boundary>
 </div>

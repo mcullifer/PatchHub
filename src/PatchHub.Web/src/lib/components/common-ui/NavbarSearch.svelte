@@ -268,7 +268,7 @@
 	}
 </script>
 
-<div class="relative w-full max-w-sm" onfocusout={onFocusOut} {@attach attachContainer}>
+<div class="relative mx-auto w-full max-w-sm" onfocusout={onFocusOut} {@attach attachContainer}>
 	<label {...floating.reference({ class: 'input flex w-full items-center gap-2' })}>
 		<Icon icon="search" size="sm" class="select-none" />
 		<input

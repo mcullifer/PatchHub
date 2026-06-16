@@ -29,6 +29,8 @@ Before building custom markup, search for nearby or shared components that alrea
 - Prefer DaisyUI semantic colors such as `primary`, `secondary`, `accent`, `neutral`, `base-*`, `info`, `success`, `warning`, and `error`.
 - Avoid hard-coded colors unless there is a specific product reason.
 - Avoid long class strings that encode a whole bespoke design.
+- Avoid weird complicated tailwind grid layouts like `grid-cols-[minmax(0,1fr)_minmax(0,0)_auto]` unless it's
+  necessary for a specific layout pattern.
 
 ## Layout
 

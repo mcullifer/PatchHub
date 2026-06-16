@@ -15,12 +15,12 @@
 	let theme = $derived(lightModeEnabled ? 'light' : 'dark');
 
 	$effect(() => {
-		document.documentElement.setAttribute('data-theme', theme);
+		document.documentElement.dataset.theme = theme;
 	});
 </script>
 
 <div class="flex h-full w-full flex-col">
-	<Navbar class="bg-base-200 gap-4">
+	<Navbar class="bg-base-200 gap-2 sm:gap-4">
 		{#snippet start()}
 			<a class="text-primary flex gap-0 px-4 text-xl font-bold" href={resolve('/')}>
 				<span class="text-primary">patch</span>
@@ -28,7 +28,9 @@
 			</a>
 		{/snippet}
 		{#snippet center()}
-			<NavbarSearch />
+			<div class="hidden w-full sm:block">
+				<NavbarSearch />
+			</div>
 		{/snippet}
 		{#snippet end()}
 			<label class="swap swap-rotate">
@@ -45,8 +47,9 @@
 			{#if data.user}
 				<ProfileDropdown class="w-8 rounded" user={data.user} />
 			{:else}
-				<a class="btn btn-primary btn-sm" href={resolve('/auth/login')}>
-					Login / Signup
+				<a class="btn btn-primary btn-sm px-2 sm:px-3" href={resolve('/auth/login')}>
+					<span class="hidden sm:inline">Login / Signup</span>
+					<span class="sm:hidden">Login</span>
 					<Icon icon="arrow_forward" size="sm" />
 				</a>
 			{/if}
