@@ -11,7 +11,7 @@
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
 	import { getGameNews, getSteamHeaderImage } from '$lib/remote/games.remote';
 	import { BBCodeService } from '$lib/services/BBCodeService';
-	import DOMPurify from 'dompurify';
+	import TipTap from '$lib/components/wysiwyg/TipTap.svelte';
 	import { onMount, tick } from 'svelte';
 	import type { PageData } from './$types';
 
@@ -157,12 +157,9 @@
 							meta={getArticleMeta(selectedNews)}
 						>
 							{#if canRenderSanitizedHtml}
-								<div
-									class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
-								>
-									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-									{@html DOMPurify.sanitize(selectedNews.contents)}
-								</div>
+								<!-- Temporary TipTap render test. Restore this sanitized HTML line after visual QA. -->
+								<!-- {@html DOMPurify.sanitize(selectedNews.contents)} -->
+								<TipTap content={selectedNews.contents} />
 							{:else}
 								<div class="space-y-3" role="status" aria-label="Loading article content">
 									<div class="skeleton h-4 w-full"></div>
