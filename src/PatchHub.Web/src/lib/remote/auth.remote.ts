@@ -1,6 +1,14 @@
 import { form, getRequestEvent } from '$app/server';
-import { createOrGetUserForWorkOSUser, findUserByUsername } from '$lib/server/UserService';
-import { updateWorkOSUser } from '$lib/server/WorkOSClient';
+import { getAuthContext } from '$lib/server/auth/AuthContext';
+import { ACCOUNT_DISABLED_ERROR_CODE } from '$lib/server/auth/provisioning';
+import { createOrGetUserForWorkOSUser, findUserByUsername } from '$lib/server/auth/users';
+import {
+	USERNAME_MAX_LENGTH,
+	USERNAME_MIN_LENGTH,
+	USERNAME_PATTERN,
+	USERNAME_RULE_MESSAGE
+} from '$lib/server/auth/usernames';
+import { updateWorkOSUserExternalId } from '$lib/server/auth/workos';
 import { error, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 
@@ -9,12 +17,16 @@ export const setupAccount = form(
 		username: v.pipeAsync(
 			v.string(),
 			v.trim(),
-			v.minLength(3, 'Username must be at least 3 characters'),
-			v.maxLength(20, 'Username must be at most 20 characters'),
-			v.regex(
-				/^[a-zA-Z0-9_-]+$/,
-				'Username can only contain letters, numbers, underscores, and hyphens'
+			v.toLowerCase(),
+			v.minLength(
+				USERNAME_MIN_LENGTH,
+				`Username must be at least ${USERNAME_MIN_LENGTH} characters`
 			),
+			v.maxLength(
+				USERNAME_MAX_LENGTH,
+				`Username must be at most ${USERNAME_MAX_LENGTH} characters`
+			),
+			v.regex(USERNAME_PATTERN, USERNAME_RULE_MESSAGE),
 			v.checkAsync(
 				async (input) => (await findUserByUsername(input)) === null,
 				'Username is already taken'
@@ -22,11 +34,20 @@ export const setupAccount = form(
 		)
 	}),
 	async ({ username }) => {
-		const { locals } = getRequestEvent();
-		if (!locals.auth.user) {
+		const event = getRequestEvent();
+		const { internalUserStatus, workosUser } = await getAuthContext(event);
+		if (!workosUser) {
 			error(401, 'Not authenticated');
 		}
-		const workosUser = locals.auth.user;
+
+		if (internalUserStatus === 'deleted') {
+			redirect(302, `/auth/error?code=${ACCOUNT_DISABLED_ERROR_CODE}`);
+		}
+
+		if (internalUserStatus === 'active') {
+			redirect(302, '/');
+		}
+
 		const dbUser = await createOrGetUserForWorkOSUser(
 			workosUser.id,
 			workosUser.email,
@@ -35,13 +56,19 @@ export const setupAccount = form(
 			new Date(workosUser.updatedAt)
 		);
 
-		// Update WorkOS user with external ID
-		await updateWorkOSUser({
-			userId: workosUser.id,
-			externalId: dbUser.id.toString(),
-			metadata: { username: dbUser.username }
-		});
+		try {
+			await updateWorkOSUserExternalId({
+				userId: workosUser.id,
+				externalId: dbUser.id.toString()
+			});
+		} catch (updateError) {
+			console.error('Failed to update WorkOS user externalId after account setup', {
+				workosUserId: workosUser.id,
+				dbUserId: dbUser.id,
+				updateError
+			});
+		}
 
-		throw redirect(302, '/');
+		redirect(302, '/');
 	}
 );

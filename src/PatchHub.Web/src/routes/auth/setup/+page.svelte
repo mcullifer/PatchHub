@@ -21,7 +21,9 @@
 					</div>
 				</div>
 				<h1 class="card-title justify-center text-center">Complete your account</h1>
-				<p class="text-center text-sm opacity-70">Choose a username to finish setup.</p>
+				<p class="text-center text-sm opacity-70">
+					Choose a username with lowercase letters and numbers.
+				</p>
 			</div>
 			<div class="divider my-0"></div>
 

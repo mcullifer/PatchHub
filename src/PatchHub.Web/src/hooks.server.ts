@@ -1,5 +1,9 @@
 import { env } from '$env/dynamic/private';
 import { getAuthContext } from '$lib/server/auth/AuthContext';
+import {
+	getInternalUserProvisioningRedirect,
+	shouldBypassInternalUserProvisioning
+} from '$lib/server/auth/provisioning';
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
@@ -21,22 +25,19 @@ const authHandle = authKitHandle({
 	}
 });
 
-const setupExcludedPathPrefixes = ['/auth/callback', '/auth/login', '/auth/logout', '/auth/setup'];
-
 const provisionUserHandle: Handle = async ({ event, resolve }) => {
 	if (!event.locals.auth.user) return resolve(event);
-	if (setupExcludedPathPrefixes.some((path) => event.url.pathname.startsWith(path))) {
+	if (shouldBypassInternalUserProvisioning(event.url.pathname)) {
 		return resolve(event);
 	}
 
-	try {
-		const { dbUser } = await getAuthContext(event);
-		if (!dbUser) {
-			return Response.redirect(new URL('/auth/setup', event.url.origin), 302);
-		}
-	} catch (error) {
-		console.error('Error checking internal user:', error);
-		return Response.redirect(new URL('/auth/setup', event.url.origin), 302);
+	const { internalUserStatus } = await getAuthContext(event);
+	const provisioningRedirect = getInternalUserProvisioningRedirect(
+		internalUserStatus,
+		event.url.origin
+	);
+	if (provisioningRedirect) {
+		return provisioningRedirect;
 	}
 
 	return resolve(event);
