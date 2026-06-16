@@ -1,32 +1,27 @@
 <script lang="ts">
 	import { Button, Icon, VisibleWhenInView } from '$lib/components/common-ui';
+	import SectionHeader from '$lib/components/layout/SectionHeader.svelte';
 	import type { INamedSteamGame } from '$lib/models/Steam';
 	import { getMostPopularGames } from '$lib/remote/games.remote';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 
 	type TopGameSectionProps = {
-		item: Snippet<[INamedSteamGame]>;
+		item: Snippet<[INamedSteamGame, boolean]>;
+		id?: string;
 		class?: ClassValue;
 	};
-	let { item, class: classNames = '' }: TopGameSectionProps = $props();
+	let { item, id, class: classNames = '' }: TopGameSectionProps = $props();
 	let inview = $state<ReturnType<typeof VisibleWhenInView>>();
 	let showMore = $state(false);
 </script>
 
-<section class={classNames}>
-	<div class="mb-6">
-		<div class="border-base-content/10 flex items-end justify-between border-b pb-4">
-			<div>
-				<h2 class="mb-1 flex items-center gap-3 text-2xl font-bold">
-					<Icon icon="sports_esports" size="md" />
-					<span>Games</span>
-				</h2>
-				<p class="text-base-content/50 text-sm">Latest patches and updates</p>
-			</div>
+<section {id} class={['scroll-mt-4', classNames]}>
+	<SectionHeader icon="sports_esports" title="Games" subtitle="Latest patches and updates">
+		{#snippet meta()}
 			<div class="badge badge-ghost badge-lg gap-2">
 				<svg
-					class="w-4 fill-black dark:fill-white"
+					class="w-4 fill-current"
 					role="img"
 					viewBox="0 0 24 24"
 					xmlns="http://www.w3.org/2000/svg"
@@ -38,36 +33,47 @@
 				</svg>
 				Steam®
 			</div>
-		</div>
-	</div>
-	<div class="grow gap-4 max-sm:flex max-sm:flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3">
-		<svelte:boundary>
-			{@const games = await getMostPopularGames()}
-			<VisibleWhenInView
-				bind:this={inview}
-				items={games}
-				visibleOnStart={6}
-				increment={10}
-				opts={{ immediate: false }}
-			>
-				{#snippet template(game)}
-					{@render item(game)}
-				{/snippet}
-			</VisibleWhenInView>
-		</svelte:boundary>
-	</div>
-	{#if !showMore}
-		<div class="mt-8 flex w-full justify-center">
-			<Button
-				text="Show more games"
-				class="btn btn-outline btn-sm gap-2"
-				onclick={() => {
-					showMore = true;
-					inview?.resume();
-				}}
-			>
-				<Icon icon="expand_more" size="xs" />
-			</Button>
-		</div>
-	{/if}
+		{/snippet}
+	</SectionHeader>
+
+	<svelte:boundary>
+		{@const games = await getMostPopularGames()}
+		{#if games.length > 0}
+			<div class="space-y-4">
+				{@render item(games[0], true)}
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<VisibleWhenInView
+						bind:this={inview}
+						items={games.slice(1)}
+						visibleOnStart={6}
+						increment={12}
+						opts={{ immediate: false }}
+					>
+						{#snippet template(game)}
+							{@render item(game, false)}
+						{/snippet}
+					</VisibleWhenInView>
+				</div>
+			</div>
+			{#if !showMore}
+				<div class="mt-4 flex w-full justify-center">
+					<Button
+						text="Show more games"
+						class="btn-outline btn-sm gap-2"
+						onclick={() => {
+							showMore = true;
+							inview?.resume();
+						}}
+					>
+						<Icon icon="expand_more" size="xs" />
+					</Button>
+				</div>
+			{/if}
+		{:else}
+			<div class="alert alert-info alert-soft">
+				<Icon icon="info" />
+				<span>No games to show right now.</span>
+			</div>
+		{/if}
+	</svelte:boundary>
 </section>

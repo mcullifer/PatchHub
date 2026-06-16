@@ -1,12 +1,17 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { Card, Icon, Label } from '$lib/components/common-ui';
+	import { Icon } from '$lib/components/common-ui';
+	import { Tooltip } from '$lib/components/common-ui/floating';
 	import type { INamedSteamGame } from '$lib/models/Steam';
 	import { getSteamHeaderImage } from '$lib/remote/games.remote';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 
-	let { game, isFavorited }: { game: INamedSteamGame; isFavorited: boolean } = $props();
+	let {
+		game,
+		isFavorited,
+		featured = false
+	}: { game: INamedSteamGame; isFavorited: boolean; featured?: boolean } = $props();
 
 	let defaultHeaderImageUrl = $derived(getDefaultHeaderImageUrl(game.appid));
 	let resolvedHeaderImage = $state<{ appid: number; url: string } | null>(null);
@@ -63,70 +68,100 @@
 	}
 </script>
 
-<Card class="card-border card-sm border-base-content/20 bg-base-200 shadow-md">
-	{#snippet figure()}
-		<a
-			data-sveltekit-preload-data="off"
-			href={resolve(steamPath as `/${string}/${string}/${string}`)}
-			class="block w-full overflow-hidden"
+<div
+	class={[
+		'group bg-base-300 rounded-box ring-base-content/20 relative overflow-hidden shadow-md ring-1',
+		featured ? 'h-56 sm:h-72 lg:h-80' : 'aspect-[460/215]'
+	]}
+>
+	{#if showImagePlaceholder}
+		<div class="absolute inset-0 grid place-items-center">
+			<Icon icon="sports_esports" size="xl" class="text-base-content/30" />
+		</div>
+	{:else}
+		{#if !imageLoaded}
+			<div class="skeleton absolute inset-0 rounded-none"></div>
+		{/if}
+		{#if imageSrc}
+			<img
+				class={[
+					'absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105',
+					!imageLoaded && 'invisible'
+				]}
+				src={imageSrc}
+				alt=""
+				onload={() => (loadedHeaderImage = { appid: game.appid, url: imageSrc })}
+				onerror={resolveHeaderImage}
+			/>
+		{/if}
+	{/if}
+
+	<div
+		class="from-neutral via-neutral/40 pointer-events-none absolute inset-0 bg-gradient-to-t to-transparent"
+	></div>
+
+	<a
+		data-sveltekit-preload-data="off"
+		href={resolve(steamPath as `/${string}/${string}/${string}`)}
+		class="rounded-box focus-visible:ring-primary absolute inset-0 focus-visible:ring-2 focus-visible:outline-none"
+		aria-label={game.name}
+	></a>
+
+	{#if featured}
+		<span class="badge badge-primary pointer-events-none absolute top-4 left-4 gap-1 font-semibold">
+			<Icon icon="trending_up" size="xs" />
+			Most played
+		</span>
+	{:else}
+		<span
+			class="badge badge-neutral badge-sm pointer-events-none absolute top-2 left-2 font-semibold"
 		>
-			<div
-				class="bg-base-300 relative flex aspect-[460/215] w-full items-center justify-center overflow-hidden"
-			>
-				{#if showImagePlaceholder}
-					<Icon icon="sports_esports" size="xl" class="text-base-content/30" />
-				{:else}
-					{#if !imageLoaded}
-						<div class="skeleton absolute inset-0 rounded-none"></div>
-					{/if}
-					{#if imageSrc}
-						<img
-							class={[
-								'absolute inset-0 h-full w-full object-cover duration-500 hover:scale-110',
-								!imageLoaded && 'invisible'
-							]}
-							src={imageSrc}
-							alt=""
-							onload={() => (loadedHeaderImage = { appid: game.appid, url: imageSrc })}
-							onerror={resolveHeaderImage}
-						/>
-					{/if}
-				{/if}
-			</div>
-		</a>
-	{/snippet}
-	{#snippet title()}
-		<div class="flex w-full justify-between">
-			<a
-				data-sveltekit-preload-data="off"
-				href={resolve(steamPath as `/${string}/${string}/${string}`)}
-				class="link-hover link"
-			>
-				{game.name}
-			</a>
-			{#if page.data.user !== null}
-				<label class="swap">
+			#{game.rank}
+		</span>
+	{/if}
+
+	{#if page.data.user !== null}
+		<Tooltip>
+			{#snippet reference(floating)}
+				<label
+					{...floating.reference({
+						class: [
+							'swap bg-neutral/50 text-neutral-content absolute top-2 right-2 rounded-full p-1'
+						]
+					})}
+				>
 					<input
 						type="checkbox"
-						data-tip="Favorite"
-						class="tooltip"
 						checked={isFavorited}
 						onchange={async () => await favoriteGame()}
 					/>
-					<Icon icon="favorite" style="outlined" class="swap-off" />
-					<Icon icon="favorite" class="swap-on text-pink-500" />
+					<Icon icon="favorite" style="outlined" class="swap-off" size="sm" />
+					<Icon icon="favorite" class="swap-on text-pink-500" size="sm" />
 				</label>
-			{/if}
-		</div>
-	{/snippet}
+			{/snippet}
+			<div class="bg-neutral text-neutral-content rounded-lg p-2 text-sm font-normal">Favorite</div>
+		</Tooltip>
+	{/if}
 
-	<div class="prose flex items-center gap-2">
-		<Label
-			class="opacity-80"
-			iconSize="sm"
-			icon="person"
-			text={game.concurrent_in_game.toLocaleString()}
-		/>
-		<span class="text-success">• online</span>
+	<span
+		class="badge badge-primary badge-sm pointer-events-none absolute right-4 bottom-4 gap-1 opacity-0 transition group-hover:opacity-100"
+	>
+		Patch notes
+		<Icon icon="arrow_forward" size="xs" />
+	</span>
+
+	<div
+		class="text-neutral-content pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-1 p-4"
+	>
+		<h3 class={['leading-tight font-semibold', featured ? 'text-2xl sm:text-3xl' : 'text-base']}>
+			{game.name}
+		</h3>
+		<div class="flex items-center gap-2 text-sm opacity-90">
+			<span class="inline-flex items-center gap-1">
+				<Icon icon="person" size="xs" />
+				{game.concurrent_in_game.toLocaleString()}
+			</span>
+			<span class="text-success">• online</span>
+		</div>
 	</div>
-</Card>
+</div>

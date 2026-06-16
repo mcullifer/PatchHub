@@ -2,10 +2,11 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Icon, InView } from '$lib/components/common-ui';
+	import SectionHeader from '$lib/components/layout/SectionHeader.svelte';
 	import { getSoftwareSourceSummaries } from '$lib/remote/software.remote';
 	import type { ClassValue } from 'svelte/elements';
 
-	let { class: classNames }: { class?: ClassValue } = $props();
+	let { id, class: classNames }: { id?: string; class?: ClassValue } = $props();
 
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
@@ -30,28 +31,21 @@
 	}
 </script>
 
-<section class={classNames}>
-	<div class="mb-6">
-		<div class="border-base-content/10 flex items-end justify-between border-b pb-4">
-			<div>
-				<h2 class="mb-1 flex items-center gap-3 text-2xl font-bold">
-					<Icon icon="apps" size="md" />
-					<span>Software</span>
-				</h2>
-				<p class="text-base-content/50 text-sm">Trackable update sources and release feeds</p>
-			</div>
+<section {id} class={['scroll-mt-4', classNames]}>
+	<SectionHeader icon="apps" title="Software" subtitle="Trackable update sources and release feeds">
+		{#snippet meta()}
 			<div class="badge badge-ghost badge-lg gap-2">
 				<Icon icon="rss_feed" size="xs" />
 				Sources
 			</div>
-		</div>
-	</div>
+		{/snippet}
+	</SectionHeader>
 
 	<svelte:boundary>
 		{@const summaries = await getSoftwareSourceSummaries()}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each summaries as summary (summary.source.id)}
-				<article class="card bg-base-200 border-base-300 card-sm border shadow-md">
+				<article class="card card-border card-sm border-base-content/20 bg-base-200 shadow-md">
 					<figure class="bg-base-300 relative aspect-[460/215] overflow-hidden">
 						<a data-sveltekit-preload-data="off" href={resolve(`/software/${summary.source.slug}`)}>
 							<img
@@ -62,8 +56,8 @@
 							/>
 						</a>
 					</figure>
-					<div class="card-body flex flex-col gap-3">
-						<div class="flex items-start justify-between gap-3">
+					<div class="card-body flex flex-col gap-4">
+						<div class="flex items-start justify-between gap-2">
 							<div class="min-w-0">
 								<div class="mb-2 flex flex-wrap items-center gap-2">
 									<span class="badge badge-info badge-soft gap-1">
@@ -121,14 +115,14 @@
 									</div>
 								</div>
 							{:else}
-								<div class="alert alert-info alert-soft py-2 text-sm">
+								<div class="alert alert-info alert-soft text-sm">
 									<Icon icon="info" size="sm" />
 									<span>No updates returned yet.</span>
 								</div>
 							{/if}
 						</div>
 
-						<div class="text-base-content/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+						<div class="text-base-content/60 flex flex-wrap items-center gap-2 text-xs">
 							<span class="inline-flex items-center gap-1">
 								<Icon icon="calendar_month" size="xs" />
 								{formatDate(summary.latestUpdate?.publishedAt)}

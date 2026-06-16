@@ -18,11 +18,11 @@
 	<title>PatchHub</title>
 </svelte:head>
 
-<div class="mx-auto max-w-7xl space-y-16 px-4 py-8 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-6xl space-y-12 px-4 py-8 sm:px-6 lg:px-8">
 	<TopGamesSection>
-		{#snippet item(game)}
+		{#snippet item(game, featured)}
 			<svelte:boundary>
-				<GameCard {game} isFavorited={isFavorited(favorites, game.appid)} />
+				<GameCard {game} {featured} isFavorited={isFavorited(favorites, game.appid)} />
 				{#snippet failed()}
 					<Card class="bg-base-200 text-center">
 						<Icon icon="error" class="text-error self-center pt-8" size="xl" />
