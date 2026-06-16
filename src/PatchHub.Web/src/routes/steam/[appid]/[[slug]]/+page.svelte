@@ -9,7 +9,7 @@
 		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
 	import type { ISteamAppNews, ISteamNewsItem } from '$lib/models/Steam';
-	import { getGameNews } from '$lib/remote/games.remote';
+	import { getGameNews, getSteamHeaderImage } from '$lib/remote/games.remote';
 	import { BBCodeService } from '$lib/services/BBCodeService';
 	import DOMPurify from 'dompurify';
 	import { onMount, tick } from 'svelte';
@@ -18,7 +18,8 @@
 	let { data }: { data: PageData } = $props();
 
 	let selectedId = $state<string | null>(null);
-	let headerImageIndex = $state(0);
+	let resolvedHeaderImageUrl = $state<string | null>(null);
+	let triedResolvedHeaderImage = $state(false);
 	let canRenderSanitizedHtml = $state(false);
 
 	const articleSectionId = 'steam-news-article';
@@ -27,13 +28,10 @@
 		day: 'numeric',
 		year: 'numeric'
 	});
-	const headerImageUrls = $derived(
-		[
-			data.game.headerImageUrl,
-			`https://cdn.akamai.steamstatic.com/steam/apps/${data.game.appid}/header.jpg`
-		].filter((url): url is string => typeof url === 'string' && url.length > 0)
+	const headerImageUrl = $derived(
+		resolvedHeaderImageUrl ??
+			(data.game.headerImageUrl.length > 0 ? data.game.headerImageUrl : null)
 	);
-	const headerImageUrl = $derived(headerImageUrls[headerImageIndex] ?? null);
 
 	onMount(() => {
 		canRenderSanitizedHtml = true;
@@ -92,8 +90,21 @@
 		return [{ label: 'Published', value: formatNewsDate(newsItem.date) }];
 	}
 
-	function useNextHeaderImage(): void {
-		headerImageIndex += 1;
+	async function resolveHeaderImage(): Promise<void> {
+		if (triedResolvedHeaderImage) {
+			resolvedHeaderImageUrl = null;
+			return;
+		}
+
+		triedResolvedHeaderImage = true;
+
+		try {
+			const headerImage = await getSteamHeaderImage(data.game.appid);
+			resolvedHeaderImageUrl =
+				headerImage && headerImage !== data.game.headerImageUrl ? headerImage : null;
+		} catch {
+			resolvedHeaderImageUrl = null;
+		}
 	}
 
 	async function selectNewsItem(id: string): Promise<void> {
@@ -124,7 +135,7 @@
 				description="Steam announcements and update posts collected into one readable feed."
 				imageUrl={headerImageUrl}
 				{fallbackIcon}
-				onimageerror={useNextHeaderImage}
+				onimageerror={resolveHeaderImage}
 			/>
 
 			<div class="grid min-h-0 gap-5 lg:grid-cols-[minmax(280px,360px)_1fr]">

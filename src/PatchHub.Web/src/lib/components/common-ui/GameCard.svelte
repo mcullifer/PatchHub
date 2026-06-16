@@ -31,7 +31,6 @@
 	}
 
 	let steamPath = $derived(getSteamGamePath(game));
-
 	async function resolveHeaderImage(): Promise<void> {
 		const appid = game.appid;
 		const failedImageSrc = imageSrc;

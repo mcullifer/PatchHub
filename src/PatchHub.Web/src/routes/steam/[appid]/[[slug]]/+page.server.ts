@@ -1,10 +1,10 @@
-import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService.js';
+import { getDefaultSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService.js';
 import { findSteamAppByAppId } from '$lib/server/steam/SteamCatalogRepository.js';
 import { getSteamGamePath } from '$lib/util/SteamRoute.js';
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, params, url }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
 	const appid = Number.parseInt(params.appid, 10);
 	if (!Number.isInteger(appid)) error(404, 'Steam game not found');
 
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
 			appid,
 			name: app.name,
 			slug: app.slug,
-			headerImageUrl: await getSteamHeaderImageUrl(fetch, appid)
+			headerImageUrl: getDefaultSteamHeaderImageUrl(appid)
 		}
 	};
 };

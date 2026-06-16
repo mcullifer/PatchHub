@@ -28,6 +28,20 @@ export async function getSteamHeaderImageUrl(
 		return defaultHeaderImageUrl;
 	}
 
+	const appDetailsHeaderImageUrl = await getSteamAppDetailsHeaderImageUrl(fetchFn, appid);
+	if (appDetailsHeaderImageUrl && (await imageExists(fetchFn, appDetailsHeaderImageUrl))) {
+		steamHeaderImageCache.set(appid, appDetailsHeaderImageUrl);
+		return appDetailsHeaderImageUrl;
+	}
+
+	steamHeaderImageCache.set(appid, null);
+	return null;
+}
+
+async function getSteamAppDetailsHeaderImageUrl(
+	fetchFn: typeof fetch,
+	appid: number
+): Promise<string | null> {
 	const params = new URLSearchParams({
 		appids: appid.toString(),
 		filters: 'basic'
@@ -36,18 +50,17 @@ export async function getSteamHeaderImageUrl(
 	try {
 		const response = await fetchFn(`https://store.steampowered.com/api/appdetails?${params}`);
 		if (!response.ok) {
-			steamHeaderImageCache.set(appid, null);
 			return null;
 		}
 
 		const details = (await response.json()) as SteamAppDetailsResponse;
 		const headerImage = details[appid]?.data?.header_image;
-		const headerImageUrl =
-			typeof headerImage === 'string' && headerImage.length > 0 ? headerImage : null;
-		steamHeaderImageCache.set(appid, headerImageUrl);
-		return headerImageUrl;
+		if (typeof headerImage !== 'string' || headerImage.length === 0) {
+			return null;
+		}
+
+		return headerImage;
 	} catch {
-		steamHeaderImageCache.set(appid, null);
 		return null;
 	}
 }
