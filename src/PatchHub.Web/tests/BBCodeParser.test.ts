@@ -379,6 +379,19 @@ describe('BBCodeParser - Error Handling', () => {
 		expect(result.warnings).toHaveLength(0);
 	});
 
+	it('should unescape Steam post section heading brackets', () => {
+		const parser = new BBCodeParser();
+		const result = parser.parse(
+			'\\[ COLOGNE 2026 ]\nAdded sticker price display.\n\n\\[ MISC ]\nFixed number wrapping rules.'
+		);
+
+		expect(result.html).toBe(
+			'[ COLOGNE 2026 ] Added sticker price display. <br>[ MISC ] Fixed number wrapping rules.'
+		);
+		expect(result.errors).toHaveLength(0);
+		expect(result.warnings).toHaveLength(0);
+	});
+
 	it('should handle empty input', () => {
 		const parser = new BBCodeParser();
 		const result = parser.parse('');

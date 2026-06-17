@@ -46,7 +46,7 @@ export class BBCodeRenderer {
 	}
 
 	private renderText(value: string): string {
-		const escaped = escapeHtml(value);
+		const escaped = escapeHtml(unescapeBBCodeDelimiters(value));
 		if (this.options.preserveNewlines === 'all') return escaped.replace(/\n/g, '<br>');
 		if (this.options.preserveNewlines === 'double') {
 			return escaped.replace(/\n{2,}/g, ' <br>').replace(/\n/g, ' ');
@@ -256,6 +256,13 @@ function escapeHtml(value: string): string {
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#39;');
+}
+
+function unescapeBBCodeDelimiters(value: string): string {
+	return value.replace(/\\./g, (match) => {
+		const escapedCharacter = match[1];
+		return escapedCharacter === '[' || escapedCharacter === ']' ? escapedCharacter : match;
+	});
 }
 
 function escapeAttribute(value: string): string {

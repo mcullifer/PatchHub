@@ -20,6 +20,11 @@ export class BBCodeTokenizer {
 				continue;
 			}
 
+			if (isEscapedOpeningBracket(this.input, position)) {
+				position += 1;
+				continue;
+			}
+
 			const tagEnd = this.input.indexOf(']', position + 1);
 			if (tagEnd === -1) {
 				break;
@@ -61,6 +66,18 @@ export class BBCodeTokenizer {
 
 		return tokens;
 	}
+}
+
+function isEscapedOpeningBracket(input: string, position: number): boolean {
+	let backslashCount = 0;
+	let index = position - 1;
+
+	while (index >= 0 && input[index] === '\\') {
+		backslashCount += 1;
+		index -= 1;
+	}
+
+	return backslashCount % 2 === 1;
 }
 
 function parseTag(content: string, raw: string): BBCodeTag | null {
