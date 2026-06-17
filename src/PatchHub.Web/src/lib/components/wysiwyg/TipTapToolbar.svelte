@@ -390,47 +390,44 @@
 	</div>
 {/snippet}
 
-<div class="not-prose bg-base-200 rounded-lg p-2">
-	<div class="flex flex-wrap items-center gap-2">
-		<select
-			id={blockFormatId}
-			class="select select-sm w-fit"
-			value={toolbarState.blockFormat}
-			title="Block style"
-			aria-label="Block style"
-			onchange={handleBlockFormatChange}
-		>
-			{#each blockFormats as format (format.value)}
-				<option value={format.value} title={format.title}>{format.label}</option>
-			{/each}
-		</select>
-		{@render toolbarButtonGroup(historyButtons, 'History')}
-		{@render toolbarButtonGroup(textStyleButtons, 'Text style')}
-
-		{@render toolbarButtonGroup(structureButtons, 'Structure')}
-		{@render toolbarButtonGroup(alignmentButtons, 'Alignment')}
-		{@render toolbarButtonGroup(insertButtons, 'Insert')}
-		<div class="join" role="group" aria-label="Clear formatting">
-			{@render toolbarButton(clearFormattingButton)}
-		</div>
-
-		{#if onsave}
-			<div class="join ml-auto" role="group" aria-label="Save">
-				<button
-					type="button"
-					class="btn btn-soft btn-neutral btn-square join-item btn-sm"
-					title="Save editor content"
-					aria-label="Save editor content"
-					disabled={saveStatus === 'saving'}
-					onclick={saveContent}
-				>
-					{#if saveStatus === 'saving'}
-						<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
-					{:else}
-						<Icon icon="save" size="sm" />
-					{/if}
-				</button>
-			</div>
-		{/if}
+<div class="flex p-2 flex-wrap items-center gap-2">
+	<select
+		id={blockFormatId}
+		class="select select-sm w-fit"
+		value={toolbarState.blockFormat}
+		title="Block style"
+		aria-label="Block style"
+		onchange={handleBlockFormatChange}
+	>
+		{#each blockFormats as format (format.value)}
+			<option value={format.value} title={format.title}>{format.label}</option>
+		{/each}
+	</select>
+	{@render toolbarButtonGroup(historyButtons, 'History')}
+	{@render toolbarButtonGroup(textStyleButtons, 'Text style')}
+	{@render toolbarButtonGroup(structureButtons, 'Structure')}
+	{@render toolbarButtonGroup(alignmentButtons, 'Alignment')}
+	{@render toolbarButtonGroup(insertButtons, 'Insert')}
+	<div class="join" role="group" aria-label="Clear formatting">
+		{@render toolbarButton(clearFormattingButton)}
 	</div>
+
+	{#if onsave}
+		<div class="join ml-auto" role="group" aria-label="Save">
+			<button
+				type="button"
+				class="btn btn-soft btn-neutral btn-square join-item btn-sm"
+				title="Save editor content"
+				aria-label="Save editor content"
+				disabled={saveStatus === 'saving'}
+				onclick={saveContent}
+			>
+				{#if saveStatus === 'saving'}
+					<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+				{:else}
+					<Icon icon="save" size="sm" />
+				{/if}
+			</button>
+		</div>
+	{/if}
 </div>

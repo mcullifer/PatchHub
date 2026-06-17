@@ -172,7 +172,7 @@
 	});
 </script>
 
-<div class="rounded-lg border-base-content/20 bg-base-100 border">
+<div class="rounded-lg bg-base-100">
 	{#if editor && editable}
 		<TipTapToolbar {editor} revision={toolbarRevision} {onsave} />
 	{/if}
