@@ -30,7 +30,6 @@
 			id: entry.id,
 			title: entry.title,
 			dateLabel: formatDate(entry.publishedAt),
-			summary: entry.summary,
 			isSelected: isSelected(entry, index)
 		}))
 	);
@@ -71,7 +70,14 @@
 	async function selectUpdate(id: string): Promise<void> {
 		selectedId = id;
 		await tick();
-		document.getElementById(articleSectionId)?.scrollIntoView({ block: 'start' });
+
+		const articleSection = document.getElementById(articleSectionId);
+		if (!articleSection) return;
+
+		const isScrolledPastArticleStart = articleSection.getBoundingClientRect().top < 96;
+		if (isScrolledPastArticleStart) {
+			articleSection.scrollIntoView({ block: 'start' });
+		}
 	}
 </script>
 
@@ -79,78 +85,75 @@
 	<title>{data.detail.source.name}</title>
 </svelte:head>
 
-<div class="bg-base-100 min-h-full">
-	<div class="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 lg:p-6">
-		{#snippet fallbackIcon()}
-			<Icon icon={data.detail.source.icon} size="xl" class="text-base-content/30" />
-		{/snippet}
+<div class="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 p-4 lg:p-6">
+	{#snippet fallbackIcon()}
+		<Icon icon={data.detail.source.icon} size="xl" class="text-base-content/30" />
+	{/snippet}
 
-		<UpdateFeedHero
-			title={data.detail.source.name}
-			description={data.detail.source.description}
-			imageUrl={data.detail.source.imageUrl}
-			imageAlt={data.detail.source.imageAlt}
-			{fallbackIcon}
+	<UpdateFeedHero
+		title={data.detail.source.name}
+		description={data.detail.source.description}
+		imageUrl={data.detail.source.imageUrl}
+		imageAlt={data.detail.source.imageAlt}
+		{fallbackIcon}
+	/>
+
+	{#if data.detail.health.error}
+		<div class="alert alert-warning alert-soft">
+			<Icon icon="warning" />
+			<span>{data.detail.health.error}</span>
+		</div>
+	{/if}
+
+	<div class="grid min-h-0 gap-4 lg:grid-cols-4">
+		<UpdateFeedPostList
+			title="Updates"
+			description="Latest software updates"
+			ariaLabel="Software updates"
+			items={navItems}
+			emptyMessage="This software source has no updates to show yet."
+			onselect={selectUpdate}
 		/>
 
-		{#if data.detail.health.error}
-			<div class="alert alert-warning alert-soft">
-				<Icon icon="warning" />
-				<span>{data.detail.health.error}</span>
-			</div>
-		{/if}
-
-		<div class="grid min-h-0 gap-5 lg:grid-cols-[minmax(280px,380px)_1fr]">
-			<UpdateFeedPostList
-				title="Updates"
-				description="Newest posts from this source."
-				ariaLabel="Software updates"
-				items={navItems}
-				emptyMessage="This software source has no updates to show yet."
-				onselect={selectUpdate}
-			/>
-
-			<section id={articleSectionId} class="min-w-0 scroll-mt-24">
-				{#if selectedUpdate}
-					<UpdateFeedArticle
-						title={selectedUpdate.title}
-						sourceLabel="Source"
-						sourceUrl={selectedUpdate.sourceUrl}
-						meta={getArticleMeta(selectedUpdate)}
-					>
-						{#if selectedUpdate.contentHtml}
-							{#if canRenderSanitizedHtml}
-								<div
-									class="patchhub-rich-text prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
-								>
-									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-									{@html DOMPurify.sanitize(selectedUpdate.contentHtml)}
-								</div>
-							{:else}
-								<div class="space-y-3" role="status" aria-label="Loading article content">
-									<div class="skeleton h-4 w-full"></div>
-									<div class="skeleton h-4 w-11/12"></div>
-									<div class="skeleton h-4 w-10/12"></div>
-									<div class="skeleton mt-6 h-32 w-full"></div>
-								</div>
-							{/if}
-						{:else}
-							<div class="alert alert-info alert-soft">
-								<Icon icon="info" />
-								<span>
-									This source did not include article content. Open the source link to read the full
-									update.
-								</span>
+		<section id={articleSectionId} class="min-w-0 scroll-mt-24 lg:col-span-3">
+			{#if selectedUpdate}
+				<UpdateFeedArticle
+					title={selectedUpdate.title}
+					sourceLabel="Source"
+					sourceUrl={selectedUpdate.sourceUrl}
+					meta={getArticleMeta(selectedUpdate)}
+				>
+					{#if selectedUpdate.contentHtml}
+						{#if canRenderSanitizedHtml}
+							<div
+								class="patchhub-rich-text prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
+							>
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+								{@html DOMPurify.sanitize(selectedUpdate.contentHtml)}
 							</div>
+						{:else}
+							<div
+								class="skeleton min-h-64 w-full"
+								role="status"
+								aria-label="Loading article content"
+							></div>
 						{/if}
-					</UpdateFeedArticle>
-				{:else}
-					<UpdateFeedEmptyState
-						title="No updates found"
-						description="The source is configured, but no update posts were returned."
-					/>
-				{/if}
-			</section>
-		</div>
+					{:else}
+						<div class="alert alert-info alert-soft">
+							<Icon icon="info" />
+							<span>
+								This source did not include article content. Open the source link to read the full
+								update.
+							</span>
+						</div>
+					{/if}
+				</UpdateFeedArticle>
+			{:else}
+				<UpdateFeedEmptyState
+					title="No updates found"
+					description="The source is configured, but no update posts were returned."
+				/>
+			{/if}
+		</section>
 	</div>
 </div>

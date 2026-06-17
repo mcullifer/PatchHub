@@ -1,4 +1,3 @@
-import { getDefaultSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService.js';
 import { findSteamAppByAppId } from '$lib/server/steam/SteamCatalogRepository.js';
 import { getSteamGamePath } from '$lib/util/SteamRoute.js';
 import { error, redirect } from '@sveltejs/kit';
@@ -25,8 +24,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		game: {
 			appid,
 			name: app.name,
-			slug: app.slug,
-			headerImageUrl: getDefaultSteamHeaderImageUrl(appid)
+			slug: app.slug
 		}
 	};
 };

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Menu, MenuItem } from '$lib/components/common-ui';
 	import type { UpdateFeedPostListItem } from './UpdateFeedTypes';
 
 	let {
@@ -18,48 +19,44 @@
 	} = $props();
 </script>
 
-<aside class="card bg-base-200 border-base-300 h-fit border lg:sticky lg:top-20">
-	<div class="card-body gap-0 p-0">
-		<div class="border-base-300 flex items-start justify-between gap-3 border-b px-4 py-3">
+<aside class="card card-sm bg-base-200 h-fit lg:sticky lg:top-20">
+	<div class="card-body gap-4">
+		<div class="flex items-start justify-between gap-4">
 			<div>
-				<h2 class="font-semibold">{title}</h2>
-				<p class="text-base-content/60 text-sm">{description}</p>
+				<h2 class="card-title">{title}</h2>
+				<p class="text-base-content/70">{description}</p>
 			</div>
-			<span class="text-base-content/50 text-sm tabular-nums">{items.length}</span>
+			<span class="badge badge-primary badge-soft">{items.length}</span>
 		</div>
 
-		<nav class="max-h-[38rem] overflow-y-auto" aria-label={ariaLabel}>
-			<ul class="divide-base-300 divide-y">
+		<nav class="max-h-[32rem] overflow-y-auto" aria-label={ariaLabel}>
+			<Menu class="w-full p-0">
 				{#each items as item (item.id)}
-					<li>
-						<button
-							type="button"
-							class={[
-								'hover:bg-base-300/70 focus-visible:outline-primary flex w-full border-l-2 px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px]',
-								item.isSelected ? 'bg-base-300 border-primary' : 'border-transparent'
-							]}
-							aria-current={item.isSelected ? 'true' : undefined}
-							onclick={() => onselect(item.id)}
-						>
-							<span class="min-w-0 flex-1">
-								<span class="text-base-content/50 text-xs">{item.dateLabel}</span>
-								<span class="mt-1 line-clamp-2 text-sm font-medium text-pretty">
-									{item.title}
-								</span>
-								<span class="text-base-content/60 mt-1 line-clamp-2 text-xs leading-5">
+					<MenuItem
+						onclick={() => onselect(item.id)}
+						class={[
+							'w-full border-l-4 border-transparent text-left',
+							item.isSelected && 'border-primary bg-base-300'
+						]}
+					>
+						<span class="flex min-w-0 flex-col items-start">
+							<time class="text-base-content/60 block text-sm">{item.dateLabel}</time>
+							<strong class="mt-1 block line-clamp-2 font-semibold">{item.title}</strong>
+							{#if item.summary}
+								<p class="text-base-content/70 mt-2 line-clamp-2 text-sm leading-6">
 									{item.summary}
-								</span>
-							</span>
-						</button>
-					</li>
+								</p>
+							{/if}
+						</span>
+					</MenuItem>
 				{:else}
-					<div class="p-3">
+					<MenuItem>
 						<div class="alert alert-info alert-soft">
 							<span>{emptyMessage}</span>
 						</div>
-					</div>
+					</MenuItem>
 				{/each}
-			</ul>
+			</Menu>
 		</nav>
 	</div>
 </aside>

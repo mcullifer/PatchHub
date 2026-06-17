@@ -1,3 +1,5 @@
+import { getDefaultSteamHeaderImageUrl } from '$lib/util/SteamAssets';
+
 type SteamAppDetailsResponse = Record<
 	string,
 	{
@@ -9,10 +11,6 @@ type SteamAppDetailsResponse = Record<
 >;
 
 const steamHeaderImageCache = new Map<number, string | null>();
-
-export function getDefaultSteamHeaderImageUrl(appid: number): string {
-	return `https://cdn.akamai.steamstatic.com/steam/apps/${appid}/header.jpg`;
-}
 
 export async function getSteamHeaderImageUrl(
 	fetchFn: typeof fetch,

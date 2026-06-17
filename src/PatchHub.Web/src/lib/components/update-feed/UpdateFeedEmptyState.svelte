@@ -12,7 +12,7 @@
 	} = $props();
 </script>
 
-<div class="hero bg-base-200 border-base-300 rounded-box min-h-96 border">
+<div class="hero bg-base-200 rounded-box min-h-96">
 	<div class="hero-content text-center">
 		<div class="max-w-md">
 			<Icon {icon} size="xl" class="text-base-content/40" />

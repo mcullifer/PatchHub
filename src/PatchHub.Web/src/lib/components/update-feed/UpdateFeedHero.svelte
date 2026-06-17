@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { UpdateFeedStat } from './UpdateFeedTypes';
 
 	let {
 		title,
@@ -8,62 +7,109 @@
 		imageUrl = null,
 		imageAlt = '',
 		onimageerror,
-		fallbackIcon,
-		stats = []
+		fallbackIcon
 	}: {
 		title: string;
 		description: string;
 		imageUrl?: string | null;
 		imageAlt?: string;
-		onimageerror?: () => void;
+		onimageerror?: () => void | Promise<void>;
 		fallbackIcon: Snippet;
-		stats?: UpdateFeedStat[];
 	} = $props();
+
+	let failedImageUrl = $state<string | null>(null);
+	let loadedImageUrl = $state<string | null>(null);
+	let resolvingImageUrl = $state<string | null>(null);
+	const canLoadImage = $derived(Boolean(imageUrl) && imageUrl !== failedImageUrl);
+	const showImage = $derived(canLoadImage && imageUrl === loadedImageUrl);
+	const showImageSkeleton = $derived(!showImage && (canLoadImage || Boolean(resolvingImageUrl)));
+	const showFallbackIcon = $derived(!showImage && !showImageSkeleton);
+
+	function handleImageLoad(): void {
+		loadedImageUrl = imageUrl;
+	}
+
+	async function handleImageError(): Promise<void> {
+		const failedUrl = imageUrl;
+		if (!failedUrl) return;
+
+		failedImageUrl = failedUrl;
+		if (loadedImageUrl === failedUrl) {
+			loadedImageUrl = null;
+		}
+
+		if (!onimageerror) return;
+
+		resolvingImageUrl = failedUrl;
+		try {
+			await onimageerror();
+		} catch {
+			// Failed recovery leaves the regular fallback icon visible.
+		} finally {
+			if (resolvingImageUrl === failedUrl) {
+				resolvingImageUrl = null;
+			}
+		}
+	}
 </script>
 
-<header class="card bg-base-200 border-base-300 overflow-hidden border">
-	<div class="grid min-h-72 gap-0 lg:grid-cols-[minmax(360px,50%)_minmax(0,50%)]">
-		<figure class="bg-base-300 relative min-h-56 overflow-hidden lg:min-h-full">
-			{#if imageUrl}
-				<img
-					class="h-full w-full object-cover"
-					src={imageUrl}
-					alt={imageAlt}
-					loading="lazy"
-					onerror={onimageerror}
-				/>
-			{:else}
-				<div class="flex h-full min-h-56 items-center justify-center">
+<header class="card bg-base-200 overflow-hidden">
+	<div class="grid min-h-64 lg:grid-cols-2">
+		<figure class="bg-base-300 relative min-h-64 overflow-hidden">
+			{#if showImageSkeleton}
+				<div class="skeleton absolute inset-0 h-full w-full rounded-none" aria-hidden="true"></div>
+			{:else if showFallbackIcon}
+				<div class="absolute inset-0 flex h-full min-h-64 items-center justify-center">
 					{@render fallbackIcon()}
 				</div>
 			{/if}
-			<div
-				class="from-base-200/0 from-[50%] via-base-200/65 via-[78%] to-base-200 pointer-events-none absolute inset-0 bg-gradient-to-b lg:from-[42%] lg:via-[76%] lg:bg-gradient-to-r"
-			></div>
+
+			{#if canLoadImage && imageUrl}
+				<img
+					class={[
+						'absolute inset-0 h-full w-full object-cover object-bottom',
+						!showImage && 'invisible'
+					]}
+					src={imageUrl}
+					alt={imageAlt}
+					loading="lazy"
+					onload={handleImageLoad}
+					onerror={handleImageError}
+				/>
+			{/if}
+
+			<div class="hero-image-fade pointer-events-none absolute inset-0"></div>
 		</figure>
 
-		<div class="card-body justify-center gap-5 p-4 sm:p-6 lg:p-8">
-			<div class="max-w-3xl">
-				<h1 class="text-2xl leading-tight font-bold text-pretty md:text-3xl">
-					{title}
-				</h1>
-				<p class="text-base-content/70 mt-2 max-w-2xl text-sm leading-6">
-					{description}
-				</p>
-			</div>
-
-			{#if stats.length > 0}
-				<dl class="border-base-300 grid gap-4 border-t pt-4 sm:grid-cols-3">
-					{#each stats as stat (stat.label)}
-						<div class="min-w-0">
-							<dt class="text-base-content/50 text-xs font-medium tracking-wide uppercase">
-								{stat.label}
-							</dt>
-							<dd class="mt-1 truncate text-sm font-medium">{stat.value}</dd>
-						</div>
-					{/each}
-				</dl>
-			{/if}
+		<div class="card-body justify-center">
+			<h1 class="max-w-3xl text-3xl leading-tight font-bold text-pretty">
+				{title}
+			</h1>
+			<p class="text-base-content/70 max-w-2xl text-sm leading-6">
+				{description}
+			</p>
 		</div>
 	</div>
 </header>
+
+<style>
+	.hero-image-fade {
+		background: linear-gradient(
+			to bottom,
+			transparent 50%,
+			color-mix(in oklch, var(--color-base-200) 65%, transparent) 78%,
+			var(--color-base-200)
+		);
+	}
+
+	@media (min-width: 64rem) {
+		.hero-image-fade {
+			background: linear-gradient(
+				to right,
+				transparent 42%,
+				color-mix(in oklch, var(--color-base-200) 65%, transparent) 76%,
+				var(--color-base-200)
+			);
+		}
+	}
+</style>

@@ -5,6 +5,7 @@
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import type { INamedSteamGame } from '$lib/models/Steam';
 	import { getSteamHeaderImage } from '$lib/remote/games.remote';
+	import { getDefaultSteamHeaderImageUrl } from '$lib/util/SteamAssets';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 
 	let {
@@ -13,7 +14,7 @@
 		featured = false
 	}: { game: INamedSteamGame; isFavorited: boolean; featured?: boolean } = $props();
 
-	let defaultHeaderImageUrl = $derived(getDefaultHeaderImageUrl(game.appid));
+	let defaultHeaderImageUrl = $derived(getDefaultSteamHeaderImageUrl(game.appid));
 	let resolvedHeaderImage = $state<{ appid: number; url: string } | null>(null);
 	let loadedHeaderImage = $state<{ appid: number; url: string } | null>(null);
 	let triedResolvedHeaderImageAppId = $state<number | null>(null);
@@ -25,10 +26,6 @@
 		loadedHeaderImage?.appid === game.appid && loadedHeaderImage.url === imageSrc
 	);
 	let showImagePlaceholder = $derived(placeholderImageAppId === game.appid);
-
-	function getDefaultHeaderImageUrl(appId: number): string {
-		return `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
-	}
 
 	let steamPath = $derived(getSteamGamePath(game));
 	async function resolveHeaderImage(): Promise<void> {
