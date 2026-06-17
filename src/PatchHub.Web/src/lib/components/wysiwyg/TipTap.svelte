@@ -60,7 +60,7 @@
 			editorProps: {
 				attributes: {
 					class:
-						'tiptap-editor prose prose-sm sm:prose-base prose-a:link prose-a:link-primary prose-img:block prose-img:h-auto prose-img:max-w-full prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content max-w-none min-h-80 w-full px-6 py-5 pl-12 outline-none max-sm:p-4'
+						'tiptap-editor patchhub-rich-text prose prose-sm sm:prose-base prose-a:link prose-a:link-primary prose-img:block prose-img:h-auto prose-img:max-w-full prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content max-w-none min-h-80 w-full px-6 py-5 outline-none max-sm:p-4'
 				}
 			},
 			onContentError: ({ error }) => {

@@ -42,7 +42,7 @@ export class BBCodeRenderer {
 	}
 
 	private renderChildren(nodes: BBCodeNode[]): string {
-		return nodes.map((node) => this.render(node)).join('');
+		return normalizeBreaksAroundBlocks(nodes.map((node) => this.render(node)).join(''));
 	}
 
 	private renderText(value: string): string {
@@ -88,7 +88,7 @@ export class BBCodeRenderer {
 			case 'olist':
 				return `<ol>${content}</ol>`;
 			case '*':
-				return `<li>${content}</li>`;
+				return this.renderListItem(node);
 			case 'table':
 				return `<table>${content}</table>`;
 			case 'tr':
@@ -129,15 +129,42 @@ export class BBCodeRenderer {
 	}
 
 	private resolveSteamImageUrl(source: string): string {
-		if (source.startsWith('{STEAM_CLAN_IMAGE}')) {
+		if (source.startsWith('{STEAM_CLAN_IMAGE}') || source.startsWith('{STEAM_CLAN_LOC_IMAGE}')) {
 			return (
 				this.options.steamClanImageUrl +
-				source.replace('{STEAM_CLAN_IMAGE}', '').replace(/^\/+/, '')
+				source.replace(/^\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, '').replace(/^\/+/, '')
 			);
 		}
 
 		return source;
 	}
+
+	private renderListItem(node: ElementNode): string {
+		return `<li>${this.renderChildren(getListItemChildren(node.children))}</li>`;
+	}
+}
+
+function normalizeBreaksAroundBlocks(html: string): string {
+	return html
+		.replace(/\s*<br>\s*(?=<(?:blockquote|details|h[1-6]|hr|img|ol|table|ul|video)\b)/g, '')
+		.replace(/(<(?:hr|img)\b[^>]*\/>)\s*<br>\s*/g, '$1')
+		.replace(/(<\/(?:blockquote|details|h[1-6]|ol|table|ul|video)>)\s*<br>\s*/g, '$1');
+}
+
+function getListItemChildren(children: ElementNode['children']): ElementNode['children'] {
+	const meaningfulChildren = children.filter(
+		(child) => child.type !== 'text' || child.value.trim().length > 0
+	);
+
+	if (
+		meaningfulChildren.length === 1 &&
+		meaningfulChildren[0].type === 'element' &&
+		meaningfulChildren[0].tag.name === 'p'
+	) {
+		return meaningfulChildren[0].children;
+	}
+
+	return children;
 }
 
 function renderLink(node: ElementNode, content: string, textContent: string): string {

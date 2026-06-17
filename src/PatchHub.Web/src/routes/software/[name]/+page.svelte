@@ -121,7 +121,7 @@
 						{#if selectedUpdate.contentHtml}
 							{#if canRenderSanitizedHtml}
 								<div
-									class="prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
+									class="patchhub-rich-text prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
 								>
 									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 									{@html DOMPurify.sanitize(selectedUpdate.contentHtml)}

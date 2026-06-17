@@ -94,6 +94,12 @@ describe('BBCodeParser - Lists', () => {
 		expect(result.errors).toHaveLength(0);
 		expect(result.warnings).toHaveLength(0);
 	});
+
+	it('should unwrap Steam paragraph-only list items', () => {
+		const result = parser.parse('[list][*][p]Item 1[/p][/*][*][p]Item 2[/p][/*][/list]');
+		expect(result.html).toBe('<ul><li>Item 1</li><li>Item 2</li></ul>');
+		expect(result.errors).toHaveLength(0);
+	});
 });
 
 describe('BBCodeParser - URLs and Links', () => {
@@ -154,6 +160,17 @@ describe('BBCodeParser - Steam Clan Images', () => {
 		const result = parser.parse('[img]{STEAM_CLAN_IMAGE}/12345/abc.jpg[/img]');
 		expect(result.html).toContain('https://clan.akamai.steamstatic.com/images/');
 		expect(result.html).not.toContain('{STEAM_CLAN_IMAGE}');
+		expect(result.errors).toHaveLength(0);
+	});
+
+	it('should replace localized Steam clan image placeholders', () => {
+		const parser = new BBCodeParser({
+			steamClanImageUrl: 'https://clan.akamai.steamstatic.com/images/'
+		});
+		const result = parser.parse('[img]{STEAM_CLAN_LOC_IMAGE}/12345/abc.jpg[/img]');
+		expect(result.html).toBe(
+			'<img src="https://clan.akamai.steamstatic.com/images/12345/abc.jpg" alt="" />'
+		);
 		expect(result.errors).toHaveLength(0);
 	});
 
@@ -437,6 +454,21 @@ describe('BBCodeParser - Complex Content', () => {
 		// Single newlines add spaces, double newlines become <br>
 		// Result: "Line 1 Line 2 <br>Line 3" (space before <br> from first newline of pair)
 		expect(result.html).toBe('Line 1 Line 2 <br>Line 3');
+		expect(result.errors).toHaveLength(0);
+	});
+
+	it('should remove double-newline breaks around block elements', () => {
+		const parser = new BBCodeParser({
+			preserveNewlines: 'double',
+			steamClanImageUrl: 'https://clan.akamai.steamstatic.com/images/'
+		});
+		const bbcode =
+			'Ticket prices are below:\n\n[img]{STEAM_CLAN_LOC_IMAGE}/3703047/chart.png[/img]\n\nThere are two purchase paths.\n\n[h2]China Domestic Sales[/h2]\n\nChinese domestic ticket sales begin soon.';
+		const result = parser.parse(bbcode);
+
+		expect(result.html).toBe(
+			'Ticket prices are below:<img src="https://clan.akamai.steamstatic.com/images/3703047/chart.png" alt="" />There are two purchase paths.<h2>China Domestic Sales</h2>Chinese domestic ticket sales begin soon.'
+		);
 		expect(result.errors).toHaveLength(0);
 	});
 
