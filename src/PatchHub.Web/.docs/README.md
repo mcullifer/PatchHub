@@ -10,7 +10,7 @@ Agents should optimize for a product that is fast to scan, trustworthy, and easy
 - `.docs/svelte-guidelines.md`
 - `.docs/remote-functions-guidelines.md`
 - `.docs/auth-and-organizations.md`
-- `.docs/style-guidelines.md`
+- `.docs/style-guidance.md`
 - `.docs/testing-and-verification.md`
 - `.docs/scripts.md`
 - `.docs/workspace-layout.md`

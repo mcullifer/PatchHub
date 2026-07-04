@@ -85,7 +85,7 @@
 	<title>{data.detail.source.name}</title>
 </svelte:head>
 
-<div class="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 p-4 lg:p-6">
+<div class="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-3 p-2 sm:gap-4 sm:p-4 lg:p-6">
 	{#snippet fallbackIcon()}
 		<Icon icon={data.detail.source.icon} size="xl" class="text-base-content/30" />
 	{/snippet}
@@ -105,10 +105,9 @@
 		</div>
 	{/if}
 
-	<div class="grid min-h-0 gap-4 lg:grid-cols-4">
+	<div class="grid min-h-0 gap-3 sm:gap-4 lg:grid-cols-4">
 		<UpdateFeedPostList
 			title="Updates"
-			description="Latest software updates"
 			ariaLabel="Software updates"
 			items={navItems}
 			emptyMessage="This software source has no updates to show yet."

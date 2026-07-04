@@ -6,6 +6,7 @@
 		description,
 		imageUrl = null,
 		imageAlt = '',
+		loading = false,
 		onimageerror,
 		fallbackIcon
 	}: {
@@ -13,6 +14,7 @@
 		description: string;
 		imageUrl?: string | null;
 		imageAlt?: string;
+		loading?: boolean;
 		onimageerror?: () => void | Promise<void>;
 		fallbackIcon: Snippet;
 	} = $props();
@@ -20,10 +22,11 @@
 	let failedImageUrl = $state<string | null>(null);
 	let loadedImageUrl = $state<string | null>(null);
 	let resolvingImageUrl = $state<string | null>(null);
-	const canLoadImage = $derived(Boolean(imageUrl) && imageUrl !== failedImageUrl);
+	const canLoadImage = $derived(!loading && Boolean(imageUrl) && imageUrl !== failedImageUrl);
 	const showImage = $derived(canLoadImage && imageUrl === loadedImageUrl);
-	const showImageSkeleton = $derived(!showImage && (canLoadImage || Boolean(resolvingImageUrl)));
-	const showFallbackIcon = $derived(!showImage && !showImageSkeleton);
+	const showImageSkeleton = $derived(
+		loading || (!showImage && (canLoadImage || Boolean(resolvingImageUrl)))
+	);
 
 	function handleImageLoad(): void {
 		loadedImageUrl = imageUrl;
@@ -53,63 +56,48 @@
 	}
 </script>
 
-<header class="card bg-base-200 overflow-hidden">
-	<div class="grid min-h-64 lg:grid-cols-2">
-		<figure class="bg-base-300 relative min-h-64 overflow-hidden">
+<header
+	class="card card-sm md:card-md bg-base-200 overflow-hidden"
+	aria-busy={loading}
+	aria-label={loading ? title : undefined}
+>
+	<div class="grid md:min-h-64 md:grid-cols-2">
+		<figure class="bg-base-300 relative aspect-[2/1] md:aspect-auto">
 			{#if showImageSkeleton}
-				<div class="skeleton absolute inset-0 h-full w-full rounded-none" aria-hidden="true"></div>
-			{:else if showFallbackIcon}
-				<div class="absolute inset-0 flex h-full min-h-64 items-center justify-center">
+				<div class="skeleton absolute inset-0 rounded-none" aria-hidden="true"></div>
+			{:else if !showImage}
+				<div class="absolute inset-0 flex items-center justify-center">
 					{@render fallbackIcon()}
 				</div>
 			{/if}
 
 			{#if canLoadImage && imageUrl}
-				<img
-					class={[
-						'absolute inset-0 h-full w-full object-cover object-bottom',
-						!showImage && 'invisible'
-					]}
-					src={imageUrl}
-					alt={imageAlt}
-					loading="lazy"
-					onload={handleImageLoad}
-					onerror={handleImageError}
-				/>
+				{#key imageUrl}
+					<img
+						class={['absolute inset-0 h-full w-full object-cover', !showImage && 'invisible']}
+						src={imageUrl}
+						alt={imageAlt}
+						loading="lazy"
+						onload={handleImageLoad}
+						onerror={handleImageError}
+					/>
+				{/key}
 			{/if}
 
-			<div class="hero-image-fade pointer-events-none absolute inset-0"></div>
+			<div
+				class="from-base-200 from-10% pointer-events-none absolute -inset-px bg-linear-to-t to-transparent to-60% md:bg-linear-to-l md:from-0%"
+			></div>
 		</figure>
 
-		<div class="card-body justify-center">
-			<h1 class="max-w-3xl text-3xl leading-tight font-bold text-pretty">
-				{title}
-			</h1>
-			<p class="text-base-content/70 max-w-2xl text-sm leading-6">
-				{description}
-			</p>
+		<!-- Negative margin floats the title onto the image's faded area on mobile. -->
+		<div class="card-body relative -mt-14 justify-center md:mt-0">
+			{#if loading}
+				<div class="skeleton h-8 w-3/4 max-w-xl"></div>
+				<div class="skeleton mt-2 h-4 w-full max-w-lg"></div>
+			{:else}
+				<h1 class="text-2xl font-bold text-pretty md:text-3xl">{title}</h1>
+				<p class="text-base-content/70 text-sm">{description}</p>
+			{/if}
 		</div>
 	</div>
 </header>
-
-<style>
-	.hero-image-fade {
-		background: linear-gradient(
-			to bottom,
-			transparent 50%,
-			color-mix(in oklch, var(--color-base-200) 65%, transparent) 78%,
-			var(--color-base-200)
-		);
-	}
-
-	@media (min-width: 64rem) {
-		.hero-image-fade {
-			background: linear-gradient(
-				to right,
-				transparent 42%,
-				color-mix(in oklch, var(--color-base-200) 65%, transparent) 76%,
-				var(--color-base-200)
-			);
-		}
-	}
-</style>
