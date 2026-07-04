@@ -6,10 +6,7 @@ import type {
 } from '$lib/models/Steam';
 
 export type SteamApiErrorCode =
-	| 'missing_configuration'
-	| 'http_error'
-	| 'invalid_response'
-	| 'network_error';
+	'missing_configuration' | 'http_error' | 'invalid_response' | 'network_error';
 
 export class SteamApiError extends Error {
 	public readonly code: SteamApiErrorCode;

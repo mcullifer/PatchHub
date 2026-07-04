@@ -138,14 +138,12 @@
 			news.newsitems.find((newsItem) => newsItem.gid === selectedNewsId) ??
 			news.newsitems[0] ??
 			null}
-		{@const navItems = news.newsitems.map(
-			(newsItem): UpdateFeedPostListItem => ({
-				id: newsItem.gid,
-				title: newsItem.title,
-				dateLabel: formatNewsDate(newsItem.date),
-				isSelected: selectedNews?.gid === newsItem.gid
-			})
-		)}
+		{@const navItems = news.newsitems.map((newsItem): UpdateFeedPostListItem => ({
+			id: newsItem.gid,
+			title: newsItem.title,
+			dateLabel: formatNewsDate(newsItem.date),
+			isSelected: selectedNews?.gid === newsItem.gid
+		}))}
 
 		<div class="grid min-h-0 gap-4 lg:grid-cols-4">
 			<UpdateFeedPostList
