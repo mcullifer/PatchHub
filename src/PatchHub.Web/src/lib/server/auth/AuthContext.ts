@@ -1,8 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import type { AuthKitAuth } from '@workos/authkit-sveltekit';
-import type { User } from '../db/schema';
-import { findUserByAuthProviderId } from './users';
+import { findUserByAuthProviderId, type User } from './users';
 
 type WorkOSUser = NonNullable<AuthKitAuth['user']>;
 export type InternalUserStatus = 'unauthenticated' | 'missing' | 'active' | 'deleted';
@@ -10,7 +9,7 @@ export type InternalUserStatus = 'unauthenticated' | 'missing' | 'active' | 'del
 export type AuthContext = {
 	workosUser: WorkOSUser | null;
 	dbUser: User | null;
-	internalUserId: number | null;
+	internalUserId: User['_id'] | null;
 	internalUserStatus: InternalUserStatus;
 	organizationId: string | null;
 };
@@ -34,7 +33,7 @@ export async function getAuthContext(event: RequestEvent): Promise<AuthContext> 
 	return {
 		workosUser,
 		dbUser,
-		internalUserId: dbUser?.id ?? null,
+		internalUserId: dbUser?._id ?? null,
 		internalUserStatus,
 		organizationId: event.locals.auth.organizationId ?? null
 	};

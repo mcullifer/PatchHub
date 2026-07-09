@@ -25,7 +25,7 @@ export const load: PageServerLoad = async (event) => {
 			firstName: workosUser.firstName,
 			lastName: workosUser.lastName,
 			profilePictureUrl: workosUser.profilePictureUrl,
-			createdAt: dbUser.createdAt.toISOString()
+			createdAt: new Date(dbUser.createdAt).toISOString()
 		}
 	};
 };

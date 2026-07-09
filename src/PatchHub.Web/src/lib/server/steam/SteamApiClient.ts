@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import type {
 	ISteamAppListResponse,
 	ISteamAppNewsResponse,
@@ -128,7 +129,7 @@ function buildSteamApiUrl(apiBaseUrl: string | undefined, route: string, params?
 }
 
 function getSteamApiBaseUrl(apiBaseUrl: string | undefined): string {
-	const configuredUrl = apiBaseUrl || process.env.STEAM_API_URL;
+	const configuredUrl = apiBaseUrl || env.STEAM_API_URL;
 	if (!configuredUrl) {
 		throw new SteamApiError('STEAM_API_URL is not set', { code: 'missing_configuration' });
 	}

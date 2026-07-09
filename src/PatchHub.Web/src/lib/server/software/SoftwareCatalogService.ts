@@ -1,15 +1,14 @@
-import { db } from '$lib/server/db';
-import { externalItem } from '$lib/server/db/schema';
+import { convex, getConvexServerSecret } from '$lib/server/convex';
 import { getSoftwareSource, getSoftwareSources } from '$lib/server/software/SoftwareSourceRegistry';
-import { normalizeSearchName } from '$lib/util/StringUtils';
+import { normalizeSearchName } from '$convex/lib/strings';
+import { api } from '$convex/_generated/api';
 
 export class SoftwareCatalogService {
-	static async getExternalItemId(slug: string): Promise<number | null> {
-		const item = await db.query.externalItem.findFirst({
-			where: (items, { and, eq }) => and(eq(items.type, 'software'), eq(items.slug, slug))
+	static async getExternalItemId(slug: string): Promise<string | null> {
+		return await convex.query(api.catalog.getItemIdByTypeAndSlug, {
+			type: 'software',
+			slug
 		});
-
-		return item?.id ?? null;
 	}
 
 	static async upsertRegisteredSources(): Promise<void> {
@@ -22,14 +21,12 @@ export class SoftwareCatalogService {
 		const source = getSoftwareSource(slug);
 		if (!source) return;
 
-		const now = new Date();
-		const values = {
+		await convex.mutation(api.catalog.upsertSoftwareSource, {
+			secret: getConvexServerSecret(),
 			name: source.name,
 			normalizedName: normalizeSearchName(source.name),
-			type: 'software',
 			externalId: source.id,
 			source: source.vendor,
-			appType: 'software',
 			slug: source.slug,
 			searchName: normalizeSearchName(`${source.name} ${source.vendor}`),
 			metadataJson: JSON.stringify({
@@ -42,26 +39,7 @@ export class SoftwareCatalogService {
 				searchUrl: source.searchUrl,
 				supportUrl: source.supportUrl,
 				releaseInfoUrl: source.releaseInfoUrl
-			}),
-			createdAt: now,
-			updatedAt: now
-		};
-
-		await db
-			.insert(externalItem)
-			.values(values)
-			.onConflictDoUpdate({
-				target: [externalItem.type, externalItem.externalId],
-				set: {
-					name: values.name,
-					normalizedName: values.normalizedName,
-					source: values.source,
-					appType: values.appType,
-					slug: values.slug,
-					searchName: values.searchName,
-					metadataJson: values.metadataJson,
-					updatedAt: values.updatedAt
-				}
-			});
+			})
+		});
 	}
 }

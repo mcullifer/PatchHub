@@ -24,11 +24,15 @@
 	let canRenderSanitizedHtml = $state(false);
 
 	const articleSectionId = 'steam-news-article';
+	// During navigation data can transiently lack the loaded game; read it
+	// through this derived (with ?.) instead of data.game so late re-evaluations
+	// (e.g. header image recovery) never dereference undefined.
+	const game = $derived(data.game);
 	const routeSteamAppId = $derived.by(() => {
 		const appid = Number.parseInt(page.params.appid ?? '', 10);
-		return Number.isInteger(appid) ? appid : data.game.appid;
+		return Number.isInteger(appid) ? appid : (game?.appid ?? Number.NaN);
 	});
-	const isLoadingRouteSteamGame = $derived(routeSteamAppId !== data.game.appid);
+	const isLoadingRouteSteamGame = $derived(routeSteamAppId !== game?.appid);
 	const steamHeroDescription =
 		'Steam announcements and update posts collected into one readable feed.';
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -66,19 +70,21 @@
 	}
 
 	async function resolveHeaderImage(): Promise<void> {
-		const appid = data.game.appid;
+		const appid = game?.appid;
+		if (appid === undefined) return;
+
 		const failedUrl = getHeaderImageUrl(appid);
 		headerImageOverride = { appid, url: null };
 
 		try {
 			const headerImage = await getSteamHeaderImage(appid);
-			if (appid !== data.game.appid) return;
+			if (appid !== game?.appid) return;
 
 			if (headerImage && headerImage !== failedUrl) {
 				headerImageOverride = { appid, url: headerImage };
 			}
 		} catch {
-			if (appid === data.game.appid) {
+			if (appid === game?.appid) {
 				headerImageOverride = { appid, url: null };
 			}
 		}
@@ -103,7 +109,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.game.name}</title>
+	<title>{game?.name ?? 'PatchHub'}</title>
 </svelte:head>
 
 <div class="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-3 p-2 sm:gap-4 sm:p-4 lg:p-6">
@@ -135,9 +141,9 @@
 
 	{#key routeSteamAppId}
 		<UpdateFeedHero
-			title={isLoadingRouteSteamGame ? 'Loading Steam game' : data.game.name}
+			title={isLoadingRouteSteamGame || !game ? 'Loading Steam game' : game.name}
 			description={steamHeroDescription}
-			imageUrl={isLoadingRouteSteamGame ? null : getHeaderImageUrl(data.game.appid)}
+			imageUrl={isLoadingRouteSteamGame || !game ? null : getHeaderImageUrl(game.appid)}
 			loading={isLoadingRouteSteamGame}
 			onimageerror={resolveHeaderImage}
 		>

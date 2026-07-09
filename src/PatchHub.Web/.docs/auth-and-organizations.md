@@ -8,11 +8,16 @@ authorization and product data in the PatchHub database.
 - WorkOS owns sign-in, sessions, identity provider details, and hosted auth flows.
 - WorkOS can own organization membership lifecycle concerns such as invitations, SSO, and
   directory-backed membership.
-- PatchHub owns internal users, usernames, favorites, project ownership, app roles, and
-  authorization decisions.
+- PatchHub owns internal users, usernames, favorites, project ownership, and authorization
+  decisions.
 - PatchHub should not store sensitive auth data in WorkOS metadata.
 - WorkOS `externalId` may mirror the PatchHub internal user id as a fast-path hint, but the
   PatchHub database remains the source of truth for app user state.
+- Global platform/operator access lives on the PatchHub user row, such as
+  `users.platformRole = "admin"`. This is separate from customer organization roles.
+- WorkOS AuthKit roles and permissions may be used as the role-assignment source for future
+  organization-scoped checks. PatchHub code still owns the authorization decision: which WorkOS
+  roles or permissions are allowed to perform a PatchHub action.
 
 ## Personal Accounts and Organizations
 

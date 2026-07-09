@@ -1,13 +1,13 @@
 import { form, getRequestEvent } from '$app/server';
 import { getAuthContext } from '$lib/server/auth/AuthContext';
 import { ACCOUNT_DISABLED_ERROR_CODE } from '$lib/server/auth/provisioning';
-import { createOrGetUserForWorkOSUser, findUserByUsername } from '$lib/server/auth/users';
+import { getOrCreateUserForWorkOSUser, isUsernameTaken } from '$lib/server/auth/users';
 import {
 	USERNAME_MAX_LENGTH,
 	USERNAME_MIN_LENGTH,
 	USERNAME_PATTERN,
 	USERNAME_RULE_MESSAGE
-} from '$lib/server/auth/usernames';
+} from '$convex/lib/usernames';
 import { updateWorkOSUserExternalId } from '$lib/server/auth/workos';
 import { error, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
@@ -27,10 +27,7 @@ export const setupAccount = form(
 				`Username must be at most ${USERNAME_MAX_LENGTH} characters`
 			),
 			v.regex(USERNAME_PATTERN, USERNAME_RULE_MESSAGE),
-			v.checkAsync(
-				async (input) => (await findUserByUsername(input)) === null,
-				'Username is already taken'
-			)
+			v.checkAsync(async (input) => !(await isUsernameTaken(input)), 'Username is already taken')
 		)
 	}),
 	async ({ username }) => {
@@ -48,7 +45,7 @@ export const setupAccount = form(
 			redirect(302, '/');
 		}
 
-		const dbUser = await createOrGetUserForWorkOSUser(
+		const dbUser = await getOrCreateUserForWorkOSUser(
 			workosUser.id,
 			workosUser.email,
 			username,
@@ -59,12 +56,12 @@ export const setupAccount = form(
 		try {
 			await updateWorkOSUserExternalId({
 				userId: workosUser.id,
-				externalId: dbUser.id.toString()
+				externalId: dbUser._id
 			});
 		} catch (updateError) {
 			console.error('Failed to update WorkOS user externalId after account setup', {
 				workosUserId: workosUser.id,
-				dbUserId: dbUser.id,
+				dbUserId: dbUser._id,
 				updateError
 			});
 		}

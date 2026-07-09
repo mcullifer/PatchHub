@@ -12,3 +12,6 @@ export {
 	removeExternalItemFavorite,
 	removeProjectFavorite
 } from './favorites.remote';
+
+// Admin remote functions
+export { runSteamCatalogSync } from './admin.remote';

@@ -3,7 +3,7 @@
 Status: In Progress
 Owner: Codex
 Created: 2026-06-15
-Last Updated: 2026-06-15
+Last Updated: 2026-07-08
 
 ## Goal
 
@@ -62,6 +62,11 @@ npm run steam:sync
 - Added tests for API failure semantics and cursor advancement behavior.
 - Added a regression test for Steam final pages that omit pagination fields.
 - Added a regression test for Steam's empty current response shape, `{"response":{}}`.
+- Reduced the Convex Steam import mutation default batch size from 500 to 50 because
+  `externalItems` is search-indexed and large import transactions were conflicting with Convex's
+  internal search-index metadata writer.
+- Changed external item upserts to skip unchanged existing rows instead of updating only
+  `updatedAt`, reducing unnecessary search-index churn on duplicate/retry imports.
 
 ## Validation
 
@@ -71,3 +76,6 @@ npm run steam:sync
 - Focused Steam tests passed:
   `npm run test:unit -- --run tests/SteamApiClient.test.ts tests/SteamCatalogSync.test.ts tests/SteamCatalogRepository.test.ts`.
 - `npm run validate` passed.
+- 2026-07-08: Focused Convex test passed:
+  `npm run test:unit -- --run src/convex/convex.test.ts`.
+- 2026-07-08: `npm run validate` passed.

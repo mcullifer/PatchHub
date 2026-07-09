@@ -60,5 +60,5 @@ export type SoftwareSourceSummary = {
 	latestUpdate: SoftwareUpdateEntry | null;
 	updateCount: number;
 	health: SoftwareSourceHealth;
-	externalItemId: number | null;
+	externalItemId: string | null;
 };

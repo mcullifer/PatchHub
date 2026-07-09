@@ -1,15 +1,37 @@
 <script lang="ts">
 	import '../app.css';
+	import { PUBLIC_CONVEX_URL } from '$env/static/public';
 	// sort-ignore
 	import { resolve } from '$app/paths';
 	import { Icon, ScrollToTop } from '$lib/components/common-ui';
 	import NavbarSearch from '$lib/components/common-ui/NavbarSearch.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
+	import { getConvexAccessToken } from '$lib/remote/convexAuth.remote';
+	import { setupAuth, setupConvex } from 'convex-svelte';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
+
+	const isAuthenticated = () => data.user !== null;
+
+	setupConvex(PUBLIC_CONVEX_URL);
+	setupAuth(
+		() => ({
+			isLoading: false,
+			isAuthenticated: isAuthenticated(),
+			fetchAccessToken: async ({ forceRefreshToken }) =>
+				await getConvexAccessToken({ forceRefreshToken })
+		}),
+		{
+			initialState: {
+				get isAuthenticated() {
+					return isAuthenticated();
+				}
+			}
+		}
+	);
 
 	let lightModeEnabled = $state(false);
 	let theme = $derived(lightModeEnabled ? 'light' : 'dark');

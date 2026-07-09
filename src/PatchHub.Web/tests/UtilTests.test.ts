@@ -3,7 +3,7 @@ import {
 	getSearchTokens,
 	normalizeName,
 	normalizeSearchName
-} from '$lib/util/StringUtils';
+} from '$convex/lib/strings';
 import { describe, expect, it } from 'vitest';
 
 describe('UtilTests', () => {

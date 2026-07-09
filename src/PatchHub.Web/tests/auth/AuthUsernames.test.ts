@@ -1,8 +1,4 @@
-import {
-	USERNAME_RULE_MESSAGE,
-	normalizeUsername,
-	validateUsername
-} from '$lib/server/auth/usernames';
+import { USERNAME_RULE_MESSAGE, normalizeUsername, validateUsername } from '$convex/lib/usernames';
 import { describe, expect, it } from 'vitest';
 
 describe('normalizeUsername', () => {

@@ -48,7 +48,8 @@ export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> =>
 	let rankedGames;
 	try {
 		rankedGames = await getPopularSteamGames({ fetchFn: event.fetch });
-	} catch {
+	} catch (fetchError) {
+		console.error('Failed to fetch popular Steam games', fetchError);
 		popularGamesCache = { lastUpdate: 0, ranks: [] };
 		return [];
 	}

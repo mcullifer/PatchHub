@@ -1,5 +1,5 @@
 import type { SoftwareUpdateEntry, SoftwareUpdateMetadata } from '$lib/models/Software';
-import { createSlug } from '$lib/util/StringUtils';
+import { createSlug } from '$convex/lib/strings';
 
 export type FeedItemLike = {
 	id?: string | null;

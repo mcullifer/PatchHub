@@ -7,7 +7,13 @@ export default defineConfig({
 	plugins: [tailwindcss(), webfontDownload(), sveltekit()],
 
 	test: {
-		include: ['src/**/*.{test,spec}.{js,ts}', './tests/**/*.{test,spec}.{js,ts}']
+		include: ['src/**/*.{test,spec}.{js,ts}', './tests/**/*.{test,spec}.{js,ts}'],
+		server: {
+			deps: {
+				// Required by convex-test so vitest transforms its module glob imports
+				inline: ['convex-test']
+			}
+		}
 	},
 	build: {
 		rollupOptions: {

@@ -1,4 +1,4 @@
-import { createSlug } from '$lib/util/StringUtils';
+import { createSlug } from '$convex/lib/strings';
 
 export type SteamRouteItem = {
 	appid: number;
