@@ -62,32 +62,43 @@ export default defineSchema({
 		normalizedName: v.string(),
 		slug: v.string(),
 		description: v.optional(v.string()),
+		bannerStorageId: v.optional(v.id('_storage')),
 		userId: v.optional(v.id('users')),
 		orgId: v.optional(v.id('organizations')),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
-		.index('by_slug', ['slug'])
-		.index('by_userId', ['userId'])
-		.index('by_userId_and_slug', ['userId', 'slug'])
-		.index('by_orgId', ['orgId'])
-		.index('by_orgId_and_slug', ['orgId', 'slug']),
+		.index('by_userId_and_deletedAt_and_updatedAt', ['userId', 'deletedAt', 'updatedAt'])
+		.index('by_userId_and_slug_and_deletedAt', ['userId', 'slug', 'deletedAt'])
+		.index('by_orgId_and_deletedAt_and_updatedAt', ['orgId', 'deletedAt', 'updatedAt'])
+		.index('by_orgId_and_slug_and_deletedAt', ['orgId', 'slug', 'deletedAt']),
 
 	patchNotes: defineTable({
 		projectId: v.id('projects'),
 		authorId: v.id('users'),
 		title: v.string(),
 		slug: v.string(),
-		content: v.string(), // WYSIWYG HTML
-		status: v.string(), // 'draft' | 'published' | 'archived'
+		content: v.string(), // Stringified TipTap JSON document, not rendered HTML
+		status: v.union(v.literal('draft'), v.literal('published'), v.literal('archived')),
 		publishedAt: v.optional(v.number()),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
-		.index('by_projectId_and_slug', ['projectId', 'slug'])
-		.index('by_status', ['status']),
+		.index('by_projectId_and_deletedAt_and_status_and_createdAt', [
+			'projectId',
+			'deletedAt',
+			'status',
+			'createdAt'
+		])
+		.index('by_projectId_and_deletedAt_and_status_and_publishedAt', [
+			'projectId',
+			'deletedAt',
+			'status',
+			'publishedAt'
+		])
+		.index('by_projectId_and_slug_and_deletedAt', ['projectId', 'slug', 'deletedAt']),
 
 	projectFavorites: defineTable({
 		userId: v.id('users'),

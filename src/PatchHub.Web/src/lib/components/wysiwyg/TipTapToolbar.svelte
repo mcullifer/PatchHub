@@ -3,16 +3,13 @@
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import type {
 		BlockFormat,
-		NormalizeUrlOptions,
 		TextAlignment,
 		TipTapToolbarProps,
 		ToolbarButton
 	} from './TipTapTypes';
+	import { linkProtocols, normalizeUrl } from './TipTapTypes';
 
-	let { editor, revision, onsave }: TipTapToolbarProps = $props();
-
-	const linkProtocols = ['http:', 'https:', 'mailto:'] as const;
-	const imageProtocols = ['http:', 'https:'] as const;
+	let { editor, revision, onsave, getPayload, openImageDialog }: TipTapToolbarProps = $props();
 	const componentId = $props.id();
 	const blockFormatId = `${componentId}-block-format`;
 	const blockFormats: { value: BlockFormat; label: string; title: string }[] = [
@@ -272,52 +269,7 @@
 	}
 
 	function insertImage(): void {
-		const src = window.prompt('Image URL');
-		if (src === null) return;
-
-		const normalizedSrc = normalizeUrl(src, {
-			allowRootRelative: true,
-			allowedProtocols: imageProtocols
-		});
-		if (!normalizedSrc) return;
-
-		editor.chain().focus().setImage({ src: normalizedSrc }).run();
-	}
-
-	function normalizeUrl(value: string, options: NormalizeUrlOptions): string {
-		const trimmedValue = value.trim();
-		if (!trimmedValue) return '';
-
-		if (options.allowHash && trimmedValue.startsWith('#')) return trimmedValue;
-		if (
-			options.allowRootRelative &&
-			trimmedValue.startsWith('/') &&
-			!trimmedValue.startsWith('//')
-		) {
-			return trimmedValue;
-		}
-
-		const hasProtocol = /^[a-z][a-z\d+\-.]*:/i.test(trimmedValue);
-		let candidate = trimmedValue;
-
-		if (!hasProtocol) {
-			candidate = trimmedValue.startsWith('//')
-				? `https:${trimmedValue}`
-				: `https://${trimmedValue}`;
-		}
-
-		if (!hasAllowedProtocol(candidate, options.allowedProtocols)) return '';
-
-		return candidate;
-	}
-
-	function hasAllowedProtocol(value: string, allowedProtocols: readonly string[]): boolean {
-		try {
-			const url = new URL(value);
-			return allowedProtocols.includes(url.protocol);
-		} catch {
-			return false;
-		}
+		openImageDialog();
 	}
 
 	function resetFormatting(): void {
@@ -341,12 +293,8 @@
 		saveStatus = 'saving';
 
 		try {
-			await onsave({
-				json: editor.getJSON(),
-				html: editor.getHTML(),
-				text: editor.getText(),
-				isEmpty: editor.isEmpty
-			});
+			const payload = getPayload();
+			if (payload) await onsave(payload);
 		} finally {
 			saveStatus = 'idle';
 		}
@@ -413,10 +361,10 @@
 	</div>
 
 	{#if onsave}
-		<div class="join ml-auto" role="group" aria-label="Save">
+		<div class="join" role="group" aria-label="Save">
 			<button
 				type="button"
-				class="btn btn-soft btn-neutral btn-square join-item btn-sm"
+				class="btn btn-soft btn-square join-item btn-sm"
 				title="Save editor content"
 				aria-label="Save editor content"
 				disabled={saveStatus === 'saving'}

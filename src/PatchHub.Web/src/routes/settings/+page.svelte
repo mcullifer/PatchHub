@@ -25,7 +25,10 @@
 				<p class="font-medium">Username</p>
 				<p class="text-base-content/70 text-sm">{data.account.username}</p>
 			</div>
-			<a class="btn btn-outline btn-sm" href={resolve('/profile')}>
+			<a
+				class="btn btn-outline btn-sm"
+				href={resolve('/[createdBy=owner]', { createdBy: data.account.username })}
+			>
 				<Icon icon="person" size="sm" />
 				View profile
 			</a>

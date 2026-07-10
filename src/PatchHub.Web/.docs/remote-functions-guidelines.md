@@ -22,6 +22,10 @@ Use `.remote.ts` files and `$app/server` helpers for app-owned client/server wor
 
 Keep remote files under `src`, but not in `src/lib/server`.
 
+## Page Reads
+
+App-owned page reads use remote `query` functions (wrapping Convex queries) awaited directly in the component, not `+page.server.ts` load functions. Derive authorization inside the query from validated arguments and `getAuthContext(getRequestEvent())` — never from `getRequestEvent().params`/`url`. Throwing `error(404)` from an awaited query produces a real 404 status during SSR, so this pattern preserves SEO-correct status codes. Reserve `+page.server.ts` loads for the rare cases a query can't cover (e.g. work that must run before the component renders, or response shaping queries don't support).
+
 ## Validation
 
 - Validate remote function arguments with Valibot or another Standard Schema library.

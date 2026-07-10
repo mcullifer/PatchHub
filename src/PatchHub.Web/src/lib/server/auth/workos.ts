@@ -1,9 +1,14 @@
 import { env } from '$env/dynamic/private';
-import { WorkOS, type UpdateUserOptions } from '@workos-inc/node';
+import { NotFoundException, WorkOS, type UpdateUserOptions } from '@workos-inc/node';
 
 type ExternalIdUpdate = {
 	userId: string;
 	externalId: string;
+};
+
+type WorkOSPublicUserProfile = {
+	id: string;
+	profilePictureUrl: string | null;
 };
 
 let workosClient: WorkOS | null = null;
@@ -32,4 +37,22 @@ export function buildWorkOSExternalIdUpdate(update: ExternalIdUpdate): UpdateUse
 
 export async function updateWorkOSUserExternalId(update: ExternalIdUpdate): Promise<void> {
 	await getWorkOSClient().userManagement.updateUser(buildWorkOSExternalIdUpdate(update));
+}
+
+export async function getWorkOSPublicUserProfile(
+	userId: string
+): Promise<WorkOSPublicUserProfile | null> {
+	try {
+		const user = await getWorkOSClient().userManagement.getUser(userId);
+		return {
+			id: user.id,
+			profilePictureUrl: user.profilePictureUrl
+		};
+	} catch (profileError) {
+		if (profileError instanceof NotFoundException) {
+			return null;
+		}
+
+		throw profileError;
+	}
 }

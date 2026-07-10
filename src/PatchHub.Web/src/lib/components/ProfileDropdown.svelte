@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { Icon, MenuItem } from '$lib/components/common-ui';
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import Menu from '$lib/components/common-ui/Menu.svelte';
@@ -18,6 +19,9 @@
 	let username = $derived(user.username);
 	let primaryName = $derived(username ? `${username}` : user.email);
 	let secondaryText = $derived(username ? user.email : null);
+	let profileHref = $derived(
+		username ? resolve('/[createdBy=owner]', { createdBy: username }) : '/auth/setup'
+	);
 </script>
 
 {#snippet pfp(url: string | null)}
@@ -57,7 +61,7 @@
 			</div>
 		</li>
 		<li class="border-base-content/10 my-1 border-t" aria-hidden="true"></li>
-		<MenuItem href="/profile">
+		<MenuItem href={profileHref}>
 			<Icon icon="person" size="sm" />
 			Profile
 		</MenuItem>

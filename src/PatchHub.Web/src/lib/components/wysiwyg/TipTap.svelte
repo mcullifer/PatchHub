@@ -12,14 +12,21 @@
 
 <script lang="ts">
 	import { Icon } from '$lib/components/common-ui';
+	import { offset } from '@floating-ui/dom';
 	import { Editor, type Extensions } from '@tiptap/core';
 	import DragHandle from '@tiptap/extension-drag-handle';
 	import Image from '@tiptap/extension-image';
 	import Link from '@tiptap/extension-link';
 	import Placeholder from '@tiptap/extension-placeholder';
 	import TextAlign from '@tiptap/extension-text-align';
+	import { Selection } from '@tiptap/extensions';
 	import StarterKit from '@tiptap/starter-kit';
-	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
+	import type { Attachment } from 'svelte/attachments';
+	import { createSlashCommandItems, SlashCommand } from './slashCommand';
+	import TipTapBubbleMenu from './TipTapBubbleMenu.svelte';
+	import TipTapImageDialog from './TipTapImageDialog.svelte';
+	import TipTapSlashMenu from './TipTapSlashMenu.svelte';
 	import TipTapToolbar from './TipTapToolbar.svelte';
 	import type {
 		TipTapContent as EditorContent,
@@ -48,7 +55,9 @@
 	let toolbarRevision = $state(0);
 	let contentErrorMessage = $state<string | null>(null);
 	let appliedContent: EditorContent | null = null;
-	let editorElement: HTMLDivElement;
+	let imageDialog = $state<TipTapImageDialog | null>(null);
+	let slashMenu = $state<TipTapSlashMenu | null>(null);
+	const slashCommandItems = createSlashCommandItems(openImageDialog);
 
 	function createEditor(element: HTMLDivElement): Editor {
 		const instance = new Editor({
@@ -60,19 +69,42 @@
 			editorProps: {
 				attributes: {
 					class:
-						'tiptap-editor patchhub-rich-text prose prose-sm sm:prose-base prose-a:link prose-a:link-primary prose-img:block prose-img:h-auto prose-img:max-w-full prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content max-w-none min-h-80 w-full px-6 py-5 outline-none max-sm:p-4'
+						'tiptap-editor patchhub-rich-text prose prose-sm sm:prose-base prose-a:link prose-a:link-primary prose-img:block prose-img:h-auto prose-img:max-w-full prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content w-full max-w-none outline-none'
 				}
 			},
 			onContentError: ({ error }) => {
 				contentErrorMessage = error.message;
 			},
-			onTransaction: () => {
-				toolbarRevision += 1;
+			onTransaction: ({ editor: instance }) => {
+				if (instance.isEditable) {
+					toolbarRevision += 1;
+				}
+			},
+			onUpdate: ({ editor: instance }) => {
+				// F1f: clear an orphaned drag handle once the doc is empty.
+				if (instance.isEmpty) {
+					instance.view.dispatch(instance.state.tr.setMeta('hideDragHandle', true));
+				}
 			}
 		});
 
 		appliedContent = content;
 		return instance;
+	}
+
+	function buildPayload(instance: Editor): EditorSavePayload {
+		return {
+			json: instance.getJSON(),
+			html: instance.getHTML(),
+			text: instance.getText(),
+			isEmpty: instance.isEmpty
+		};
+	}
+
+	export function getPayload(): EditorSavePayload | null {
+		if (!editor) return null;
+
+		return buildPayload(editor);
 	}
 
 	function createExtensions(currentPlaceholder: string): Extensions {
@@ -87,7 +119,7 @@
 				autolink: true,
 				defaultProtocol: 'https',
 				linkOnPaste: true,
-				openOnClick: false,
+				openOnClick: 'whenNotEditable',
 				HTMLAttributes: {
 					class: 'link link-primary link-hover',
 					rel: 'noopener noreferrer nofollow',
@@ -97,9 +129,16 @@
 			TextAlign.configure({
 				types: ['heading', 'paragraph']
 			}),
+			Selection,
 			Placeholder.configure({
-				placeholder: currentPlaceholder,
-				showOnlyCurrent: false
+				placeholder: ({ node }) => {
+					if (node.type.name === 'heading') {
+						return `Heading ${node.attrs.level}`;
+					}
+
+					return currentPlaceholder;
+				},
+				showOnlyCurrent: true
 			}),
 			Image.configure({
 				inline: false,
@@ -118,40 +157,45 @@
 			DragHandle.configure({
 				render: createDragHandle,
 				computePositionConfig: {
-					placement: 'left-start'
-				},
-				nested: {
-					edgeDetection: {
-						threshold: 18
-					}
+					placement: 'left-start',
+					middleware: [offset({ mainAxis: 6, crossAxis: 2 })]
 				}
+			}),
+			SlashCommand.configure({
+				items: () => slashCommandItems,
+				onStart: (props) => slashMenu?.start(props),
+				onUpdate: (props) => slashMenu?.update(props),
+				onKeyDown: (event) => slashMenu?.keydown(event) ?? false,
+				onExit: () => slashMenu?.exit()
 			})
 		];
 	}
 
 	function createDragHandle(): HTMLElement {
 		const handle = document.createElement('div');
-		handle.className = 'btn btn-square btn-soft btn-xs';
+		handle.className = 'tiptap-drag-handle';
 		handle.setAttribute('aria-hidden', 'true');
 		handle.textContent = 'drag_indicator';
-		handle.style.fontFamily = 'Material Symbols Rounded';
-		handle.style.fontVariationSettings = "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24";
 		handle.style.visibility = 'hidden';
 		handle.style.pointerEvents = 'none';
 		return handle;
 	}
 
-	onMount(() => {
-		const instance = createEditor(editorElement);
-
+	// untrack: create the editor once on mount; content/editable/placeholder changes
+	// are synced below rather than recreating the instance.
+	const mountEditor: Attachment<HTMLDivElement> = (element) => {
+		const instance = untrack(() => createEditor(element));
 		editor = instance;
-		toolbarRevision += 1;
 
 		return () => {
 			instance.destroy();
 			editor = null;
 		};
-	});
+	};
+
+	function openImageDialog(): void {
+		imageDialog?.open();
+	}
 
 	$effect(() => {
 		if (!editor) return;
@@ -164,17 +208,17 @@
 		if (!editor || content === appliedContent) return;
 
 		appliedContent = content;
-		editor.commands.setContent(content ?? emptyEditorContent, {
-			emitUpdate: false
-		});
+		editor.commands.setContent(content ?? emptyEditorContent, { emitUpdate: false });
 		contentErrorMessage = null;
-		toolbarRevision += 1;
 	});
 </script>
 
-<div class="rounded-lg bg-base-100">
+<div class={['tiptap-shell']} data-editable={editable}>
 	{#if editor && editable}
-		<TipTapToolbar {editor} revision={toolbarRevision} {onsave} />
+		<TipTapToolbar {editor} revision={toolbarRevision} {onsave} {getPayload} {openImageDialog} />
+		<TipTapBubbleMenu {editor} revision={toolbarRevision} />
+		<TipTapSlashMenu bind:this={slashMenu} />
+		<TipTapImageDialog bind:this={imageDialog} {editor} />
 	{/if}
 
 	{#if contentErrorMessage}
@@ -186,13 +230,13 @@
 		</div>
 	{/if}
 
-	<div bind:this={editorElement}></div>
+	<div {@attach mountEditor} class="relative"></div>
 </div>
 
 <style lang="postcss">
 	@reference '../../../app.css';
 
-	:global(.tiptap-editor p.is-editor-empty:first-child::before) {
+	:global(.tiptap-editor .is-empty[data-placeholder]::before) {
 		color: color-mix(in oklch, currentColor 45%, transparent);
 		content: attr(data-placeholder);
 		float: left;
@@ -200,8 +244,147 @@
 		pointer-events: none;
 	}
 
+	/* Unlayered :global rules beat Tailwind's utilities layer — required for these to
+	   win over `prose`, unlike the dead app.css @layer overrides. */
+	:global(.tiptap-editor p) {
+		margin: 0 0 0.5rem;
+		line-height: 1.6;
+	}
+	:global(.tiptap-editor h1) {
+		margin: 1.5rem 0 0.5rem;
+	}
+	:global(.tiptap-editor h2) {
+		margin: 1.25rem 0 0.375rem;
+	}
+	:global(.tiptap-editor h3) {
+		margin: 1rem 0 0.25rem;
+	}
+	:global(.tiptap-editor ul),
+	:global(.tiptap-editor ol) {
+		margin: 0.5rem 0;
+		padding-inline-start: 1.375rem;
+	}
+	:global(.tiptap-editor li ul),
+	:global(.tiptap-editor li ol) {
+		margin: 0.125rem 0;
+	}
+	:global(.tiptap-editor li) {
+		margin: 0.125rem 0;
+	}
+	:global(.tiptap-editor li > p) {
+		margin: 0;
+	}
+	:global(.tiptap-editor blockquote) {
+		margin: 0.75rem 0;
+		font-style: normal;
+	}
+	:global(.tiptap-editor blockquote p::before),
+	:global(.tiptap-editor blockquote p::after) {
+		content: none;
+	}
+	:global(.tiptap-editor pre) {
+		margin: 0.75rem 0;
+		padding: 0.75rem 1rem;
+	}
+	:global(.tiptap-editor code::before),
+	:global(.tiptap-editor code::after) {
+		content: none;
+	}
+	:global(.tiptap-editor :not(pre) > code) {
+		background: color-mix(in oklch, var(--color-base-content) 8%, transparent);
+		padding: 0.125rem 0.375rem;
+		border-radius: var(--radius-selector, 0.25rem);
+		font-size: 0.875em;
+		font-weight: inherit;
+	}
+	:global(.tiptap-editor [data-resize-wrapper]) {
+		margin: 0.75rem 0;
+	}
+	:global(.tiptap-editor [data-resize-wrapper] img),
+	:global(.tiptap-editor img) {
+		margin: 0;
+	}
+	:global(.tiptap-editor hr) {
+		margin: 1.25rem 0;
+	}
+	:global(.tiptap-editor > :first-child) {
+		margin-top: 0;
+	}
+	:global(.tiptap-editor > :last-child) {
+		margin-bottom: 0;
+	}
+
+	/* Keyed on data-editable so a runtime editable flip re-applies. */
+	:global(.tiptap-shell[data-editable='true'] .tiptap-editor) {
+		min-height: 20rem;
+		padding: 1rem 1.5rem;
+	}
+	:global(.tiptap-shell[data-editable='false'] .tiptap-editor) {
+		min-height: 0;
+		padding: 0;
+	}
+	:global(.tiptap-shell[data-editable='false'] .tiptap-editor [data-resize-handle]) {
+		display: none;
+		pointer-events: none;
+	}
+	@media (max-width: 640px) {
+		:global(.tiptap-shell[data-editable='true'] .tiptap-editor) {
+			padding: 0.75rem 1rem;
+		}
+	}
+
+	:global(.tiptap-drag-handle) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: var(--radius-field, 0.25rem);
+		font-family: 'Material Symbols Rounded';
+		font-size: 18px;
+		font-variation-settings:
+			'FILL' 0,
+			'wght' 400,
+			'GRAD' 0,
+			'opsz' 24;
+		line-height: 1;
+		color: var(--color-base-content);
+		background: transparent;
+		opacity: 0.4;
+		cursor: grab;
+		user-select: none;
+		transition:
+			opacity 100ms ease-out,
+			background-color 100ms ease-out;
+	}
+	:global(.tiptap-drag-handle:hover) {
+		opacity: 0.7;
+		background: color-mix(in oklch, var(--color-base-content) 10%, transparent);
+	}
+	:global(.tiptap-drag-handle[data-dragging='true']) {
+		cursor: grabbing;
+	}
+	/* No drag affordance in read-only or on touch (F1e / D9). */
+	:global(.tiptap-shell[data-editable='false'] .tiptap-drag-handle) {
+		display: none;
+	}
+	@media (hover: none) {
+		:global(.tiptap-drag-handle) {
+			display: none;
+		}
+	}
+
 	:global(.tiptap-editor .ProseMirror-selectednode) {
-		outline: 2px solid color-mix(in oklch, var(--color-primary) 65%, transparent);
-		outline-offset: 3px;
+		outline: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+		outline-offset: 2px;
+	}
+	:global(.tiptap-editor .ProseMirror-gapcursor::after) {
+		border-top-color: color-mix(in oklch, var(--color-primary) 55%, transparent);
+		border-top-width: 2px;
+	}
+
+	/* Keeps the selection visible while the editor is blurred (link editing). */
+	:global(.tiptap-editor .selection) {
+		background: color-mix(in oklch, var(--color-primary) 18%, transparent);
 	}
 </style>

@@ -18,6 +18,10 @@ export const load: PageServerLoad = async (event) => {
 		throw redirect(302, '/auth/setup');
 	}
 
+	if (!dbUser.username) {
+		throw redirect(302, '/auth/setup');
+	}
+
 	return {
 		account: {
 			username: dbUser.username,

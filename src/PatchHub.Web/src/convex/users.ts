@@ -94,14 +94,26 @@ export const getOrCreate = mutation({
 			throw new Error('Username is already taken');
 		}
 
-		const userId = await ctx.db.insert('users', {
+		const newUser: {
+			authProviderId: string;
+			email?: string;
+			username: string;
+			platformRole: 'member';
+			createdAt: number;
+			updatedAt: number;
+		} = {
 			authProviderId: args.authProviderId,
-			email: args.email,
 			username: usernameValidation.username,
 			platformRole: 'member',
 			createdAt: args.createdAt,
 			updatedAt: args.updatedAt
-		});
+		};
+
+		if (args.email !== undefined) {
+			newUser.email = args.email;
+		}
+
+		const userId = await ctx.db.insert('users', newUser);
 
 		const user = await ctx.db.get(userId);
 		if (!user) {

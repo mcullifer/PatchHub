@@ -9,6 +9,10 @@ import schema from './schema';
 const modules = import.meta.glob('./**/*.ts');
 
 const SECRET = 'test-secret';
+const TIPTAP_DOC = JSON.stringify({
+	type: 'doc',
+	content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Fixed a bug.' }] }]
+});
 
 function createTest() {
 	return convexTest(schema, modules);
@@ -25,13 +29,13 @@ describe('users.getOrCreate', () => {
 		const created = await t.mutation(api.users.getOrCreate, {
 			secret: SECRET,
 			authProviderId: 'workos_1',
-			email: 'max@example.com',
-			username: '  MaxUser1  ',
+			email: 'owner@example.com',
+			username: '  Owner123  ',
 			createdAt: 1000,
 			updatedAt: 2000
 		});
 
-		expect(created.username).toBe('maxuser1');
+		expect(created.username).toBe('owner123');
 		expect(created.authProviderId).toBe('workos_1');
 		expect(created.platformRole).toBe('member');
 
@@ -51,7 +55,7 @@ describe('users.getOrCreate', () => {
 		await t.mutation(api.users.getOrCreate, {
 			secret: SECRET,
 			authProviderId: 'workos_1',
-			username: 'maxuser1',
+			username: 'owner123',
 			createdAt: 1000,
 			updatedAt: 1000
 		});
@@ -60,7 +64,7 @@ describe('users.getOrCreate', () => {
 			t.mutation(api.users.getOrCreate, {
 				secret: SECRET,
 				authProviderId: 'workos_2',
-				username: 'MAXUSER1',
+				username: 'OWNER123',
 				createdAt: 1000,
 				updatedAt: 1000
 			})
@@ -73,7 +77,7 @@ describe('users.getOrCreate', () => {
 		await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_1',
-				username: 'maxuser1',
+				username: 'owner123',
 				platformRole: 'member',
 				createdAt: 1000,
 				updatedAt: 1000,
@@ -85,7 +89,7 @@ describe('users.getOrCreate', () => {
 			t.mutation(api.users.getOrCreate, {
 				secret: SECRET,
 				authProviderId: 'workos_1',
-				username: 'maxuser1',
+				username: 'owner123',
 				createdAt: 1000,
 				updatedAt: 1000
 			})
@@ -99,7 +103,7 @@ describe('users.getOrCreate', () => {
 			t.mutation(api.users.getOrCreate, {
 				secret: 'wrong',
 				authProviderId: 'workos_1',
-				username: 'maxuser1',
+				username: 'owner123',
 				createdAt: 1000,
 				updatedAt: 1000
 			})
@@ -114,7 +118,7 @@ describe('favorites', () => {
 		const { itemId } = await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_1',
-				username: 'maxuser1',
+				username: 'owner123',
 				platformRole: 'member',
 				createdAt: 1000,
 				updatedAt: 1000
@@ -174,7 +178,7 @@ describe('favorites', () => {
 		const { itemId } = await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_1',
-				username: 'maxuser1',
+				username: 'owner123',
 				platformRole: 'member',
 				createdAt: 1000,
 				updatedAt: 1000
@@ -420,7 +424,7 @@ describe('projects.getByOwnerAndSlug', () => {
 
 			const targetUserId = await ctx.db.insert('users', {
 				authProviderId: 'workos_target',
-				username: 'maxuser1',
+				username: 'owner123',
 				platformRole: 'member',
 				createdAt: 1000,
 				updatedAt: 1000
@@ -436,7 +440,7 @@ describe('projects.getByOwnerAndSlug', () => {
 		});
 
 		const project = await t.query(api.projects.getByOwnerAndSlug, {
-			createdBy: 'maxuser1',
+			createdBy: 'owner123',
 			projectSlug: 'patchhub'
 		});
 
@@ -444,5 +448,650 @@ describe('projects.getByOwnerAndSlug', () => {
 			name: 'PatchHub',
 			slug: 'patchhub'
 		});
+	});
+});
+
+describe('projects.getOwnerProfile', () => {
+	it('returns the newest active projects without capping before sorting', async () => {
+		const t = createTest();
+
+		await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+
+			for (let index = 0; index < 130; index++) {
+				await ctx.db.insert('projects', {
+					name: `Project ${index}`,
+					normalizedName: `PROJECT_${index}`,
+					slug: `project-${index}`,
+					userId,
+					createdAt: index,
+					updatedAt: index
+				});
+			}
+
+			for (let index = 0; index < 5; index++) {
+				await ctx.db.insert('projects', {
+					name: `Deleted Project ${index}`,
+					normalizedName: `DELETED_PROJECT_${index}`,
+					slug: `deleted-project-${index}`,
+					userId,
+					createdAt: 1000 + index,
+					updatedAt: 1000 + index,
+					deletedAt: 2000 + index
+				});
+			}
+		});
+
+		const profile = await t.query(api.projects.getOwnerProfile, {
+			createdBy: 'owner123'
+		});
+
+		expect(profile?.owner).toMatchObject({
+			kind: 'user',
+			name: 'owner123'
+		});
+		expect(profile?.owner).not.toHaveProperty('authProviderId');
+		expect(profile?.projects).toHaveLength(100);
+		expect(profile?.projects[0]).toMatchObject({
+			name: 'Project 129',
+			slug: 'project-129',
+			updatedAt: 129
+		});
+		expect(profile?.projects[99]).toMatchObject({
+			name: 'Project 30',
+			slug: 'project-30',
+			updatedAt: 30
+		});
+		expect(profile?.projects.some((project) => project.slug.startsWith('deleted-project'))).toBe(
+			false
+		);
+	});
+
+	it('returns auth provider details only from the server owner profile query', async () => {
+		const t = createTest();
+
+		await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+		});
+
+		const publicProfile = await t.query(api.projects.getOwnerProfile, {
+			createdBy: 'owner123'
+		});
+		const serverProfile = await t.query(api.projects.getOwnerProfileForServer, {
+			secret: SECRET,
+			createdBy: 'owner123'
+		});
+
+		expect(publicProfile?.owner).not.toHaveProperty('authProviderId');
+		expect(serverProfile?.owner).toMatchObject({
+			kind: 'user',
+			name: 'owner123',
+			authProviderId: 'workos_1'
+		});
+	});
+});
+
+describe('projects.create', () => {
+	it('creates unique slugs for repeated project names owned by the same user', async () => {
+		const t = createTest();
+
+		await t.run(async (ctx) => {
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+		});
+
+		const firstProject = await t.mutation(api.projects.create, {
+			secret: SECRET,
+			authProviderId: 'workos_1',
+			name: '  PatchHub  ',
+			description: '  Release notes in one place  '
+		});
+		const secondProject = await t.mutation(api.projects.create, {
+			secret: SECRET,
+			authProviderId: 'workos_1',
+			name: 'PatchHub'
+		});
+
+		expect(firstProject).toMatchObject({
+			name: 'PatchHub',
+			slug: 'patchhub'
+		});
+		expect(secondProject.slug).toBe('patchhub-2');
+
+		const storedProject = await t.run(async (ctx) => {
+			return await ctx.db.get(firstProject.id);
+		});
+		expect(storedProject).toMatchObject({
+			name: 'PatchHub',
+			normalizedName: 'PATCHHUB',
+			description: 'Release notes in one place'
+		});
+	});
+
+	it('rejects invalid project names and descriptions', async () => {
+		const t = createTest();
+
+		await t.run(async (ctx) => {
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+		});
+
+		await expect(
+			t.mutation(api.projects.create, {
+				secret: SECRET,
+				authProviderId: 'workos_1',
+				name: '   '
+			})
+		).rejects.toThrow('Project name is required');
+
+		await expect(
+			t.mutation(api.projects.create, {
+				secret: SECRET,
+				authProviderId: 'workos_1',
+				name: 'PatchHub',
+				description: 'x'.repeat(501)
+			})
+		).rejects.toThrow('Project description must be at most 500 characters');
+	});
+});
+
+describe('projects project banners', () => {
+	it('returns a resolved banner URL without exposing the storage id', async () => {
+		const t = createTest();
+
+		await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owneruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const bannerStorageId = await ctx.storage.store(
+				new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })
+			);
+			await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				bannerStorageId,
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+		});
+
+		const result = await t.query(api.patchNotes.listByOwnerAndProject, {
+			createdBy: 'owneruser',
+			projectSlug: 'patchhub'
+		});
+
+		expect(result?.project.bannerUrl).toContain('/api/storage/');
+		expect(result?.project).not.toHaveProperty('bannerStorageId');
+	});
+
+	it('only generates replacement upload URLs for the project owner', async () => {
+		const t = createTest();
+
+		const { projectId } = await t.run(async (ctx) => {
+			const ownerId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owneruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_other',
+				username: 'otheruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId: ownerId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			return { projectId };
+		});
+
+		await expect(
+			t.mutation(api.projects.generateBannerUploadUrl, {
+				secret: SECRET,
+				authProviderId: 'workos_other',
+				projectId
+			})
+		).rejects.toThrow('Not authorized');
+
+		await expect(
+			t.mutation(api.projects.generateBannerUploadUrl, {
+				secret: SECRET,
+				authProviderId: 'workos_owner',
+				projectId
+			})
+		).resolves.toContain('/api/storage/upload');
+	});
+
+	it('checks project ownership before attaching a stored banner', async () => {
+		const t = createTest();
+
+		const { projectId, storageId } = await t.run(async (ctx) => {
+			const ownerId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owneruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_other',
+				username: 'otheruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId: ownerId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const storageId = await ctx.storage.store(
+				new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })
+			);
+			return { projectId, storageId };
+		});
+
+		await expect(
+			t.mutation(api.projects.setBanner, {
+				secret: SECRET,
+				authProviderId: 'workos_other',
+				projectId,
+				storageId
+			})
+		).rejects.toThrow('Not authorized');
+	});
+
+	it('discards an unattached banner without deleting the project banner', async () => {
+		const t = createTest();
+
+		const { projectId, unattachedStorageId, attachedStorageId } = await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owneruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const unattachedStorageId = await ctx.storage.store(
+				new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })
+			);
+			const attachedStorageId = await ctx.storage.store(
+				new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' })
+			);
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				bannerStorageId: attachedStorageId,
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			return { projectId, unattachedStorageId, attachedStorageId };
+		});
+
+		await t.mutation(api.projects.discardBannerUpload, {
+			secret: SECRET,
+			authProviderId: 'workos_owner',
+			projectId,
+			storageId: unattachedStorageId
+		});
+		await t.mutation(api.projects.discardBannerUpload, {
+			secret: SECRET,
+			authProviderId: 'workos_owner',
+			projectId,
+			storageId: attachedStorageId
+		});
+
+		const state = await t.run(async (ctx) => ({
+			project: await ctx.db.get(projectId),
+			unattachedBanner: await ctx.db.system.get('_storage', unattachedStorageId),
+			attachedBanner: await ctx.db.system.get('_storage', attachedStorageId)
+		}));
+		expect(state.project?.bannerStorageId).toBe(attachedStorageId);
+		expect(state.unattachedBanner).toBeNull();
+		expect(state.attachedBanner).not.toBeNull();
+	});
+});
+
+describe('patchNotes.create', () => {
+	it('rejects patch notes for projects owned by another user', async () => {
+		const t = createTest();
+
+		const { projectId } = await t.run(async (ctx) => {
+			const ownerId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owneruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_other',
+				username: 'otheruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId: ownerId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			return { projectId };
+		});
+
+		await expect(
+			t.mutation(api.patchNotes.create, {
+				secret: SECRET,
+				authProviderId: 'workos_other',
+				projectId,
+				title: 'Patch note',
+				content: TIPTAP_DOC,
+				status: 'draft'
+			})
+		).rejects.toThrow('Not authorized');
+	});
+
+	it('bumps the parent project updatedAt so profile ordering stays fresh', async () => {
+		const t = createTest();
+
+		const { projectId } = await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			return { projectId };
+		});
+
+		await t.mutation(api.patchNotes.create, {
+			secret: SECRET,
+			authProviderId: 'workos_1',
+			projectId,
+			title: 'Patch note',
+			content: TIPTAP_DOC,
+			status: 'published'
+		});
+
+		const project = await t.run(async (ctx) => ctx.db.get(projectId));
+		expect(project?.updatedAt).toBeGreaterThan(1000);
+	});
+
+	it('rejects content without renderable text or atoms, accepts atom-only docs', async () => {
+		const t = createTest();
+
+		const { projectId } = await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			return { projectId };
+		});
+
+		const createWithContent = (content: unknown, title: string) =>
+			t.mutation(api.patchNotes.create, {
+				secret: SECRET,
+				authProviderId: 'workos_1',
+				projectId,
+				title,
+				content: JSON.stringify(content),
+				status: 'draft'
+			});
+
+		await expect(createWithContent({ type: 'doc', content: [] }, 'Empty doc')).rejects.toThrow(
+			'Patch note content is empty'
+		);
+		await expect(
+			createWithContent(
+				{ type: 'doc', content: [{ type: 'paragraph' }, { type: 'paragraph' }] },
+				'Blank paragraphs'
+			)
+		).rejects.toThrow('Patch note content is empty');
+		await expect(
+			createWithContent(
+				{
+					type: 'doc',
+					content: [
+						{ type: 'paragraph', content: [{ type: 'text', text: '   ' }] },
+						{ type: 'paragraph' }
+					]
+				},
+				'Whitespace only'
+			)
+		).rejects.toThrow('Patch note content is empty');
+		await expect(
+			createWithContent(
+				{ type: 'doc', content: [{ type: 'image', attrs: { src: 'https://x.test/a.png' } }] },
+				'Image only'
+			)
+		).resolves.toMatchObject({ slug: 'image-only' });
+	});
+
+	it('shows drafts only to the owning user when listing project patch notes', async () => {
+		const t = createTest();
+
+		const { projectId } = await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			return { projectId };
+		});
+
+		await t.mutation(api.patchNotes.create, {
+			secret: SECRET,
+			authProviderId: 'workos_1',
+			projectId,
+			title: 'Draft note',
+			content: TIPTAP_DOC,
+			status: 'draft'
+		});
+		await t.mutation(api.patchNotes.create, {
+			secret: SECRET,
+			authProviderId: 'workos_1',
+			projectId,
+			title: 'Published note',
+			content: TIPTAP_DOC,
+			status: 'published'
+		});
+
+		const publicList = await t.query(api.patchNotes.listByOwnerAndProject, {
+			createdBy: 'owner123',
+			projectSlug: 'patchhub'
+		});
+		expect(publicList?.project).toMatchObject({
+			ownerName: 'owner123',
+			ownerKind: 'user',
+			isOwner: false
+		});
+		expect(publicList?.notes).toHaveLength(1);
+		expect(publicList?.notes[0]).toMatchObject({
+			title: 'Published note',
+			status: 'published'
+		});
+
+		const ownerList = await t.query(api.patchNotes.listByOwnerAndProject, {
+			createdBy: 'owner123',
+			projectSlug: 'patchhub',
+			secret: SECRET,
+			authProviderId: 'workos_1'
+		});
+		expect(ownerList?.project.isOwner).toBe(true);
+		expect(ownerList?.notes.map((note) => note.status).sort()).toEqual(['draft', 'published']);
+	});
+
+	it('keeps older published notes visible when newer drafts exceed the list cap', async () => {
+		const t = createTest();
+
+		await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+
+			await ctx.db.insert('patchNotes', {
+				projectId,
+				authorId: userId,
+				title: 'Published note',
+				slug: 'published-note',
+				content: TIPTAP_DOC,
+				status: 'published',
+				publishedAt: 1,
+				createdAt: 1,
+				updatedAt: 1
+			});
+
+			for (let index = 0; index < 120; index++) {
+				await ctx.db.insert('patchNotes', {
+					projectId,
+					authorId: userId,
+					title: `Draft note ${index}`,
+					slug: `draft-note-${index}`,
+					content: TIPTAP_DOC,
+					status: 'draft',
+					createdAt: 1000 + index,
+					updatedAt: 1000 + index
+				});
+			}
+		});
+
+		const publicList = await t.query(api.patchNotes.listByOwnerAndProject, {
+			createdBy: 'owner123',
+			projectSlug: 'patchhub'
+		});
+
+		expect(publicList?.notes).toHaveLength(1);
+		expect(publicList?.notes[0]).toMatchObject({
+			title: 'Published note',
+			status: 'published'
+		});
+	});
+
+	it('suffixes the reserved new patch note slug', async () => {
+		const t = createTest();
+
+		const { projectId } = await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_1',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			return { projectId };
+		});
+
+		const note = await t.mutation(api.patchNotes.create, {
+			secret: SECRET,
+			authProviderId: 'workos_1',
+			projectId,
+			title: 'New',
+			content: TIPTAP_DOC,
+			status: 'draft'
+		});
+
+		expect(note.slug).toBe('new-2');
 	});
 });

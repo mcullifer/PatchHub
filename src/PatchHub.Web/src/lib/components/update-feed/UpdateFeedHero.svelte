@@ -8,15 +8,17 @@
 		imageAlt = '',
 		loading = false,
 		onimageerror,
-		fallbackIcon
+		fallbackIcon,
+		actions
 	}: {
 		title: string;
-		description: string;
+		description?: string | null;
 		imageUrl?: string | null;
 		imageAlt?: string;
 		loading?: boolean;
 		onimageerror?: () => void | Promise<void>;
 		fallbackIcon: Snippet;
+		actions?: Snippet;
 	} = $props();
 
 	let failedImageUrl = $state<string | null>(null);
@@ -96,7 +98,14 @@
 				<div class="skeleton mt-2 h-4 w-full max-w-lg"></div>
 			{:else}
 				<h1 class="text-2xl font-bold text-pretty md:text-3xl">{title}</h1>
-				<p class="text-base-content/70 text-sm">{description}</p>
+				{#if description}
+					<p class="text-base-content/70 text-sm">{description}</p>
+				{/if}
+				{#if actions}
+					<div class="mt-2">
+						{@render actions()}
+					</div>
+				{/if}
 			{/if}
 		</div>
 	</div>
