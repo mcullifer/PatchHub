@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { DropdownProps } from '$lib/components/common-ui/floating';
 	import { arrow, flip, offset } from '@floating-ui/dom';
-	import { cubicOut } from 'svelte/easing';
-	import { scale } from 'svelte/transition';
+	import { pop } from '$lib/util/transitions';
 	import Portal from '../Portal.svelte';
 	import FloatingArrow from './FloatingArrow.svelte';
 	import {
@@ -83,7 +82,7 @@
 			{...dropdown.floating({
 				class: ['floating drop-shadow-lg', dropdownOpen && 'z-[100]', showTip && 'z-[100]']
 			})}
-			transition:scale={{ easing: cubicOut, duration: 150 }}
+			transition:pop
 		>
 			{#if dropdownOpen}
 				{@render children()}

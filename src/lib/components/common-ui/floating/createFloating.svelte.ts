@@ -19,6 +19,23 @@ import type {
 	OpenChangeReason
 } from './interactions/types';
 
+const OPPOSITE_SIDE = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' } as const;
+
+// Scale transitions grow the surface out of its trigger instead of its center.
+function placementToTransformOrigin(placement: Placement): string {
+	const [side, alignment] = placement.split('-') as [
+		keyof typeof OPPOSITE_SIDE,
+		'start' | 'end' | undefined
+	];
+	const origin = OPPOSITE_SIDE[side];
+	if (!alignment) return origin;
+
+	if (side === 'top' || side === 'bottom') {
+		return `${origin} ${alignment === 'start' ? 'left' : 'right'}`;
+	}
+	return `${origin} ${alignment === 'start' ? 'top' : 'bottom'}`;
+}
+
 type CreateFloatingOptions = {
 	open: () => boolean;
 	opts?: () => FloatingOptions | undefined;
@@ -97,7 +114,10 @@ export function createFloating(options: CreateFloatingOptions): FloatingInstance
 			position: opts.strategy ?? options.defaultStrategy ?? 'absolute',
 			left: '0',
 			top: '0',
-			visibility: 'hidden'
+			visibility: 'hidden',
+			transformOrigin: placementToTransformOrigin(
+				opts.placement ?? options.defaultPlacement ?? 'bottom'
+			)
 		});
 	}
 
@@ -138,7 +158,8 @@ export function createFloating(options: CreateFloatingOptions): FloatingInstance
 			left: `${Math.round(result.x)}px`,
 			top: `${Math.round(result.y)}px`,
 			transform: '',
-			visibility: ''
+			visibility: '',
+			transformOrigin: placementToTransformOrigin(result.placement)
 		});
 
 		options.onPositioned?.(result);

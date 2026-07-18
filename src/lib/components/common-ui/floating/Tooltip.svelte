@@ -2,8 +2,7 @@
 	import type { TooltipProps } from '$lib/components/common-ui/floating';
 	import { arrow, flip, offset } from '@floating-ui/dom';
 	import { onDestroy } from 'svelte';
-	import { cubicOut } from 'svelte/easing';
-	import { scale } from 'svelte/transition';
+	import { pop } from '$lib/util/transitions';
 	import Portal from '../Portal.svelte';
 	import FloatingArrow from './FloatingArrow.svelte';
 	import {
@@ -72,7 +71,7 @@
 	{#if tooltip.isOpen()}
 		<div
 			{...tooltip.floating({ class: ['floating z-50 drop-shadow-lg', floatingClass] })}
-			transition:scale={{ easing: cubicOut, duration: 150 }}
+			transition:pop
 		>
 			{@render children()}
 			<FloatingArrow

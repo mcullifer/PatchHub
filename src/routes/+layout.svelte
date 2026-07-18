@@ -22,9 +22,9 @@
 <div class="flex h-full w-full flex-col">
 	<Navbar class="bg-base-200 gap-2 sm:gap-4">
 		{#snippet start()}
-			<a class="text-primary flex gap-0 px-4 text-xl font-bold" href={resolve('/')}>
-				<span class="text-primary">patch</span>
-				<span class={lightModeEnabled ? 'text-base-content' : 'text-white'}>hub</span>
+			<a class="flex gap-0 px-4 text-xl font-bold" href={resolve('/')}>
+				<span class={lightModeEnabled ? 'text-base-content' : 'text-white'}>patch</span>
+				<span class="text-primary">hub</span>
 			</a>
 		{/snippet}
 		{#snippet center()}
