@@ -2,7 +2,7 @@ import { api } from '$convex/_generated/api';
 import { normalizeUsername } from '$convex/lib/usernames';
 import { getAuthContext } from '$lib/server/auth/AuthContext';
 import { getWorkOSPublicUserProfile } from '$lib/server/auth/workos';
-import { convex, getConvexServerSecret } from '$lib/server/convex';
+import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { error, type RequestEvent } from '@sveltejs/kit';
 
 type OwnerProfileOwner =
@@ -26,7 +26,7 @@ type WorkOSProfileUser = {
 type WorkOSProfileLookup = (userId: string) => Promise<WorkOSProfileUser | null>;
 
 export async function getOwnerProfileForEvent(event: RequestEvent, createdBy: string) {
-	const profile = await convex.query(api.projects.getOwnerProfileForServer, {
+	const profile = await createConvexClient().query(api.projects.getOwnerProfileForServer, {
 		secret: getConvexServerSecret(),
 		createdBy
 	});

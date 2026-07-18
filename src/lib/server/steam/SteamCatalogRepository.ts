@@ -1,21 +1,21 @@
 import type { INamedSteamGame, ISteamApp } from '$lib/models/Steam';
-import { convex } from '$lib/server/convex';
+import { createConvexClient } from '$lib/server/convex';
 import { api } from '$convex/_generated/api';
 
 export async function findSteamAppByAppId(appId: number) {
-	return await convex.query(api.catalog.getSteamAppByAppId, { appid: appId });
+	return await createConvexClient().query(api.catalog.getSteamAppByAppId, { appid: appId });
 }
 
 export async function getSteamAppNamesByAppIds(
 	appIds: number[]
 ): Promise<Record<string, { name: string; slug: string }>> {
 	if (appIds.length === 0) return {};
-	return await convex.query(api.catalog.getSteamAppNamesByAppIds, { appIds });
+	return await createConvexClient().query(api.catalog.getSteamAppNamesByAppIds, { appIds });
 }
 
 export async function searchSteamApps(query: string): Promise<ISteamApp[]> {
 	if (!query.trim()) return [];
-	return await convex.query(api.catalog.searchSteam, { query });
+	return await createConvexClient().query(api.catalog.searchSteam, { query });
 }
 
 export function attachSteamAppNames(

@@ -1,38 +1,33 @@
-# create-svelte
+# PatchHub
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+SvelteKit app deployed as a Cloudflare Worker, with [Convex](https://convex.dev) as the backend and WorkOS AuthKit for authentication.
 
-## Creating a project
+## Requirements
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Node 22.12+ (see `.node-version`)
 
-```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Setup
 
 ```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+npm ci
 ```
 
-## Building
+Environment files (never commit real values):
 
-To create a production version of your app:
+- `.env.local` — build-time and Vite dev variables. Copy `.env.example` and fill in the values. `PUBLIC_CONVEX_URL` is baked into the build via `$env/static/public`, so it must be present at build time.
+- `.dev.vars` — runtime bindings for the local Worker (`npm run preview`). Copy `.dev.vars.example` and fill in the values. If `.dev.vars` is absent, Wrangler falls back to reading `.env`/`.env.local`.
+
+## Development
 
 ```bash
-npm run build
+npm run dev          # Vite dev server
+npm run preview      # build + run the Cloudflare Worker locally (port 4173)
 ```
 
-You can preview the production build with `npm run preview`.
+## Validation
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```bash
+npm run validate     # svelte-check, tsc, lint, unit tests
+npm run check:worker # build + wrangler deploy --dry-run (no deployment)
+npm run test:e2e     # Playwright against the local Worker
+```

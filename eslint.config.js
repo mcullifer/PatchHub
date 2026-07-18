@@ -35,6 +35,6 @@ export default ts.config(
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/', 'src/convex/_generated/']
+		ignores: ['build/', '.svelte-kit/', '.wrangler/', 'dist/', 'src/convex/_generated/']
 	}
 );

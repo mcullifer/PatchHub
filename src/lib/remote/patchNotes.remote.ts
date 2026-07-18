@@ -2,7 +2,7 @@ import { command, getRequestEvent, query, requested } from '$app/server';
 import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
 import { getAuthContext, requireInternalUser } from '$lib/server/auth/AuthContext';
-import { convex, getConvexServerSecret } from '$lib/server/convex';
+import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
 
@@ -17,7 +17,7 @@ const ownerProjectArgs = v.object({
 });
 
 export const getProjectNotes = query(ownerProjectArgs, async ({ createdBy, projectSlug }) => {
-	const result = await convex.query(api.patchNotes.listByOwnerAndProject, {
+	const result = await createConvexClient().query(api.patchNotes.listByOwnerAndProject, {
 		createdBy,
 		projectSlug,
 		...(await viewerAuthArgs())
@@ -29,7 +29,7 @@ export const getProjectNotes = query(ownerProjectArgs, async ({ createdBy, proje
 export const getPatchNote = query(
 	v.object({ createdBy: v.string(), projectSlug: v.string(), noteSlug: v.string() }),
 	async ({ createdBy, projectSlug, noteSlug }) => {
-		const result = await convex.query(api.patchNotes.getByOwnerProjectAndSlug, {
+		const result = await createConvexClient().query(api.patchNotes.getByOwnerProjectAndSlug, {
 			createdBy,
 			projectSlug,
 			noteSlug,
@@ -41,7 +41,7 @@ export const getPatchNote = query(
 );
 
 export const getOwnedProject = query(ownerProjectArgs, async ({ createdBy, projectSlug }) => {
-	const result = await convex.query(api.patchNotes.listByOwnerAndProject, {
+	const result = await createConvexClient().query(api.patchNotes.listByOwnerAndProject, {
 		createdBy,
 		projectSlug,
 		...(await viewerAuthArgs())
@@ -84,7 +84,7 @@ export const createPatchNote = command(createPatchNoteSchema, async (input) => {
 	const event = getRequestEvent();
 	const dbUser = await requireInternalUser(event);
 
-	const patchNote = await convex.mutation(api.patchNotes.create, {
+	const patchNote = await createConvexClient().mutation(api.patchNotes.create, {
 		secret: getConvexServerSecret(),
 		authProviderId: dbUser.authProviderId,
 		projectId: input.projectId as Id<'projects'>,

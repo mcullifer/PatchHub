@@ -3,7 +3,7 @@ import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
 import { getProjectBannerValidationError } from '$lib/projects/projectBanner';
 import { requireInternalUser } from '$lib/server/auth/AuthContext';
-import { convex, getConvexServerSecret } from '$lib/server/convex';
+import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { getOwnerProfileForEvent } from '$lib/server/projects/ownerProfile';
 import { error, invalid } from '@sveltejs/kit';
 import * as v from 'valibot';
@@ -48,7 +48,7 @@ export const createProject = form(
 		}
 
 		try {
-			const project = await convex.mutation(api.projects.create, {
+			const project = await createConvexClient().mutation(api.projects.create, {
 				secret: getConvexServerSecret(),
 				authProviderId: dbUser.authProviderId,
 				name,
@@ -91,7 +91,7 @@ const projectBannerAttemptSchema = v.object({
 
 export const beginProjectBannerUpload = command(projectBannerSchema, async ({ projectId }) => {
 	const dbUser = await requireInternalUser(getRequestEvent());
-	const result = await convex.mutation(api.projects.beginBannerUpload, {
+	const result = await createConvexClient().mutation(api.projects.beginBannerUpload, {
 		secret: getConvexServerSecret(),
 		authProviderId: dbUser.authProviderId,
 		projectId: projectId as Id<'projects'>,
@@ -110,6 +110,7 @@ export const completeProjectBannerUpload = command(
 	}),
 	async ({ projectId, attemptId, storageId, contentType }) => {
 		const dbUser = await requireInternalUser(getRequestEvent());
+		const convex = createConvexClient();
 		const typedProjectId = projectId as Id<'projects'>;
 		const typedStorageId = storageId as Id<'_storage'>;
 		const auth = {
@@ -162,7 +163,7 @@ export const failProjectBannerUpload = command(
 	projectBannerAttemptSchema,
 	async ({ projectId, attemptId }) => {
 		const dbUser = await requireInternalUser(getRequestEvent());
-		const result = await convex.mutation(api.projects.failBannerUpload, {
+		const result = await createConvexClient().mutation(api.projects.failBannerUpload, {
 			secret: getConvexServerSecret(),
 			authProviderId: dbUser.authProviderId,
 			projectId: projectId as Id<'projects'>,

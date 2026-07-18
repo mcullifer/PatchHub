@@ -2,9 +2,11 @@
 
 ## Development
 
-- `npm run dev` — starts the Vite development server.
-- `npm run build` — builds the SvelteKit app.
-- `npm run preview` — previews the production build.
+- `npm run dev` — starts the Vite development server. Use this for normal development.
+- `npm run build` — builds the SvelteKit app as a Cloudflare Worker (`.svelte-kit/cloudflare`).
+- `npm run preview` — builds and starts the Cloudflare Worker locally with Wrangler (workerd) on port 4173. Requires a `.dev.vars` file (copy `.dev.vars.example`).
+- `npm run preview:worker` — starts an already-built Worker without rebuilding.
+- `npm run check:worker` — builds and performs a `wrangler deploy --dry-run` without deploying.
 
 ## Validation
 

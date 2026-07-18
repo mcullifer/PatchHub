@@ -1,7 +1,7 @@
 import { command, getRequestEvent } from '$app/server';
 import { api } from '$convex/_generated/api';
 import { requirePatchHubAdmin } from '$lib/server/auth/admin';
-import { convex, getConvexServerSecret } from '$lib/server/convex';
+import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import * as v from 'valibot';
 
 const steamSyncOptionsSchema = v.object({
@@ -28,5 +28,5 @@ export const runSteamCatalogSync = command(steamSyncOptionsSchema, async (option
 	if (options.startCursor !== undefined) args.startCursor = options.startCursor;
 	if (options.batchSize !== undefined) args.batchSize = options.batchSize;
 
-	return await convex.action(api.steamSync.runManual, args);
+	return await createConvexClient().action(api.steamSync.runManual, args);
 });
