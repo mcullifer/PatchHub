@@ -1,14 +1,5 @@
 # PatchHub Agent Instructions
 
-## Task Completion Requirements
-
-- `npm run validate` must pass before considering implementation work complete.
-- If `npm run validate` fails, do not claim the task is complete. Fix the failures or clearly report the remaining blockers.
-- Format edited files before validation. Use targeted Prettier for narrow changes, or `npm run format` for broad refactors.
-- Never use `svelte-check` alone as the full TypeScript validation pass. Use `npm run check:types` or `npm run validate`.
-- Never hide TypeScript errors with `any`, broad casts, or `@ts-ignore` unless the boundary is genuinely untyped and the reason is documented.
-- Name tests after the production API, component, or behavior under test. Do not name test files after implementation phases, work units, tickets, or refactor plans.
-
 ## Project Snapshot
 
 PatchHub is a SvelteKit / Svelte 5 / TypeScript web app for collecting patch notes, release notes, feeds, and update information from games, software projects, and related sources.
@@ -18,6 +9,15 @@ The product should be fast to scan, trustworthy about sources and timestamps, an
 PatchHub includes external sources in the meantime until users begin creating their own projects they post patch notes to.
 Since the external sources require so many custom flows it's best to treat external sources separate from
 the main user generated projects/patch notes.
+
+## Task Completion Requirements
+
+- `npm run validate` must pass before considering implementation work complete.
+- If `npm run validate` fails, do not claim the task is complete. Fix the failures or clearly report the remaining blockers.
+- Format edited files before validation. Use targeted Prettier for narrow changes, or `npm run format` for broad refactors.
+- Never use `svelte-check` alone as the full TypeScript validation pass. Use `npm run check:types` or `npm run validate`.
+- Never hide TypeScript errors with `any`, broad casts, or `@ts-ignore` unless the boundary is genuinely untyped and the reason is documented.
+- Name tests after the production API, component, or behavior under test. Do not name test files after implementation phases, work units, tickets, or refactor plans.
 
 ## Read First
 
@@ -35,6 +35,7 @@ Before non-trivial work, read the relevant project docs:
 5. Prefer maintainable shared logic over duplicated local fixes.
 
 If a tradeoff is required, choose type-safe, predictable behavior over short-term convenience.
+Use `.agents/` skills when relevant to the task.
 
 ## Engineering Posture
 
