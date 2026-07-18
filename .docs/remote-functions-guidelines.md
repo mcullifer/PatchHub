@@ -24,7 +24,19 @@ Keep remote files under `src`, but not in `src/lib/server`.
 
 ## Page Reads
 
-App-owned page reads use remote `query` functions (wrapping Convex queries) awaited directly in the component, not `+page.server.ts` load functions. Derive authorization inside the query from validated arguments and `getAuthContext(getRequestEvent())` — never from `getRequestEvent().params`/`url`. Throwing `error(404)` from an awaited query produces a real 404 status during SSR, so this pattern preserves SEO-correct status codes. Reserve `+page.server.ts` loads for the rare cases a query can't cover (e.g. work that must run before the component renders, or response shaping queries don't support).
+App-owned page reads use remote `query` functions (wrapping Convex queries) awaited directly in the component, not `+page.server.ts` load functions. Derive authorization inside the query from validated arguments and `getAuthContext(getRequestEvent())` — never from `getRequestEvent().params`/`url`.
+
+Status-code caveat: `error(404)` thrown by an awaited query sets the real response status **only when no ancestor `<svelte:boundary>` has a `pending` snippet** — any pending snippet above the await (including in a parent layout) starts streaming SSR, which commits a 200 before the query settles. Since the project layout uses pending skeletons, pages whose primary query can 404 pair the component await with a thin SSR-only universal load:
+
+```ts
+// +page.ts
+export const load: PageLoad = async ({ params }) => {
+	if (browser) return;
+	await getProjectPost({ ... });
+};
+```
+
+During SSR the load and the component share one query execution (SvelteKit dedupes per request), so this costs nothing extra; on client navigation the load no-ops and the boundary skeleton behavior is unchanged. See `src/routes/[createdBy=owner]/+page.ts` and siblings. Reserve full `+page.server.ts` loads for the rare cases a query can't cover (e.g. work that must run before the component renders, or response shaping queries don't support).
 
 ## Validation
 

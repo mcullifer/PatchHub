@@ -1,16 +1,16 @@
 <script lang="ts">
 	import ProjectHero from '$lib/components/projects/ProjectHero.svelte';
 	import ProjectPostFeed from '$lib/components/projects/ProjectPostFeed.svelte';
-	import { getProjectNotes } from '$lib/remote/patchNotes.remote';
+	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 	import type { PageProps } from './$types';
 
 	let { params }: PageProps = $props();
 
 	const result = $derived(
-		await getProjectNotes({ createdBy: params.createdBy, projectSlug: params.project })
+		await getProjectPosts({ createdBy: params.createdBy, projectSlug: params.project })
 	);
 	const project = $derived(result.project);
-	const notes = $derived(result.notes);
+	const posts = $derived(result.posts);
 </script>
 
 <svelte:head>
@@ -20,12 +20,16 @@
 <svelte:boundary>
 	<div class="flex flex-col gap-3 sm:gap-4">
 		<ProjectHero {project} createdBy={params.createdBy} projectSlug={params.project} />
-		<ProjectPostFeed {project} {notes} createdBy={params.createdBy} />
+		<ProjectPostFeed {project} {posts} createdBy={params.createdBy} />
 	</div>
 
 	{#snippet pending()}
-		<div class="flex justify-center py-16">
-			<span class="loading loading-spinner loading-lg" aria-label="Loading"></span>
+		<div class="flex flex-col gap-3 sm:gap-4">
+			<div class="skeleton h-40 w-full sm:h-48"></div>
+			<div class="grid gap-3 sm:gap-4 lg:grid-cols-4">
+				<div class="skeleton hidden h-64 lg:block"></div>
+				<div class="skeleton h-96 lg:col-span-3"></div>
+			</div>
 		</div>
 	{/snippet}
 </svelte:boundary>

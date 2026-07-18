@@ -1,6 +1,8 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
+export const projectPostKind = v.union(v.literal('patch_notes'), v.literal('announcement'));
+
 // Timestamps are Unix epoch milliseconds. Soft deletes use optional deletedAt.
 export default defineSchema({
 	users: defineTable({
@@ -96,9 +98,10 @@ export default defineSchema({
 		.index('by_orgId_and_slug_and_deletedAt', ['orgId', 'slug', 'deletedAt'])
 		.index('by_bannerStorageId', ['bannerStorageId']),
 
-	patchNotes: defineTable({
+	projectPosts: defineTable({
 		projectId: v.id('projects'),
 		authorId: v.id('users'),
+		kind: projectPostKind,
 		title: v.string(),
 		slug: v.string(),
 		content: v.string(), // Stringified TipTap JSON document, not rendered HTML

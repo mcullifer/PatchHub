@@ -1,6 +1,6 @@
 # PatchHub Agent Guidelines
 
-PatchHub is a single place to discover updates from many sources: game patch notes, software release notes, news posts, feeds, and related project updates.
+PatchHub is a single place to discover updates from many sources: game patch notes, software release notes, news posts, feeds, and related project posts.
 
 Agents should optimize for a product that is fast to scan, trustworthy, and easy to extend with new update sources.
 

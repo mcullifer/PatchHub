@@ -4,15 +4,16 @@ import { mutation, query, type QueryCtx } from './_generated/server';
 import { findOwner, findProjectByOwnerAndSlug, type ProjectOwner } from './projects';
 import { requireServerSecret } from './lib/serverSecret';
 import { createSlug } from './lib/strings';
+import { projectPostKind } from './schema';
 import { findUserByAuthProviderId } from './users';
 
-const PATCH_NOTE_LIST_LIMIT = 50;
-const PATCH_NOTE_TITLE_MAX_LENGTH = 150;
-const PATCH_NOTE_CONTENT_MAX_BYTES = 400_000;
+const PROJECT_POST_LIST_LIMIT = 50;
+const PROJECT_POST_TITLE_MAX_LENGTH = 150;
+const PROJECT_POST_CONTENT_MAX_BYTES = 400_000;
 const MAX_SLUG_ATTEMPTS = 1000;
-const RESERVED_NOTE_SLUGS = new Set(['new']);
+const RESERVED_POST_SLUGS = new Set(['new']);
 
-type PatchNoteAuthArgs = {
+type ProjectPostAuthArgs = {
 	secret?: string;
 	authProviderId?: string;
 };
@@ -23,7 +24,7 @@ type ProjectBannerDto =
 	| { status: 'pending'; url: string | null }
 	| { status: 'failed'; url: string | null; message: string };
 
-type PatchNoteProjectDto = {
+type ProjectPostProjectDto = {
 	id: Id<'projects'>;
 	name: string;
 	slug: string;
@@ -34,17 +35,18 @@ type PatchNoteProjectDto = {
 	isOwner: boolean;
 };
 
-type PatchNoteListItemDto = {
-	id: Id<'patchNotes'>;
+type ProjectPostListItemDto = {
+	id: Id<'projectPosts'>;
+	kind: Doc<'projectPosts'>['kind'];
 	title: string;
 	slug: string;
-	status: Doc<'patchNotes'>['status'];
+	status: Doc<'projectPosts'>['status'];
 	publishedAt: number | null;
 	createdAt: number;
 	updatedAt: number;
 };
 
-type PatchNoteDto = PatchNoteListItemDto & {
+type ProjectPostDto = ProjectPostListItemDto & {
 	content: string;
 };
 
@@ -65,7 +67,7 @@ export const listByOwnerAndProject = query({
 		const resolvedProject = await resolveProjectForViewer(ctx, args);
 		if (!resolvedProject) return null;
 
-		const notes = await listVisiblePatchNotes(
+		const posts = await listVisibleProjectPosts(
 			ctx,
 			resolvedProject.project._id,
 			resolvedProject.isOwner
@@ -73,7 +75,7 @@ export const listByOwnerAndProject = query({
 
 		return {
 			project: await toProjectDto(ctx, resolvedProject),
-			notes: notes.map(toPatchNoteListItemDto)
+			posts: posts.map(toProjectPostListItemDto)
 		};
 	}
 });
@@ -82,7 +84,7 @@ export const getByOwnerProjectAndSlug = query({
 	args: {
 		createdBy: v.string(),
 		projectSlug: v.string(),
-		noteSlug: v.string(),
+		postSlug: v.string(),
 		secret: v.optional(v.string()),
 		authProviderId: v.optional(v.string())
 	},
@@ -90,18 +92,18 @@ export const getByOwnerProjectAndSlug = query({
 		const resolvedProject = await resolveProjectForViewer(ctx, args);
 		if (!resolvedProject) return null;
 
-		const note = await findPatchNoteByProjectAndSlug(
+		const post = await findProjectPostByProjectAndSlug(
 			ctx,
 			resolvedProject.project._id,
-			args.noteSlug.toLowerCase()
+			args.postSlug.toLowerCase()
 		);
-		if (!note || !canViewNote(note, resolvedProject.isOwner)) {
+		if (!post || !canViewPost(post, resolvedProject.isOwner)) {
 			return null;
 		}
 
 		return {
 			project: await toProjectDto(ctx, resolvedProject),
-			note: toPatchNoteDto(note)
+			post: toProjectPostDto(post)
 		};
 	}
 });
@@ -111,6 +113,7 @@ export const create = mutation({
 		secret: v.string(),
 		authProviderId: v.string(),
 		projectId: v.id('projects'),
+		kind: projectPostKind,
 		title: v.string(),
 		content: v.string(),
 		status: v.union(v.literal('draft'), v.literal('published'))
@@ -128,14 +131,15 @@ export const create = mutation({
 			throw new Error('Not authorized');
 		}
 
-		const title = normalizePatchNoteTitle(args.title);
-		validatePatchNoteContent(args.content);
+		const title = normalizeProjectPostTitle(args.title);
+		validateProjectPostContent(args.content);
 
-		const slug = await createUniqueNoteSlug(ctx, project._id, createSlug(title, 'note'));
+		const slug = await createUniquePostSlug(ctx, project._id, createSlug(title, 'post'));
 		const now = Date.now();
-		const patchNote: {
+		const projectPost: {
 			projectId: Id<'projects'>;
 			authorId: Id<'users'>;
+			kind: Doc<'projectPosts'>['kind'];
 			title: string;
 			slug: string;
 			content: string;
@@ -146,6 +150,7 @@ export const create = mutation({
 		} = {
 			projectId: project._id,
 			authorId: user._id,
+			kind: args.kind,
 			title,
 			slug,
 			content: args.content,
@@ -155,10 +160,10 @@ export const create = mutation({
 		};
 
 		if (args.status === 'published') {
-			patchNote.publishedAt = now;
+			projectPost.publishedAt = now;
 		}
 
-		const id = await ctx.db.insert('patchNotes', patchNote);
+		const id = await ctx.db.insert('projectPosts', projectPost);
 		await ctx.db.patch(project._id, { updatedAt: now });
 		return { id, slug };
 	}
@@ -166,7 +171,7 @@ export const create = mutation({
 
 async function resolveProjectForViewer(
 	ctx: QueryCtx,
-	args: { createdBy: string; projectSlug: string } & PatchNoteAuthArgs
+	args: { createdBy: string; projectSlug: string } & ProjectPostAuthArgs
 ): Promise<ResolvedProject | null> {
 	const owner = await findOwner(ctx, args.createdBy);
 	if (!owner) return null;
@@ -174,15 +179,15 @@ async function resolveProjectForViewer(
 	const project = await findProjectByOwnerAndSlug(ctx, owner, args.projectSlug);
 	if (!project) return null;
 
-	const viewer = await findPatchNoteViewer(ctx, args);
+	const viewer = await findProjectPostViewer(ctx, args);
 	const isOwner = project.userId !== undefined && viewer?._id === project.userId;
 
 	return { owner, project, isOwner };
 }
 
-async function findPatchNoteViewer(
+async function findProjectPostViewer(
 	ctx: QueryCtx,
-	args: PatchNoteAuthArgs
+	args: ProjectPostAuthArgs
 ): Promise<Doc<'users'> | null> {
 	if (args.secret === undefined && args.authProviderId === undefined) {
 		return null;
@@ -198,13 +203,13 @@ async function findPatchNoteViewer(
 	return user && !user.deletedAt ? user : null;
 }
 
-async function findPatchNoteByProjectAndSlug(
+async function findProjectPostByProjectAndSlug(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
 	slug: string
-): Promise<Doc<'patchNotes'> | null> {
+): Promise<Doc<'projectPosts'> | null> {
 	return await ctx.db
-		.query('patchNotes')
+		.query('projectPosts')
 		.withIndex('by_projectId_and_slug_and_deletedAt', (q) =>
 			q.eq('projectId', projectId).eq('slug', slug).eq('deletedAt', undefined)
 		)
@@ -214,7 +219,7 @@ async function findPatchNoteByProjectAndSlug(
 async function toProjectDto(
 	ctx: QueryCtx,
 	resolvedProject: ResolvedProject
-): Promise<PatchNoteProjectDto> {
+): Promise<ProjectPostProjectDto> {
 	const bannerUrl = resolvedProject.project.bannerStorageId
 		? await ctx.storage.getUrl(resolvedProject.project.bannerStorageId)
 		: null;
@@ -262,32 +267,36 @@ function getBannerUploadErrorMessage(errorCode: 'upload_failed' | 'invalid_file'
 	}
 }
 
-function toPatchNoteDto(note: Doc<'patchNotes'>): PatchNoteDto {
+function toProjectPostDto(post: Doc<'projectPosts'>): ProjectPostDto {
 	return {
-		...toPatchNoteListItemDto(note),
-		content: note.content
+		...toProjectPostListItemDto(post),
+		content: post.content
 	};
 }
 
-function toPatchNoteListItemDto(note: Doc<'patchNotes'>): PatchNoteListItemDto {
+function toProjectPostListItemDto(post: Doc<'projectPosts'>): ProjectPostListItemDto {
 	return {
-		id: note._id,
-		title: note.title,
-		slug: note.slug,
-		status: note.status,
-		publishedAt: note.publishedAt ?? null,
-		createdAt: note.createdAt,
-		updatedAt: note.updatedAt
+		id: post._id,
+		kind: post.kind,
+		title: post.title,
+		slug: post.slug,
+		status: post.status,
+		publishedAt: post.publishedAt ?? null,
+		createdAt: post.createdAt,
+		updatedAt: post.updatedAt
 	};
 }
 
-function canViewNote(note: Doc<'patchNotes'>, isOwner: boolean): boolean {
-	if (note.deletedAt) return false;
-	if (note.status === 'published') return true;
-	return isOwner && note.status === 'draft';
+function canViewPost(post: Doc<'projectPosts'>, isOwner: boolean): boolean {
+	if (post.deletedAt) return false;
+	if (post.status === 'published') return true;
+	return isOwner && post.status === 'draft';
 }
 
-function comparePatchNotesNewestFirst(left: Doc<'patchNotes'>, right: Doc<'patchNotes'>): number {
+function compareProjectPostsNewestFirst(
+	left: Doc<'projectPosts'>,
+	right: Doc<'projectPosts'>
+): number {
 	const leftSortAt = left.publishedAt ?? left.createdAt;
 	const rightSortAt = right.publishedAt ?? right.createdAt;
 	if (leftSortAt !== rightSortAt) {
@@ -297,37 +306,37 @@ function comparePatchNotesNewestFirst(left: Doc<'patchNotes'>, right: Doc<'patch
 	return right._creationTime - left._creationTime;
 }
 
-function normalizePatchNoteTitle(title: string): string {
+function normalizeProjectPostTitle(title: string): string {
 	const trimmedTitle = title.trim();
 	if (trimmedTitle.length === 0) {
-		throw new Error('Patch note title is required');
+		throw new Error('Post title is required');
 	}
 
-	if (trimmedTitle.length > PATCH_NOTE_TITLE_MAX_LENGTH) {
-		throw new Error(`Patch note title must be at most ${PATCH_NOTE_TITLE_MAX_LENGTH} characters`);
+	if (trimmedTitle.length > PROJECT_POST_TITLE_MAX_LENGTH) {
+		throw new Error(`Post title must be at most ${PROJECT_POST_TITLE_MAX_LENGTH} characters`);
 	}
 
 	return trimmedTitle;
 }
 
-function validatePatchNoteContent(content: string): void {
-	if (new TextEncoder().encode(content).byteLength > PATCH_NOTE_CONTENT_MAX_BYTES) {
-		throw new Error('Patch note content must be at most 400KB');
+function validateProjectPostContent(content: string): void {
+	if (new TextEncoder().encode(content).byteLength > PROJECT_POST_CONTENT_MAX_BYTES) {
+		throw new Error('Post content must be at most 400KB');
 	}
 
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(content);
 	} catch {
-		throw new Error('Patch note content must be valid JSON');
+		throw new Error('Post content must be valid JSON');
 	}
 
 	if (!isTipTapDocument(parsed)) {
-		throw new Error('Patch note content must be a TipTap doc');
+		throw new Error('Post content must be a TipTap doc');
 	}
 
 	if (!hasRenderableContent(parsed)) {
-		throw new Error('Patch note content is empty');
+		throw new Error('Post content is empty');
 	}
 }
 
@@ -354,7 +363,7 @@ function isTipTapDocument(value: unknown): value is { type: 'doc' } {
 	);
 }
 
-async function createUniqueNoteSlug(
+async function createUniquePostSlug(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
 	baseSlug: string
@@ -362,56 +371,56 @@ async function createUniqueNoteSlug(
 	for (let attempt = 1; attempt <= MAX_SLUG_ATTEMPTS; attempt++) {
 		const candidate = appendSlugSuffix(baseSlug, attempt);
 		if (
-			!RESERVED_NOTE_SLUGS.has(candidate) &&
-			!(await activeNoteSlugExists(ctx, projectId, candidate))
+			!RESERVED_POST_SLUGS.has(candidate) &&
+			!(await activePostSlugExists(ctx, projectId, candidate))
 		) {
 			return candidate;
 		}
 	}
 
-	throw new Error('Unable to create a unique patch note slug');
+	throw new Error('Unable to create a unique post slug');
 }
 
-async function activeNoteSlugExists(
+async function activePostSlugExists(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
 	slug: string
 ): Promise<boolean> {
-	const note = await ctx.db
-		.query('patchNotes')
+	const post = await ctx.db
+		.query('projectPosts')
 		.withIndex('by_projectId_and_slug_and_deletedAt', (q) =>
 			q.eq('projectId', projectId).eq('slug', slug).eq('deletedAt', undefined)
 		)
 		.unique();
 
-	return note !== null;
+	return post !== null;
 }
 
 function appendSlugSuffix(baseSlug: string, attempt: number): string {
 	return attempt === 1 ? baseSlug : `${baseSlug}-${attempt}`;
 }
 
-async function listVisiblePatchNotes(
+async function listVisibleProjectPosts(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
 	isOwner: boolean
-): Promise<Doc<'patchNotes'>[]> {
-	const publishedNotes = await listPublishedPatchNotes(ctx, projectId, PATCH_NOTE_LIST_LIMIT);
-	if (!isOwner) return publishedNotes;
+): Promise<Doc<'projectPosts'>[]> {
+	const publishedPosts = await listPublishedProjectPosts(ctx, projectId, PROJECT_POST_LIST_LIMIT);
+	if (!isOwner) return publishedPosts;
 
-	const draftNotes = await listDraftPatchNotes(ctx, projectId, PATCH_NOTE_LIST_LIMIT);
-	return [...publishedNotes, ...draftNotes]
-		.sort(comparePatchNotesNewestFirst)
-		.slice(0, PATCH_NOTE_LIST_LIMIT);
+	const draftPosts = await listDraftProjectPosts(ctx, projectId, PROJECT_POST_LIST_LIMIT);
+	return [...publishedPosts, ...draftPosts]
+		.sort(compareProjectPostsNewestFirst)
+		.slice(0, PROJECT_POST_LIST_LIMIT);
 }
 
-async function listPublishedPatchNotes(
+async function listPublishedProjectPosts(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
 	limit: number
-): Promise<Doc<'patchNotes'>[]> {
+): Promise<Doc<'projectPosts'>[]> {
 	return await ctx.db
-		.query('patchNotes')
+		.query('projectPosts')
 		.withIndex('by_projectId_and_deletedAt_and_status_and_publishedAt', (q) =>
 			q.eq('projectId', projectId).eq('deletedAt', undefined).eq('status', 'published')
 		)
@@ -419,13 +428,13 @@ async function listPublishedPatchNotes(
 		.take(limit);
 }
 
-async function listDraftPatchNotes(
+async function listDraftProjectPosts(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
 	limit: number
-): Promise<Doc<'patchNotes'>[]> {
+): Promise<Doc<'projectPosts'>[]> {
 	return await ctx.db
-		.query('patchNotes')
+		.query('projectPosts')
 		.withIndex('by_projectId_and_deletedAt_and_status_and_createdAt', (q) =>
 			q.eq('projectId', projectId).eq('deletedAt', undefined).eq('status', 'draft')
 		)

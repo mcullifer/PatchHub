@@ -35,6 +35,9 @@
 			>
 				<time class="text-xs opacity-60">{item.dateLabel}</time>
 				<span class="font-medium">{item.title}</span>
+				{#if item.badgeLabel}
+					<span class="badge badge-soft badge-info badge-xs">{item.badgeLabel}</span>
+				{/if}
 			</button>
 		</li>
 	{/each}

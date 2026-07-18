@@ -3,9 +3,15 @@ export type UpdateFeedPostListItem = {
 	title: string;
 	dateLabel: string;
 	isSelected: boolean;
+	badgeLabel?: string;
 };
 
 export type UpdateFeedMetaItem = {
-	label: string;
+	label?: string;
 	value: string | number;
+};
+
+export type UpdateFeedBadge = {
+	label: string;
+	tone?: 'info' | 'warning';
 };

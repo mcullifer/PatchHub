@@ -1,5 +1,5 @@
 import type { Id } from '$convex/_generated/dataModel';
-import { getProjectNotes } from '$lib/remote/patchNotes.remote';
+import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 import { completeProjectBannerUpload, failProjectBannerUpload } from '$lib/remote/projects.remote';
 
 let retryFile: { projectId: Id<'projects'>; file: File } | null = null;
@@ -31,7 +31,7 @@ export async function runProjectBannerUpload({
 	attemptId,
 	uploadUrl
 }: {
-	projectQuery: ReturnType<typeof getProjectNotes>;
+	projectQuery: ReturnType<typeof getProjectPosts>;
 	projectId: Id<'projects'>;
 	file: File;
 	attemptId: string;

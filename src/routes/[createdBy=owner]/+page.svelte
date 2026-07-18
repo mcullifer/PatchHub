@@ -8,7 +8,7 @@
 		getProjectBannerValidationError
 	} from '$lib/projects/projectBanner';
 	import { runProjectBannerUpload } from '$lib/projects/projectBannerUpload';
-	import { getProjectNotes } from '$lib/remote/patchNotes.remote';
+	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 	import { createProject, getOwnerProfile } from '$lib/remote/projects.remote';
 	import type { PageProps } from './$types';
 
@@ -159,7 +159,7 @@
 			<EmptyState
 				icon="rocket_launch"
 				title="Create your first project"
-				description="Projects hold the patch notes you publish for your users."
+				description="Projects hold the posts you publish for your users."
 			>
 				{@render newProjectButton()}
 			</EmptyState>
@@ -173,9 +173,16 @@
 	</section>
 
 	{#snippet pending()}
-		<div class="flex justify-center py-16">
-			<span class="loading loading-spinner loading-lg" aria-label="Loading"></span>
-		</div>
+		<section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+			<div class="flex items-center gap-4">
+				<div class="skeleton rounded-box size-20"></div>
+				<div class="flex flex-col gap-2">
+					<div class="skeleton h-6 w-40"></div>
+					<div class="skeleton h-4 w-24"></div>
+				</div>
+			</div>
+			<div class="skeleton h-64 w-full"></div>
+		</section>
 	{/snippet}
 </svelte:boundary>
 
@@ -189,7 +196,7 @@
 >
 	<div class="modal-box">
 		<h2 class="text-lg font-semibold">New project</h2>
-		<p class="text-base-content/60 mt-1 text-sm">Create a home for your patch notes.</p>
+		<p class="text-base-content/60 mt-1 text-sm">Create a home for your posts.</p>
 		<form
 			{...createProject.enhance(async (form) => {
 				const banner = selectedBanner;
@@ -209,7 +216,7 @@
 					let uploadTask: ReturnType<typeof runProjectBannerUpload> | null = null;
 					if (banner && result.bannerUpload) {
 						uploadTask = runProjectBannerUpload({
-							projectQuery: getProjectNotes(destination),
+							projectQuery: getProjectPosts(destination),
 							projectId: result.project.id,
 							file: banner,
 							attemptId: result.bannerUpload.attemptId,

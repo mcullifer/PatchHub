@@ -1,18 +1,20 @@
 <script lang="ts">
 	import { Icon } from '$lib/components/common-ui';
 	import type { Snippet } from 'svelte';
-	import type { UpdateFeedMetaItem } from './UpdateFeedTypes';
+	import type { UpdateFeedBadge, UpdateFeedMetaItem } from './UpdateFeedTypes';
 
 	let {
 		title,
 		sourceLabel,
 		sourceUrl = null,
+		badges = [],
 		meta = [],
 		children
 	}: {
 		title: string;
 		sourceLabel: string;
 		sourceUrl?: string | null;
+		badges?: UpdateFeedBadge[];
 		meta?: UpdateFeedMetaItem[];
 		children: Snippet;
 	} = $props();
@@ -23,15 +25,31 @@
 		<header class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
 			<div class="min-w-0">
 				<h2 class="text-2xl font-bold text-pretty lg:text-3xl">{title}</h2>
-				{#if meta.length > 0}
-					<dl class="text-base-content/60 mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-						{#each meta as item (item.label)}
-							<div class="flex gap-1.5">
-								<dt>{item.label}</dt>
-								<dd class="text-base-content/80 font-medium">{item.value}</dd>
-							</div>
+				{#if badges.length > 0 || meta.length > 0}
+					<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+						{#each badges as badge (badge.label)}
+							<span
+								class={[
+									'badge badge-soft badge-sm',
+									badge.tone === 'warning' ? 'badge-warning' : 'badge-info'
+								]}
+							>
+								{badge.label}
+							</span>
 						{/each}
-					</dl>
+						{#if meta.length > 0}
+							<dl class="text-base-content/60 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+								{#each meta as item (item.value)}
+									<div class="flex gap-1.5">
+										{#if item.label}
+											<dt>{item.label}</dt>
+										{/if}
+										<dd class="text-base-content/80 font-medium">{item.value}</dd>
+									</div>
+								{/each}
+							</dl>
+						{/if}
+					</div>
 				{/if}
 			</div>
 			{#if sourceUrl}

@@ -4,41 +4,42 @@
 	import {
 		UpdateFeedArticle,
 		UpdateFeedPostList,
-		type UpdateFeedMetaItem,
+		type UpdateFeedBadge,
 		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
 	import TipTap, { type TipTapContent } from '$lib/components/wysiwyg/TipTap.svelte';
-	import { getPatchNote, type getProjectNotes } from '$lib/remote/patchNotes.remote';
+	import { getProjectPost, type getProjectPosts } from '$lib/remote/projectPosts.remote';
 	import { tick } from 'svelte';
 
-	type ProjectNotesResult = Awaited<ReturnType<typeof getProjectNotes>>;
-	type Project = ProjectNotesResult['project'];
-	type ProjectNote = ProjectNotesResult['notes'][number];
+	type ProjectPostsResult = Awaited<ReturnType<typeof getProjectPosts>>;
+	type Project = ProjectPostsResult['project'];
+	type ProjectPost = ProjectPostsResult['posts'][number];
 
 	let {
 		project,
-		notes,
+		posts,
 		createdBy
 	}: {
 		project: Project;
-		notes: ProjectNote[];
+		posts: ProjectPost[];
 		createdBy: string;
 	} = $props();
 
-	let selectedNoteSlug = $state<string | null>(null);
+	let selectedPostSlug = $state<string | null>(null);
 
-	const selectedNoteSummary = $derived(
-		notes.find((note) => note.slug === selectedNoteSlug) ?? notes[0] ?? null
+	const selectedPostSummary = $derived(
+		posts.find((post) => post.slug === selectedPostSlug) ?? posts[0] ?? null
 	);
-	const noteNavItems = $derived(
-		notes.map((note): UpdateFeedPostListItem => ({
-			id: note.slug,
-			title: note.status === 'draft' ? `Draft — ${note.title}` : note.title,
-			dateLabel: getNoteDate(note),
-			isSelected: selectedNoteSummary?.slug === note.slug
+	const postNavItems = $derived(
+		posts.map((post): UpdateFeedPostListItem => ({
+			id: post.slug,
+			title: post.status === 'draft' ? `Draft — ${post.title}` : post.title,
+			dateLabel: getPostDate(post),
+			isSelected: selectedPostSummary?.slug === post.slug,
+			badgeLabel: kindLabel(post.kind)
 		}))
 	);
-	const articleSectionId = 'project-patch-note';
+	const articleSectionId = 'project-post';
 
 	function formatDate(timestamp: number | null): string {
 		return new Date(timestamp ?? Date.now()).toLocaleDateString(undefined, {
@@ -48,22 +49,23 @@
 		});
 	}
 
-	function getNoteDate(note: { publishedAt: number | null; createdAt: number }): string {
-		return formatDate(note.publishedAt ?? note.createdAt);
+	function getPostDate(post: { publishedAt: number | null; createdAt: number }): string {
+		return formatDate(post.publishedAt ?? post.createdAt);
 	}
 
-	function getArticleMeta(note: {
-		status: 'draft' | 'published' | 'archived';
-		publishedAt: number | null;
-		createdAt: number;
-	}): UpdateFeedMetaItem[] {
-		const date = {
-			label: note.status === 'published' ? 'Published' : 'Created',
-			value: getNoteDate(note)
-		};
-		if (note.status === 'published') return [date];
+	function kindLabel(kind: ProjectPost['kind']): string {
+		return kind === 'announcement' ? 'Announcement' : 'Patch notes';
+	}
 
-		return [date, { label: 'Status', value: note.status === 'draft' ? 'Draft' : 'Archived' }];
+	function getArticleBadges(post: {
+		kind: ProjectPost['kind'];
+		status: 'draft' | 'published' | 'archived';
+	}): UpdateFeedBadge[] {
+		const badges: UpdateFeedBadge[] = [{ label: kindLabel(post.kind) }];
+		if (post.status !== 'published') {
+			badges.push({ label: post.status === 'draft' ? 'Draft' : 'Archived', tone: 'warning' });
+		}
+		return badges;
 	}
 
 	function parseTipTapContent(content: string): TipTapContent | null {
@@ -74,8 +76,8 @@
 		}
 	}
 
-	async function selectNote(slug: string): Promise<void> {
-		selectedNoteSlug = slug;
+	async function selectPost(slug: string): Promise<void> {
+		selectedPostSlug = slug;
 		await tick();
 
 		const articleSection = document.getElementById(articleSectionId);
@@ -85,7 +87,7 @@
 	}
 </script>
 
-{#snippet newPatchNoteButton()}
+{#snippet newPostButton()}
 	<a
 		class="btn btn-primary btn-sm"
 		href={resolve('/[createdBy=owner]/[project]/new', {
@@ -94,56 +96,57 @@
 		})}
 	>
 		<Icon icon="edit_square" size="sm" />
-		New patch note
+		New post
 	</a>
 {/snippet}
 
 {#if project.isOwner}
 	<div class="flex justify-end">
-		{@render newPatchNoteButton()}
+		{@render newPostButton()}
 	</div>
 {/if}
 
-{#if notes.length > 0}
+{#if posts.length > 0}
 	<div class="grid min-h-0 gap-3 sm:gap-4 lg:grid-cols-4">
 		<UpdateFeedPostList
-			title="Patch notes"
-			ariaLabel={`${project.name} patch notes`}
-			items={noteNavItems}
-			emptyMessage="No patch notes yet."
-			onselect={selectNote}
+			title="Posts"
+			ariaLabel={`${project.name} posts`}
+			items={postNavItems}
+			emptyMessage="No posts yet."
+			onselect={selectPost}
 		/>
 
 		<section id={articleSectionId} class="min-w-0 scroll-mt-24 lg:col-span-3">
 			<svelte:boundary>
-				{#if selectedNoteSummary}
-					{@const selectedResult = await getPatchNote({
+				{#if selectedPostSummary}
+					{@const selectedResult = await getProjectPost({
 						createdBy,
 						projectSlug: project.slug,
-						noteSlug: selectedNoteSummary.slug
+						postSlug: selectedPostSummary.slug
 					})}
-					{@const selectedNote = selectedResult.note}
-					{@const parsedContent = parseTipTapContent(selectedNote.content)}
+					{@const selectedPost = selectedResult.post}
+					{@const parsedContent = parseTipTapContent(selectedPost.content)}
 					<UpdateFeedArticle
-						title={selectedNote.title}
+						title={selectedPost.title}
 						sourceLabel="PatchHub"
-						meta={getArticleMeta(selectedNote)}
+						badges={getArticleBadges(selectedPost)}
+						meta={[{ value: getPostDate(selectedPost) }]}
 					>
 						{#if parsedContent}
 							<TipTap content={parsedContent} editable={false} />
 						{:else}
-							<p class="text-base-content/60 text-sm italic">This patch note can't be displayed.</p>
+							<p class="text-base-content/60 text-sm italic">This post can't be displayed.</p>
 						{/if}
 						<div class="flex justify-end">
 							<a
 								class="btn btn-ghost btn-sm"
-								href={resolve('/[createdBy=owner]/[project]/[note]', {
+								href={resolve('/[createdBy=owner]/[project]/[post]', {
 									createdBy,
 									project: project.slug,
-									note: selectedNote.slug
+									post: selectedPost.slug
 								})}
 							>
-								Open note
+								Open post
 								<Icon icon="arrow_forward" size="sm" />
 							</a>
 						</div>
@@ -163,11 +166,11 @@
 {:else if project.isOwner}
 	<EmptyState
 		icon="history_edu"
-		title="Write your first patch note"
-		description="Publish updates so your users know what changed."
+		title="Write your first post"
+		description="Publish posts so your users know what changed."
 	>
-		{@render newPatchNoteButton()}
+		{@render newPostButton()}
 	</EmptyState>
 {:else}
-	<EmptyState icon="notes" title="No patch notes yet" />
+	<EmptyState icon="notes" title="No posts yet" />
 {/if}

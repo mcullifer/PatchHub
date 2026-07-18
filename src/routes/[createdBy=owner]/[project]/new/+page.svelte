@@ -2,11 +2,16 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Icon } from '$lib/components/common-ui';
-	import { createPatchNote, getOwnedProject, getProjectNotes } from '$lib/remote/patchNotes.remote';
+	import {
+		createProjectPost,
+		getOwnedProject,
+		getProjectPosts
+	} from '$lib/remote/projectPosts.remote';
 	import TipTap from '$lib/components/wysiwyg/TipTap.svelte';
 	import type { PageProps } from './$types';
 
-	type PatchNoteStatus = 'draft' | 'published';
+	type ProjectPostStatus = 'draft' | 'published';
+	type ProjectPostKind = 'patch_notes' | 'announcement';
 
 	let { params }: PageProps = $props();
 
@@ -16,16 +21,17 @@
 
 	let editor = $state<TipTap | null>(null);
 	let title = $state('');
+	let kind = $state<ProjectPostKind>('patch_notes');
 	let attemptedSubmit = $state(false);
 	let contentIssue = $state<string | null>(null);
 	let failureMessage = $state<string | null>(null);
-	let pendingStatus = $state<PatchNoteStatus | null>(null);
+	let pendingStatus = $state<ProjectPostStatus | null>(null);
 
 	const titleIssue = $derived(
 		attemptedSubmit && title.trim().length === 0 ? 'Add a title before saving.' : null
 	);
 
-	async function savePatchNote(status: PatchNoteStatus): Promise<void> {
+	async function saveProjectPost(status: ProjectPostStatus): Promise<void> {
 		if (pendingStatus) return;
 
 		attemptedSubmit = true;
@@ -43,18 +49,19 @@
 
 		pendingStatus = status;
 		try {
-			const patchNote = await createPatchNote({
+			const projectPost = await createProjectPost({
 				projectId: project.id,
+				kind,
 				title: trimmedTitle,
 				content: JSON.stringify(payload.json),
 				status
-			}).updates(getProjectNotes({ createdBy: params.createdBy, projectSlug: params.project }));
+			}).updates(getProjectPosts({ createdBy: params.createdBy, projectSlug: params.project }));
 			if (status === 'published') {
 				await goto(
-					resolve('/[createdBy=owner]/[project]/[note]', {
+					resolve('/[createdBy=owner]/[project]/[post]', {
 						createdBy: params.createdBy,
 						project: project.slug,
-						note: patchNote.slug
+						post: projectPost.slug
 					})
 				);
 				return;
@@ -74,17 +81,36 @@
 	}
 
 	function getErrorMessage(error: unknown): string {
-		return error instanceof Error ? error.message : 'Unable to create patch note';
+		return error instanceof Error ? error.message : 'Unable to create post';
 	}
 </script>
 
 <svelte:head>
-	<title>New patch note - {project.name}</title>
+	<title>New post - {project.name}</title>
 </svelte:head>
 
 <svelte:boundary>
 	<div class="mx-auto flex w-full max-w-4xl flex-col gap-6">
 		<div class="flex flex-col gap-4">
+			<div class="join" role="radiogroup" aria-label="Post type">
+				<input
+					type="radio"
+					name="post-kind"
+					class="btn btn-soft"
+					aria-label="Patch notes"
+					value="patch_notes"
+					bind:group={kind}
+				/>
+				<input
+					type="radio"
+					name="post-kind"
+					class="btn btn-soft"
+					aria-label="Announcement"
+					value="announcement"
+					bind:group={kind}
+				/>
+			</div>
+
 			<div>
 				<input
 					type="text"
@@ -99,7 +125,7 @@
 				{/if}
 			</div>
 
-			<TipTap bind:this={editor} placeholder="Write your patch notes…" />
+			<TipTap bind:this={editor} placeholder="Write your post…" />
 		</div>
 
 		{#if contentIssue}
@@ -121,7 +147,7 @@
 				type="button"
 				class="btn btn-soft"
 				disabled={pendingStatus !== null}
-				onclick={() => savePatchNote('draft')}
+				onclick={() => saveProjectPost('draft')}
 			>
 				{#if pendingStatus === 'draft'}
 					<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
@@ -132,7 +158,7 @@
 				type="button"
 				class="btn btn-primary"
 				disabled={pendingStatus !== null}
-				onclick={() => savePatchNote('published')}
+				onclick={() => saveProjectPost('published')}
 			>
 				{#if pendingStatus === 'published'}
 					<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
@@ -143,8 +169,10 @@
 	</div>
 
 	{#snippet pending()}
-		<div class="flex justify-center py-16">
-			<span class="loading loading-spinner loading-lg" aria-label="Loading"></span>
+		<div class="mx-auto flex w-full max-w-4xl flex-col gap-4">
+			<div class="skeleton h-8 w-56"></div>
+			<div class="skeleton h-12 w-full"></div>
+			<div class="skeleton h-80 w-full"></div>
 		</div>
 	{/snippet}
 </svelte:boundary>

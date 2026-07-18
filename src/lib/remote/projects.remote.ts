@@ -7,7 +7,7 @@ import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { getOwnerProfileForEvent } from '$lib/server/projects/ownerProfile';
 import { error, invalid } from '@sveltejs/kit';
 import * as v from 'valibot';
-import { getProjectNotes } from './patchNotes.remote';
+import { getProjectPosts } from './projectPosts.remote';
 
 export const getOwnerProfile = query(v.string(), async (createdBy) => {
 	return await getOwnerProfileForEvent(getRequestEvent(), createdBy);
@@ -97,7 +97,7 @@ export const beginProjectBannerUpload = command(projectBannerSchema, async ({ pr
 		projectId: projectId as Id<'projects'>,
 		attemptId: crypto.randomUUID()
 	});
-	await requested(getProjectNotes, 1).refreshAll();
+	await requested(getProjectPosts, 1).refreshAll();
 	return result;
 });
 
@@ -126,7 +126,7 @@ export const completeProjectBannerUpload = command(
 		});
 
 		if (claim.status !== 'claimed') {
-			await requested(getProjectNotes, 1).refreshAll();
+			await requested(getProjectPosts, 1).refreshAll();
 			return { status: claim.status };
 		}
 
@@ -154,7 +154,7 @@ export const completeProjectBannerUpload = command(
 			storageId: typedStorageId,
 			outcome
 		});
-		await requested(getProjectNotes, 1).refreshAll();
+		await requested(getProjectPosts, 1).refreshAll();
 		return result;
 	}
 );
@@ -169,7 +169,7 @@ export const failProjectBannerUpload = command(
 			projectId: projectId as Id<'projects'>,
 			attemptId
 		});
-		await requested(getProjectNotes, 1).refreshAll();
+		await requested(getProjectPosts, 1).refreshAll();
 		return result;
 	}
 );

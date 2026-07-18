@@ -11,3 +11,6 @@ skills-lock.json
 
 # Wrangler local state
 .wrangler/
+
+# Agent worktrees
+.claude/worktrees/

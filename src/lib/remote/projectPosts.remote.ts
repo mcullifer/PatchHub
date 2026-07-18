@@ -16,8 +16,8 @@ const ownerProjectArgs = v.object({
 	projectSlug: v.string()
 });
 
-export const getProjectNotes = query(ownerProjectArgs, async ({ createdBy, projectSlug }) => {
-	const result = await createConvexClient().query(api.patchNotes.listByOwnerAndProject, {
+export const getProjectPosts = query(ownerProjectArgs, async ({ createdBy, projectSlug }) => {
+	const result = await createConvexClient().query(api.projectPosts.listByOwnerAndProject, {
 		createdBy,
 		projectSlug,
 		...(await viewerAuthArgs())
@@ -26,13 +26,13 @@ export const getProjectNotes = query(ownerProjectArgs, async ({ createdBy, proje
 	return result;
 });
 
-export const getPatchNote = query(
-	v.object({ createdBy: v.string(), projectSlug: v.string(), noteSlug: v.string() }),
-	async ({ createdBy, projectSlug, noteSlug }) => {
-		const result = await createConvexClient().query(api.patchNotes.getByOwnerProjectAndSlug, {
+export const getProjectPost = query(
+	v.object({ createdBy: v.string(), projectSlug: v.string(), postSlug: v.string() }),
+	async ({ createdBy, projectSlug, postSlug }) => {
+		const result = await createConvexClient().query(api.projectPosts.getByOwnerProjectAndSlug, {
 			createdBy,
 			projectSlug,
-			noteSlug,
+			postSlug,
 			...(await viewerAuthArgs())
 		});
 		if (!result) error(404, 'Not found');
@@ -41,7 +41,7 @@ export const getPatchNote = query(
 );
 
 export const getOwnedProject = query(ownerProjectArgs, async ({ createdBy, projectSlug }) => {
-	const result = await createConvexClient().query(api.patchNotes.listByOwnerAndProject, {
+	const result = await createConvexClient().query(api.projectPosts.listByOwnerAndProject, {
 		createdBy,
 		projectSlug,
 		...(await viewerAuthArgs())
@@ -56,44 +56,46 @@ export const getOwnedProject = query(ownerProjectArgs, async ({ createdBy, proje
 	};
 });
 
-const PATCH_NOTE_TITLE_MAX_LENGTH = 150;
-const PATCH_NOTE_CONTENT_MAX_LENGTH = 400_000;
+const PROJECT_POST_TITLE_MAX_LENGTH = 150;
+const PROJECT_POST_CONTENT_MAX_LENGTH = 400_000;
 
-const createPatchNoteSchema = v.object({
+const createProjectPostSchema = v.object({
 	projectId: v.string(),
+	kind: v.picklist(['patch_notes', 'announcement']),
 	title: v.pipe(
 		v.string(),
 		v.trim(),
-		v.minLength(1, 'Patch note title is required'),
+		v.minLength(1, 'Post title is required'),
 		v.maxLength(
-			PATCH_NOTE_TITLE_MAX_LENGTH,
-			`Patch note title must be at most ${PATCH_NOTE_TITLE_MAX_LENGTH} characters`
+			PROJECT_POST_TITLE_MAX_LENGTH,
+			`Post title must be at most ${PROJECT_POST_TITLE_MAX_LENGTH} characters`
 		)
 	),
 	content: v.pipe(
 		v.string(),
 		v.maxLength(
-			PATCH_NOTE_CONTENT_MAX_LENGTH,
-			`Patch note content must be at most ${PATCH_NOTE_CONTENT_MAX_LENGTH} characters`
+			PROJECT_POST_CONTENT_MAX_LENGTH,
+			`Post content must be at most ${PROJECT_POST_CONTENT_MAX_LENGTH} characters`
 		)
 	),
 	status: v.picklist(['draft', 'published'])
 });
 
-export const createPatchNote = command(createPatchNoteSchema, async (input) => {
+export const createProjectPost = command(createProjectPostSchema, async (input) => {
 	const event = getRequestEvent();
 	const dbUser = await requireInternalUser(event);
 
-	const patchNote = await createConvexClient().mutation(api.patchNotes.create, {
+	const projectPost = await createConvexClient().mutation(api.projectPosts.create, {
 		secret: getConvexServerSecret(),
 		authProviderId: dbUser.authProviderId,
 		projectId: input.projectId as Id<'projects'>,
+		kind: input.kind,
 		title: input.title,
 		content: input.content,
 		status: input.status
 	});
 
-	await requested(getProjectNotes, 1).refreshAll();
+	await requested(getProjectPosts, 1).refreshAll();
 
-	return { slug: patchNote.slug };
+	return { slug: projectPost.slug };
 });

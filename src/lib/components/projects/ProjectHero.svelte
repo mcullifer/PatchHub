@@ -10,10 +10,10 @@
 		getRememberedProjectBannerFile,
 		runProjectBannerUpload
 	} from '$lib/projects/projectBannerUpload';
-	import { getProjectNotes } from '$lib/remote/patchNotes.remote';
+	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 	import { beginProjectBannerUpload } from '$lib/remote/projects.remote';
 
-	type Project = Awaited<ReturnType<typeof getProjectNotes>>['project'];
+	type Project = Awaited<ReturnType<typeof getProjectPosts>>['project'];
 
 	let {
 		project,
@@ -25,13 +25,11 @@
 	let bannerIssue = $state<string | null>(null);
 	let isUploadingBanner = $state(false);
 
-	const projectQuery = $derived(getProjectNotes({ createdBy, projectSlug }));
+	const projectQuery = $derived(getProjectPosts({ createdBy, projectSlug }));
 	const bannerUrl = $derived(project.banner.url);
 	const isBannerPending = $derived(project.banner.status === 'pending');
 	const isBannerBusy = $derived(isUploadingBanner || isBannerPending);
-	const description = $derived(
-		project.description ?? `Patch notes and updates from ${project.ownerName}.`
-	);
+	const description = $derived(project.description ?? `Posts from ${project.ownerName}.`);
 	const bannerActionLabel = $derived.by(() => {
 		if (isBannerPending) return 'Uploading banner';
 		if (project.banner.status === 'failed') return 'Retry banner upload';

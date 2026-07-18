@@ -651,7 +651,7 @@ describe('projects project banners', () => {
 			});
 		});
 
-		const result = await t.query(api.patchNotes.listByOwnerAndProject, {
+		const result = await t.query(api.projectPosts.listByOwnerAndProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub'
 		});
@@ -682,7 +682,7 @@ describe('projects project banners', () => {
 			bannerUploadAttemptId: 'attempt-1'
 		});
 		const project = await t.run(async (ctx) => await ctx.db.get(created.id));
-		const result = await t.query(api.patchNotes.listByOwnerAndProject, {
+		const result = await t.query(api.projectPosts.listByOwnerAndProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub'
 		});
@@ -832,11 +832,11 @@ describe('projects project banners', () => {
 			})
 		).resolves.toEqual({ status: 'failed' });
 
-		const visitorResult = await t.query(api.patchNotes.listByOwnerAndProject, {
+		const visitorResult = await t.query(api.projectPosts.listByOwnerAndProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub'
 		});
-		const ownerResult = await t.query(api.patchNotes.listByOwnerAndProject, {
+		const ownerResult = await t.query(api.projectPosts.listByOwnerAndProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub',
 			secret: SECRET,
@@ -1000,8 +1000,8 @@ describe('projects project banners', () => {
 	});
 });
 
-describe('patchNotes.create', () => {
-	it('rejects patch notes for projects owned by another user', async () => {
+describe('projectPosts.create', () => {
+	it('rejects posts for projects owned by another user', async () => {
 		const t = createTest();
 
 		const { projectId } = await t.run(async (ctx) => {
@@ -1031,11 +1031,12 @@ describe('patchNotes.create', () => {
 		});
 
 		await expect(
-			t.mutation(api.patchNotes.create, {
+			t.mutation(api.projectPosts.create, {
 				secret: SECRET,
 				authProviderId: 'workos_other',
 				projectId,
-				title: 'Patch note',
+				kind: 'patch_notes',
+				title: 'Project post',
 				content: TIPTAP_DOC,
 				status: 'draft'
 			})
@@ -1064,11 +1065,12 @@ describe('patchNotes.create', () => {
 			return { projectId };
 		});
 
-		await t.mutation(api.patchNotes.create, {
+		await t.mutation(api.projectPosts.create, {
 			secret: SECRET,
 			authProviderId: 'workos_1',
 			projectId,
-			title: 'Patch note',
+			kind: 'patch_notes',
+			title: 'Project post',
 			content: TIPTAP_DOC,
 			status: 'published'
 		});
@@ -1100,24 +1102,25 @@ describe('patchNotes.create', () => {
 		});
 
 		const createWithContent = (content: unknown, title: string) =>
-			t.mutation(api.patchNotes.create, {
+			t.mutation(api.projectPosts.create, {
 				secret: SECRET,
 				authProviderId: 'workos_1',
 				projectId,
+				kind: 'patch_notes',
 				title,
 				content: JSON.stringify(content),
 				status: 'draft'
 			});
 
 		await expect(createWithContent({ type: 'doc', content: [] }, 'Empty doc')).rejects.toThrow(
-			'Patch note content is empty'
+			'Post content is empty'
 		);
 		await expect(
 			createWithContent(
 				{ type: 'doc', content: [{ type: 'paragraph' }, { type: 'paragraph' }] },
 				'Blank paragraphs'
 			)
-		).rejects.toThrow('Patch note content is empty');
+		).rejects.toThrow('Post content is empty');
 		await expect(
 			createWithContent(
 				{
@@ -1129,7 +1132,7 @@ describe('patchNotes.create', () => {
 				},
 				'Whitespace only'
 			)
-		).rejects.toThrow('Patch note content is empty');
+		).rejects.toThrow('Post content is empty');
 		await expect(
 			createWithContent(
 				{ type: 'doc', content: [{ type: 'image', attrs: { src: 'https://x.test/a.png' } }] },
@@ -1138,7 +1141,7 @@ describe('patchNotes.create', () => {
 		).resolves.toMatchObject({ slug: 'image-only' });
 	});
 
-	it('shows drafts only to the owning user when listing project patch notes', async () => {
+	it('shows drafts only to the owner and returns both post kinds', async () => {
 		const t = createTest();
 
 		const { projectId } = await t.run(async (ctx) => {
@@ -1160,24 +1163,26 @@ describe('patchNotes.create', () => {
 			return { projectId };
 		});
 
-		await t.mutation(api.patchNotes.create, {
+		await t.mutation(api.projectPosts.create, {
 			secret: SECRET,
 			authProviderId: 'workos_1',
 			projectId,
-			title: 'Draft note',
+			kind: 'patch_notes',
+			title: 'Draft post',
 			content: TIPTAP_DOC,
 			status: 'draft'
 		});
-		await t.mutation(api.patchNotes.create, {
+		await t.mutation(api.projectPosts.create, {
 			secret: SECRET,
 			authProviderId: 'workos_1',
 			projectId,
-			title: 'Published note',
+			kind: 'announcement',
+			title: 'Published post',
 			content: TIPTAP_DOC,
 			status: 'published'
 		});
 
-		const publicList = await t.query(api.patchNotes.listByOwnerAndProject, {
+		const publicList = await t.query(api.projectPosts.listByOwnerAndProject, {
 			createdBy: 'owner123',
 			projectSlug: 'patchhub'
 		});
@@ -1186,23 +1191,39 @@ describe('patchNotes.create', () => {
 			ownerKind: 'user',
 			isOwner: false
 		});
-		expect(publicList?.notes).toHaveLength(1);
-		expect(publicList?.notes[0]).toMatchObject({
-			title: 'Published note',
+		expect(publicList?.posts).toHaveLength(1);
+		expect(publicList?.posts[0]).toMatchObject({
+			kind: 'announcement',
+			title: 'Published post',
 			status: 'published'
 		});
 
-		const ownerList = await t.query(api.patchNotes.listByOwnerAndProject, {
+		const ownerList = await t.query(api.projectPosts.listByOwnerAndProject, {
 			createdBy: 'owner123',
 			projectSlug: 'patchhub',
 			secret: SECRET,
 			authProviderId: 'workos_1'
 		});
 		expect(ownerList?.project.isOwner).toBe(true);
-		expect(ownerList?.notes.map((note) => note.status).sort()).toEqual(['draft', 'published']);
+		expect(ownerList?.posts.map((post) => post.status).sort()).toEqual(['draft', 'published']);
+		expect(ownerList?.posts.map((post) => post.kind).sort()).toEqual([
+			'announcement',
+			'patch_notes'
+		]);
+
+		const detail = await t.query(api.projectPosts.getByOwnerProjectAndSlug, {
+			createdBy: 'owner123',
+			projectSlug: 'patchhub',
+			postSlug: 'published-post'
+		});
+		expect(detail?.post).toMatchObject({
+			kind: 'announcement',
+			title: 'Published post',
+			status: 'published'
+		});
 	});
 
-	it('keeps older published notes visible when newer drafts exceed the list cap', async () => {
+	it('keeps older published posts visible when newer drafts exceed the list cap', async () => {
 		const t = createTest();
 
 		await t.run(async (ctx) => {
@@ -1222,11 +1243,12 @@ describe('patchNotes.create', () => {
 				updatedAt: 1000
 			});
 
-			await ctx.db.insert('patchNotes', {
+			await ctx.db.insert('projectPosts', {
 				projectId,
 				authorId: userId,
-				title: 'Published note',
-				slug: 'published-note',
+				kind: 'patch_notes',
+				title: 'Published post',
+				slug: 'published-post',
 				content: TIPTAP_DOC,
 				status: 'published',
 				publishedAt: 1,
@@ -1235,11 +1257,12 @@ describe('patchNotes.create', () => {
 			});
 
 			for (let index = 0; index < 120; index++) {
-				await ctx.db.insert('patchNotes', {
+				await ctx.db.insert('projectPosts', {
 					projectId,
 					authorId: userId,
-					title: `Draft note ${index}`,
-					slug: `draft-note-${index}`,
+					kind: 'announcement',
+					title: `Draft post ${index}`,
+					slug: `draft-post-${index}`,
 					content: TIPTAP_DOC,
 					status: 'draft',
 					createdAt: 1000 + index,
@@ -1248,19 +1271,20 @@ describe('patchNotes.create', () => {
 			}
 		});
 
-		const publicList = await t.query(api.patchNotes.listByOwnerAndProject, {
+		const publicList = await t.query(api.projectPosts.listByOwnerAndProject, {
 			createdBy: 'owner123',
 			projectSlug: 'patchhub'
 		});
 
-		expect(publicList?.notes).toHaveLength(1);
-		expect(publicList?.notes[0]).toMatchObject({
-			title: 'Published note',
+		expect(publicList?.posts).toHaveLength(1);
+		expect(publicList?.posts[0]).toMatchObject({
+			kind: 'patch_notes',
+			title: 'Published post',
 			status: 'published'
 		});
 	});
 
-	it('suffixes the reserved new patch note slug', async () => {
+	it('suffixes the reserved new post slug', async () => {
 		const t = createTest();
 
 		const { projectId } = await t.run(async (ctx) => {
@@ -1282,15 +1306,16 @@ describe('patchNotes.create', () => {
 			return { projectId };
 		});
 
-		const note = await t.mutation(api.patchNotes.create, {
+		const post = await t.mutation(api.projectPosts.create, {
 			secret: SECRET,
 			authProviderId: 'workos_1',
 			projectId,
+			kind: 'patch_notes',
 			title: 'New',
 			content: TIPTAP_DOC,
 			status: 'draft'
 		});
 
-		expect(note.slug).toBe('new-2');
+		expect(post.slug).toBe('new-2');
 	});
 });

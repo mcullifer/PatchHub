@@ -6,7 +6,7 @@
 	type OwnerRouteErrorParams = {
 		createdBy?: string;
 		project?: string;
-		note?: string;
+		post?: string;
 	};
 
 	type OwnerRouteErrorDetails = {
@@ -25,10 +25,10 @@
 		params: OwnerRouteErrorParams,
 		message: string | undefined
 	): OwnerRouteErrorDetails {
-		if (status === 404 && params.note) {
+		if (status === 404 && params.post) {
 			return {
-				title: 'Patch note not found',
-				description: 'That patch note does not exist or is not visible.',
+				title: 'Post not found',
+				description: 'That post does not exist or is not visible.',
 				icon: 'article_off',
 				showOwnerLink: params.createdBy !== undefined
 			};

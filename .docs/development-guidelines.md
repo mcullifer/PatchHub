@@ -16,7 +16,7 @@
 - Avoid unused parameters, variables, and imports.
 - Keep functions focused. Extract helpers when a function mixes parsing, validation, data access, and presentation.
 - Prefer early returns for invalid or empty states.
-- Use descriptive names that encode domain meaning, such as `patchNotes`, `sourceUrl`, and `releasedAt`.
+- Use descriptive names that encode domain meaning, such as `projectPosts`, `sourceUrl`, and `releasedAt`.
 
 ## SvelteKit Standards
 
