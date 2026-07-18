@@ -14,8 +14,8 @@ npm ci
 
 Environment files (never commit real values):
 
-- `.env.local` — build-time and Vite dev variables. Copy `.env.example` and fill in the values. `PUBLIC_CONVEX_URL` is baked into the build via `$env/static/public`, so it must be present at build time.
-- `.dev.vars` — runtime bindings for the local Worker (`npm run preview`). Copy `.dev.vars.example` and fill in the values. If `.dev.vars` is absent, Wrangler falls back to reading `.env`/`.env.local`.
+- `.env.local` — managed by the Convex CLI (`npx convex dev` writes the deployment and `PUBLIC_CONVEX_URL` here). `PUBLIC_CONVEX_URL` is baked into the build via `$env/static/public`, so it must be present at build time.
+- `.env` — your local WorkOS and server-secret values. Copy `.env.example` and fill it in. Both Vite (`npm run dev`) and Wrangler (`npm run preview`) read it.
 
 ## Development
 

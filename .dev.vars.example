@@ -1,6 +1,0 @@
-WORKOS_CLIENT_ID=
-WORKOS_API_KEY=
-WORKOS_REDIRECT_URI=http://localhost:4173/auth/callback
-WORKOS_COOKIE_PASSWORD=
-CONVEX_SERVER_SECRET=
-STEAM_API_URL=https://api.steampowered.com
