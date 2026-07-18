@@ -1,0 +1,10 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+src/convex/_generated/
+
+# Managed Claude/Convex files
+.claude/settings.local.json
+.claude/skills/
+skills-lock.json
