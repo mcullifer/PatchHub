@@ -17,12 +17,18 @@ type PatchNoteAuthArgs = {
 	authProviderId?: string;
 };
 
+type ProjectBannerDto =
+	| { status: 'none'; url: null }
+	| { status: 'ready'; url: string }
+	| { status: 'pending'; url: string | null }
+	| { status: 'failed'; url: string | null; message: string };
+
 type PatchNoteProjectDto = {
 	id: Id<'projects'>;
 	name: string;
 	slug: string;
 	description: string | null;
-	bannerUrl: string | null;
+	banner: ProjectBannerDto;
 	ownerName: string;
 	ownerKind: 'user' | 'org';
 	isOwner: boolean;
@@ -218,11 +224,42 @@ async function toProjectDto(
 		name: resolvedProject.project.name,
 		slug: resolvedProject.project.slug,
 		description: resolvedProject.project.description ?? null,
-		bannerUrl,
+		banner: toProjectBannerDto(resolvedProject.project, bannerUrl, resolvedProject.isOwner),
 		ownerName: resolvedProject.owner.name,
 		ownerKind: resolvedProject.owner.kind,
 		isOwner: resolvedProject.isOwner
 	};
+}
+
+function toProjectBannerDto(
+	project: Doc<'projects'>,
+	url: string | null,
+	isOwner: boolean
+): ProjectBannerDto {
+	if (project.bannerUpload?.status === 'pending') {
+		return { status: 'pending', url };
+	}
+
+	if (project.bannerUpload?.status === 'failed' && isOwner) {
+		return {
+			status: 'failed',
+			url,
+			message: getBannerUploadErrorMessage(project.bannerUpload.errorCode)
+		};
+	}
+
+	return url ? { status: 'ready', url } : { status: 'none', url: null };
+}
+
+function getBannerUploadErrorMessage(errorCode: 'upload_failed' | 'invalid_file' | 'expired') {
+	switch (errorCode) {
+		case 'invalid_file':
+			return 'The banner image was not valid.';
+		case 'expired':
+			return 'The banner upload expired.';
+		case 'upload_failed':
+			return 'The banner upload failed.';
+	}
 }
 
 function toPatchNoteDto(note: Doc<'patchNotes'>): PatchNoteDto {

@@ -205,3 +205,32 @@ Validation:
   the 375px project view remains free of horizontal overflow.
 - Convex development functions: synced successfully after the finalized storage cleanup contract.
 - `npm run validate`: passed with 132 tests.
+
+## Project creation and asynchronous banner follow-up — 2026-07-18
+
+Goal: create and navigate to a project before its optional banner upload finishes, while preserving secure validation, retry behavior, and predictable banner states.
+
+Invariants:
+
+- Project metadata persists before the browser uploads the selected banner.
+- No selected image keeps the existing fallback; only a real pending attempt shows the image-area skeleton.
+- Upload failure never deletes the project and remains retryable by the owner.
+- WorkOS remains the SvelteKit trust boundary; Convex writes remain server-secret gated.
+- `convex-svelte` and the token remote function remain available for future direct-client use, but the unused root browser setup stays inactive.
+
+Completed:
+
+- Added attempt-aware pending/failed banner state, stale-attempt protection, expiration, and attachment-safe cleanup in Convex.
+- Changed project creation to a metadata-only remote form and direct browser-to-Convex storage upload.
+- Added shared browser upload coordination for create, retry, and replacement flows with server-side signature revalidation before attachment.
+- Added an image-only daisyUI skeleton, owner-only failed alert, and inline retry controls.
+- Removed the unused root Convex browser authentication initialization that caused repeated token requests.
+- Added Convex lifecycle and browser upload helper tests.
+
+Validation:
+
+- Targeted banner and Convex tests: passed (43 tests).
+- `npm run check:types`: passed.
+- `npm run check:svelte`: passed with no warnings or errors.
+- Svelte autofixer: no issues; retained the intentional timer effect and existing simple `bind:this` usage.
+- Full validation and authenticated browser verification remain to be recorded below when complete.

@@ -7,6 +7,7 @@
 		imageUrl = null,
 		imageAlt = '',
 		loading = false,
+		imagePending = false,
 		onimageerror,
 		fallbackIcon,
 		actions
@@ -16,6 +17,7 @@
 		imageUrl?: string | null;
 		imageAlt?: string;
 		loading?: boolean;
+		imagePending?: boolean;
 		onimageerror?: () => void | Promise<void>;
 		fallbackIcon: Snippet;
 		actions?: Snippet;
@@ -24,10 +26,12 @@
 	let failedImageUrl = $state<string | null>(null);
 	let loadedImageUrl = $state<string | null>(null);
 	let resolvingImageUrl = $state<string | null>(null);
-	const canLoadImage = $derived(!loading && Boolean(imageUrl) && imageUrl !== failedImageUrl);
+	const canLoadImage = $derived(
+		!loading && !imagePending && Boolean(imageUrl) && imageUrl !== failedImageUrl
+	);
 	const showImage = $derived(canLoadImage && imageUrl === loadedImageUrl);
 	const showImageSkeleton = $derived(
-		loading || (!showImage && (canLoadImage || Boolean(resolvingImageUrl)))
+		loading || imagePending || (!showImage && (canLoadImage || Boolean(resolvingImageUrl)))
 	);
 
 	function handleImageLoad(): void {
@@ -60,7 +64,7 @@
 
 <header
 	class="card card-sm md:card-md bg-base-200 overflow-hidden"
-	aria-busy={loading}
+	aria-busy={loading || imagePending}
 	aria-label={loading ? title : undefined}
 >
 	<div class="grid md:min-h-64 md:grid-cols-2">

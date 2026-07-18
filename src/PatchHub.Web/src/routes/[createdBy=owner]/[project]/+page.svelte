@@ -19,7 +19,7 @@
 
 <svelte:boundary>
 	<div class="flex flex-col gap-3 sm:gap-4">
-		<ProjectHero {project} />
+		<ProjectHero {project} createdBy={params.createdBy} projectSlug={params.project} />
 		<ProjectPostFeed {project} {notes} createdBy={params.createdBy} />
 	</div>
 

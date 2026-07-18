@@ -1,5 +1,7 @@
-import { PROJECT_BANNER_MAX_BYTES } from '$lib/projects/projectBanner';
-import { getProjectBannerValidationError } from '$lib/server/projects/projectBanner';
+import {
+	PROJECT_BANNER_MAX_BYTES,
+	getProjectBannerValidationError
+} from '$lib/projects/projectBanner';
 import { describe, expect, it } from 'vitest';
 
 describe('getProjectBannerValidationError', () => {

@@ -63,6 +63,27 @@ export default defineSchema({
 		slug: v.string(),
 		description: v.optional(v.string()),
 		bannerStorageId: v.optional(v.id('_storage')),
+		bannerUpload: v.optional(
+			v.union(
+				v.object({
+					status: v.literal('pending'),
+					attemptId: v.string(),
+					startedAt: v.number(),
+					storageId: v.optional(v.id('_storage')),
+					contentType: v.optional(v.string())
+				}),
+				v.object({
+					status: v.literal('failed'),
+					attemptId: v.string(),
+					failedAt: v.number(),
+					errorCode: v.union(
+						v.literal('upload_failed'),
+						v.literal('invalid_file'),
+						v.literal('expired')
+					)
+				})
+			)
+		),
 		userId: v.optional(v.id('users')),
 		orgId: v.optional(v.id('organizations')),
 		createdAt: v.number(),
@@ -72,7 +93,8 @@ export default defineSchema({
 		.index('by_userId_and_deletedAt_and_updatedAt', ['userId', 'deletedAt', 'updatedAt'])
 		.index('by_userId_and_slug_and_deletedAt', ['userId', 'slug', 'deletedAt'])
 		.index('by_orgId_and_deletedAt_and_updatedAt', ['orgId', 'deletedAt', 'updatedAt'])
-		.index('by_orgId_and_slug_and_deletedAt', ['orgId', 'slug', 'deletedAt']),
+		.index('by_orgId_and_slug_and_deletedAt', ['orgId', 'slug', 'deletedAt'])
+		.index('by_bannerStorageId', ['bannerStorageId']),
 
 	patchNotes: defineTable({
 		projectId: v.id('projects'),

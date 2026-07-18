@@ -1,6 +1,13 @@
 import { v } from 'convex/values';
+import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
-import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
+import {
+	internalMutation,
+	mutation,
+	query,
+	type MutationCtx,
+	type QueryCtx
+} from './_generated/server';
 import { requireServerSecret } from './lib/serverSecret';
 import { createSlug, normalizeName } from './lib/strings';
 import { normalizeUsername } from './lib/usernames';
@@ -10,6 +17,7 @@ const OWNER_PROJECT_LIMIT = 100;
 const PROJECT_NAME_MAX_LENGTH = 100;
 const PROJECT_DESCRIPTION_MAX_LENGTH = 500;
 const PROJECT_BANNER_MAX_BYTES = 5 * 1024 * 1024;
+const PROJECT_BANNER_UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_SLUG_ATTEMPTS = 1000;
 const PROJECT_BANNER_MIME_TYPES = new Set([
 	'image/jpeg',
@@ -20,6 +28,7 @@ const PROJECT_BANNER_MIME_TYPES = new Set([
 ]);
 
 type ProjectLookupCtx = Pick<QueryCtx, 'db'>;
+type BannerUploadFailureCode = 'upload_failed' | 'invalid_file' | 'expired';
 type PublicOwnerProfile =
 	| { kind: 'user'; name: string; createdAt: number }
 	| { kind: 'org'; name: string; createdAt: number };
@@ -88,32 +97,68 @@ export const getOwnerProfileForServer = query({
 	}
 });
 
+export const getClaimedBannerUpload = query({
+	args: {
+		secret: v.string(),
+		authProviderId: v.string(),
+		projectId: v.id('projects'),
+		attemptId: v.string(),
+		storageId: v.id('_storage')
+	},
+	handler: async (ctx, args) => {
+		requireServerSecret(args.secret);
+		const user = await requireProjectUser(ctx, args.authProviderId);
+		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		if (
+			!isCurrentPendingAttempt(project, args.attemptId) ||
+			project.bannerUpload.storageId !== args.storageId ||
+			!project.bannerUpload.contentType
+		) {
+			return null;
+		}
+
+		const metadata = await getValidBannerStorageMetadata(
+			ctx,
+			args.storageId,
+			project.bannerUpload.contentType
+		);
+		const url = metadata ? await ctx.storage.getUrl(args.storageId) : null;
+		return metadata && url ? { url, contentType: project.bannerUpload.contentType } : null;
+	}
+});
+
 export const create = mutation({
 	args: {
 		secret: v.string(),
 		authProviderId: v.string(),
 		name: v.string(),
 		description: v.optional(v.string()),
-		bannerStorageId: v.optional(v.id('_storage'))
+		bannerUploadAttemptId: v.optional(v.string())
 	},
 	handler: async (ctx, args) => {
 		requireServerSecret(args.secret);
 
 		const user = await requireProjectUser(ctx, args.authProviderId);
-		if (args.bannerStorageId) {
-			await validateBannerStorage(ctx, args.bannerStorageId);
-		}
-
 		const name = normalizeProjectName(args.name);
 		const description = normalizeProjectDescription(args.description);
 		const slug = await createUniqueProjectSlug(ctx, user._id, createSlug(name, 'project'));
 		const now = Date.now();
+		const attemptId = args.bannerUploadAttemptId
+			? normalizeBannerUploadAttemptId(args.bannerUploadAttemptId)
+			: undefined;
 		const project: {
 			name: string;
 			normalizedName: string;
 			slug: string;
 			description?: string;
-			bannerStorageId?: Id<'_storage'>;
+			bannerUpload?:
+				| { status: 'pending'; attemptId: string; startedAt: number }
+				| {
+						status: 'failed';
+						attemptId: string;
+						failedAt: number;
+						errorCode: 'upload_failed';
+				  };
 			userId: Id<'users'>;
 			createdAt: number;
 			updatedAt: number;
@@ -129,88 +174,199 @@ export const create = mutation({
 		if (description !== undefined) {
 			project.description = description;
 		}
-		if (args.bannerStorageId !== undefined) {
-			project.bannerStorageId = args.bannerStorageId;
+
+		let uploadUrl: string | null = null;
+		if (attemptId) {
+			try {
+				uploadUrl = await ctx.storage.generateUploadUrl();
+				project.bannerUpload = { status: 'pending', attemptId, startedAt: now };
+			} catch {
+				project.bannerUpload = {
+					status: 'failed',
+					attemptId,
+					failedAt: now,
+					errorCode: 'upload_failed'
+				};
+			}
 		}
 
 		const id = await ctx.db.insert('projects', project);
-		return { id, name, slug };
-	}
-});
-
-export const generateBannerUploadUrl = mutation({
-	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
-		projectId: v.optional(v.id('projects'))
-	},
-	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const user = await requireProjectUser(ctx, args.authProviderId);
-
-		if (args.projectId) {
-			await requireOwnedProject(ctx, user._id, args.projectId);
+		if (attemptId && uploadUrl) {
+			await scheduleBannerUploadExpiration(ctx, id, attemptId);
 		}
 
-		return await ctx.storage.generateUploadUrl();
+		return {
+			id,
+			name,
+			slug,
+			bannerUpload: attemptId && uploadUrl ? { attemptId, uploadUrl } : null
+		};
 	}
 });
 
-export const setBanner = mutation({
+export const beginBannerUpload = mutation({
 	args: {
 		secret: v.string(),
 		authProviderId: v.string(),
 		projectId: v.id('projects'),
-		storageId: v.id('_storage')
+		attemptId: v.string()
 	},
 	handler: async (ctx, args) => {
 		requireServerSecret(args.secret);
 		const user = await requireProjectUser(ctx, args.authProviderId);
 		const project = await requireOwnedProject(ctx, user._id, args.projectId);
-		await validateBannerStorage(ctx, args.storageId);
+		const attemptId = normalizeBannerUploadAttemptId(args.attemptId);
 
-		const replacedStorageId = project.bannerStorageId;
-		await ctx.db.patch(project._id, {
-			bannerStorageId: args.storageId,
-			updatedAt: Date.now()
-		});
-
-		if (replacedStorageId && replacedStorageId !== args.storageId) {
-			await ctx.storage.delete(replacedStorageId);
+		if (project.bannerUpload?.status === 'pending' && project.bannerUpload.storageId) {
+			await deleteUnattachedStorage(ctx, project.bannerUpload.storageId);
 		}
 
-		return null;
+		const startedAt = Date.now();
+		const uploadUrl = await ctx.storage.generateUploadUrl();
+		await ctx.db.patch(project._id, {
+			bannerUpload: { status: 'pending', attemptId, startedAt }
+		});
+		await scheduleBannerUploadExpiration(ctx, project._id, attemptId);
+
+		return { attemptId, uploadUrl };
 	}
 });
 
-export const discardBannerUpload = mutation({
+export const claimBannerUpload = mutation({
 	args: {
 		secret: v.string(),
 		authProviderId: v.string(),
+		projectId: v.id('projects'),
+		attemptId: v.string(),
 		storageId: v.id('_storage'),
-		projectId: v.optional(v.id('projects'))
+		contentType: v.string()
 	},
 	handler: async (ctx, args) => {
 		requireServerSecret(args.secret);
 		const user = await requireProjectUser(ctx, args.authProviderId);
+		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		if (!isCurrentPendingAttempt(project, args.attemptId)) {
+			return { status: 'stale' as const };
+		}
 
-		if (args.projectId) {
-			const project = await requireOwnedProject(ctx, user._id, args.projectId);
-			if (project.bannerStorageId === args.storageId) {
-				return null;
+		if (await findProjectUsingBanner(ctx, args.storageId)) {
+			return { status: 'stale' as const };
+		}
+
+		const metadata = await getValidBannerStorageMetadata(ctx, args.storageId, args.contentType);
+		if (!metadata) {
+			await deleteUnattachedStorage(ctx, args.storageId);
+			await markBannerUploadFailed(ctx, project, args.attemptId, 'invalid_file');
+			return { status: 'failed' as const };
+		}
+
+		await ctx.db.patch(project._id, {
+			bannerUpload: {
+				status: 'pending',
+				attemptId: args.attemptId,
+				startedAt: project.bannerUpload.startedAt,
+				storageId: args.storageId,
+				contentType: args.contentType
 			}
+		});
+
+		return {
+			status: 'claimed' as const,
+			contentType: args.contentType
+		};
+	}
+});
+
+export const finishBannerUpload = mutation({
+	args: {
+		secret: v.string(),
+		authProviderId: v.string(),
+		projectId: v.id('projects'),
+		attemptId: v.string(),
+		storageId: v.id('_storage'),
+		outcome: v.union(v.literal('ready'), v.literal('invalid_file'), v.literal('upload_failed'))
+	},
+	handler: async (ctx, args) => {
+		requireServerSecret(args.secret);
+		const user = await requireProjectUser(ctx, args.authProviderId);
+		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		if (
+			!isCurrentPendingAttempt(project, args.attemptId) ||
+			project.bannerUpload.storageId !== args.storageId
+		) {
+			return { status: 'stale' as const };
 		}
 
-		if (await ctx.db.system.get('_storage', args.storageId)) {
-			await ctx.storage.delete(args.storageId);
+		if (args.outcome !== 'ready' || !(await getValidBannerStorageMetadata(ctx, args.storageId))) {
+			await deleteUnattachedStorage(ctx, args.storageId);
+			await markBannerUploadFailed(
+				ctx,
+				project,
+				args.attemptId,
+				args.outcome === 'invalid_file' ? 'invalid_file' : 'upload_failed'
+			);
+			return { status: 'failed' as const };
 		}
 
+		const replacedStorageId = project.bannerStorageId;
+		await ctx.db.patch(project._id, {
+			bannerStorageId: args.storageId,
+			bannerUpload: undefined,
+			updatedAt: Date.now()
+		});
+
+		if (replacedStorageId && replacedStorageId !== args.storageId) {
+			await deleteUnattachedStorage(ctx, replacedStorageId);
+		}
+
+		return { status: 'ready' as const };
+	}
+});
+
+export const failBannerUpload = mutation({
+	args: {
+		secret: v.string(),
+		authProviderId: v.string(),
+		projectId: v.id('projects'),
+		attemptId: v.string()
+	},
+	handler: async (ctx, args) => {
+		requireServerSecret(args.secret);
+		const user = await requireProjectUser(ctx, args.authProviderId);
+		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		if (!isCurrentPendingAttempt(project, args.attemptId)) {
+			return { status: 'stale' as const };
+		}
+
+		if (project.bannerUpload.storageId) {
+			await deleteUnattachedStorage(ctx, project.bannerUpload.storageId);
+		}
+		await markBannerUploadFailed(ctx, project, args.attemptId, 'upload_failed');
+		return { status: 'failed' as const };
+	}
+});
+
+export const expireBannerUpload = internalMutation({
+	args: {
+		projectId: v.id('projects'),
+		attemptId: v.string()
+	},
+	handler: async (ctx, args) => {
+		const project = await ctx.db.get(args.projectId);
+		if (!project || !isCurrentPendingAttempt(project, args.attemptId)) {
+			return null;
+		}
+
+		if (project.bannerUpload.storageId) {
+			await deleteUnattachedStorage(ctx, project.bannerUpload.storageId);
+		}
+		await markBannerUploadFailed(ctx, project, args.attemptId, 'expired');
 		return null;
 	}
 });
 
 async function requireProjectUser(
-	ctx: Pick<MutationCtx, 'auth' | 'db'>,
+	ctx: Pick<QueryCtx, 'auth' | 'db'>,
 	authProviderId: string
 ): Promise<Doc<'users'>> {
 	const user = await findUserByAuthProviderId(ctx, authProviderId);
@@ -222,7 +378,7 @@ async function requireProjectUser(
 }
 
 async function requireOwnedProject(
-	ctx: Pick<MutationCtx, 'db'>,
+	ctx: ProjectLookupCtx,
 	userId: Id<'users'>,
 	projectId: Id<'projects'>
 ): Promise<Doc<'projects'>> {
@@ -234,23 +390,97 @@ async function requireOwnedProject(
 	return project;
 }
 
-async function validateBannerStorage(
-	ctx: Pick<MutationCtx, 'db'>,
-	storageId: Id<'_storage'>
+function normalizeBannerUploadAttemptId(attemptId: string): string {
+	const normalized = attemptId.trim();
+	if (!normalized) {
+		throw new Error('Banner upload attempt is required');
+	}
+
+	return normalized;
+}
+
+function isCurrentPendingAttempt(
+	project: Doc<'projects'>,
+	attemptId: string
+): project is Doc<'projects'> & {
+	bannerUpload: {
+		status: 'pending';
+		attemptId: string;
+		startedAt: number;
+		storageId?: Id<'_storage'>;
+		contentType?: string;
+	};
+} {
+	return project.bannerUpload?.status === 'pending' && project.bannerUpload.attemptId === attemptId;
+}
+
+async function scheduleBannerUploadExpiration(
+	ctx: Pick<MutationCtx, 'scheduler'>,
+	projectId: Id<'projects'>,
+	attemptId: string
 ): Promise<void> {
+	await ctx.scheduler.runAfter(
+		PROJECT_BANNER_UPLOAD_TIMEOUT_MS,
+		internal.projects.expireBannerUpload,
+		{ projectId, attemptId }
+	);
+}
+
+async function getValidBannerStorageMetadata(
+	ctx: Pick<QueryCtx, 'db'>,
+	storageId: Id<'_storage'>,
+	contentType?: string
+) {
 	const metadata = await ctx.db.system.get('_storage', storageId);
-	if (!metadata) {
-		throw new Error('Banner upload was not found');
+	if (!metadata || metadata.size === 0 || metadata.size > PROJECT_BANNER_MAX_BYTES) {
+		return null;
 	}
 
 	if (
-		metadata.size === 0 ||
-		metadata.size > PROJECT_BANNER_MAX_BYTES ||
-		!metadata.contentType ||
-		!PROJECT_BANNER_MIME_TYPES.has(metadata.contentType)
+		contentType !== undefined &&
+		(!PROJECT_BANNER_MIME_TYPES.has(contentType) ||
+			(metadata.contentType !== undefined && metadata.contentType !== contentType))
 	) {
-		throw new Error('Banner upload must be a supported image up to 5 MB');
+		return null;
 	}
+
+	return metadata;
+}
+
+async function findProjectUsingBanner(
+	ctx: Pick<QueryCtx, 'db'>,
+	storageId: Id<'_storage'>
+): Promise<Doc<'projects'> | null> {
+	return await ctx.db
+		.query('projects')
+		.withIndex('by_bannerStorageId', (q) => q.eq('bannerStorageId', storageId))
+		.first();
+}
+
+async function deleteUnattachedStorage(
+	ctx: Pick<MutationCtx, 'db' | 'storage'>,
+	storageId: Id<'_storage'>
+): Promise<void> {
+	if (await findProjectUsingBanner(ctx, storageId)) return;
+	if (await ctx.db.system.get('_storage', storageId)) {
+		await ctx.storage.delete(storageId);
+	}
+}
+
+async function markBannerUploadFailed(
+	ctx: Pick<MutationCtx, 'db'>,
+	project: Doc<'projects'>,
+	attemptId: string,
+	errorCode: BannerUploadFailureCode
+): Promise<void> {
+	await ctx.db.patch(project._id, {
+		bannerUpload: {
+			status: 'failed',
+			attemptId,
+			failedAt: Date.now(),
+			errorCode
+		}
+	});
 }
 
 async function getOwnerProfileData(ctx: ProjectLookupCtx, createdBy: string) {
