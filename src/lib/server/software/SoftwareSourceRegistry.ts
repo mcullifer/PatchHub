@@ -73,7 +73,7 @@ export const softwareSources = {
 		description: 'Product and platform updates published in the GitHub Changelog.',
 		icon: 'code',
 		imageUrl: '/github-changelog.png',
-		imageAlt: 'GitHub logo mark',
+		imageAlt: 'GitHub logo',
 		adapter: 'atom-feed',
 		feedUrl: 'https://github.blog/changelog/feed/',
 		searchUrl: null,
