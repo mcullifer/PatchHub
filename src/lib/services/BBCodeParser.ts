@@ -1,6 +1,11 @@
 import { parseBBCodeAst } from './bbcode/BBCodeParser';
 import { BBCodeRenderer } from './bbcode/BBCodeRenderer';
-import { isKnownSteamTag } from './bbcode/SteamBBCode';
+import {
+	steamBlockTags,
+	steamInlineTags,
+	steamListItemTag,
+	steamSelfClosingTags
+} from './bbcode/SteamBBCode';
 import type { ParseOptions, ParseResult } from './bbcode/types';
 
 export type { BBCodeTag, BBCodeToken, ParseError, ParseOptions, ParseResult } from './bbcode/types';
@@ -59,38 +64,7 @@ export class BBCodeParser {
 	}
 
 	getSupportedTags(): string[] {
-		return [
-			'b',
-			'i',
-			'u',
-			's',
-			'strike',
-			'h1',
-			'h2',
-			'h3',
-			'h4',
-			'h5',
-			'h6',
-			'quote',
-			'p',
-			'code',
-			'hr',
-			'list',
-			'olist',
-			'*',
-			'url',
-			'img',
-			'previewyoutube',
-			'video',
-			'table',
-			'tr',
-			'td',
-			'th',
-			'expand',
-			'color',
-			'size',
-			'spoiler'
-		].filter(isKnownSteamTag);
+		return [...steamInlineTags, ...steamBlockTags, ...steamSelfClosingTags, steamListItemTag];
 	}
 }
 

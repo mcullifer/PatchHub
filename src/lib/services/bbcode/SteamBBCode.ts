@@ -9,6 +9,7 @@ export const steamBlockTags = new Set([
 	'quote',
 	'p',
 	'code',
+	'carousel',
 	'list',
 	'olist',
 	'table',

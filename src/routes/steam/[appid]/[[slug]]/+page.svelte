@@ -70,6 +70,20 @@
 		return [{ label: 'Published', value: formatNewsDate(newsItem.date) }];
 	}
 
+	function carouselNav(container: HTMLElement) {
+		const onclick = (event: MouseEvent) => {
+			if (!(event.target instanceof Element)) return;
+			const button = event.target.closest('[data-carousel-prev], [data-carousel-next]');
+			const carousel = button?.parentElement?.querySelector('.carousel');
+			if (!carousel) return;
+			const direction = button?.hasAttribute('data-carousel-prev') ? -1 : 1;
+			const itemWidth = carousel.querySelector('.carousel-item')?.clientWidth ?? carousel.clientWidth;
+			carousel.scrollBy({ left: direction * itemWidth });
+		};
+		container.addEventListener('click', onclick);
+		return () => container.removeEventListener('click', onclick);
+	}
+
 	async function resolveHeaderImage(): Promise<void> {
 		const appid = game?.appid;
 		if (appid === undefined) return;
@@ -193,6 +207,7 @@
 							{#if canRenderSanitizedHtml}
 								<div
 									class="patchhub-rich-text prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
+									{@attach carouselNav}
 								>
 									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 									{@html DOMPurify.sanitize(selectedNews.contents)}

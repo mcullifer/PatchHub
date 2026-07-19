@@ -103,6 +103,8 @@ export class BBCodeRenderer {
 				return renderLink(node, content, textContent);
 			case 'img':
 				return this.renderImage(node, textContent);
+			case 'carousel':
+				return this.renderCarousel(node);
 			case 'previewyoutube':
 				return renderYouTubePreview(node);
 			case 'video':
@@ -128,6 +130,22 @@ export class BBCodeRenderer {
 		return `<img src="${escapeAttribute(src)}" alt="${escapeAttribute(alt)}" />`;
 	}
 
+	private renderCarousel(node: ElementNode): string {
+		const images = node.children
+			.filter((child): child is ElementNode => child.type === 'element' && child.tag.name === 'img')
+			.map((child) => this.renderImage(child, getPlainText(child.children)))
+			.filter((image) => image.startsWith('<img'));
+		if (images.length === 0) return '';
+		if (images.length === 1) return images[0];
+
+		const items = images
+			.map((image) => `<div class="carousel-item w-[90%]">${image}</div>`)
+			.join('');
+		const chevron = (direction: 'prev' | 'next', glyph: string, position: string) =>
+			`<button type="button" data-carousel-${direction} class="btn btn-circle absolute top-1/2 ${position} hidden -translate-y-1/2 sm:inline-flex" aria-label="${direction === 'prev' ? 'Previous' : 'Next'} image">${glyph}</button>`;
+		return `<div class="not-prose relative my-4"><div class="carousel carousel-center rounded-box w-full gap-2" tabindex="0" role="region" aria-label="Image carousel">${items}</div>${chevron('prev', '❮', 'left-2')}${chevron('next', '❯', 'right-2')}</div>`;
+	}
+
 	private resolveSteamImageUrl(source: string): string {
 		if (source.startsWith('{STEAM_CLAN_IMAGE}') || source.startsWith('{STEAM_CLAN_LOC_IMAGE}')) {
 			return (
@@ -146,9 +164,9 @@ export class BBCodeRenderer {
 
 function normalizeBreaksAroundBlocks(html: string): string {
 	return html
-		.replace(/\s*<br>\s*(?=<(?:blockquote|details|h[1-6]|hr|img|ol|table|ul|video)\b)/g, '')
+		.replace(/\s*<br>\s*(?=<(?:blockquote|details|div|h[1-6]|hr|img|ol|table|ul|video)\b)/g, '')
 		.replace(/(<(?:hr|img)\b[^>]*\/>)\s*<br>\s*/g, '$1')
-		.replace(/(<\/(?:blockquote|details|h[1-6]|ol|table|ul|video)>)\s*<br>\s*/g, '$1');
+		.replace(/(<\/(?:blockquote|details|div|h[1-6]|ol|table|ul|video)>)\s*<br>\s*/g, '$1');
 }
 
 function getListItemChildren(children: ElementNode['children']): ElementNode['children'] {
