@@ -30,6 +30,52 @@ html {
 	/* Fix for daisyui Modal + Drawer adding scrollbar margin? */
 	scrollbar-gutter: auto !important;
 }
+
+/* Modal entrance/exit: sync backdrop + box on one clock (daisyui staggers
+   them). The opener applies .modal-opening/.modal-closing to hold the closed
+   visual state during the transition, and only closes the dialog after the
+   exit finishes — so visibility/overlay must flip instantly, NOT transition:
+   a transitioning visibility leaves the dialog's subtree unfocusable at
+   showModal() time, which breaks focusing the input on open. */
+.modal,
+.modal[open] {
+	transition:
+		visibility 0s,
+		background-color 100ms ease,
+		opacity 100ms ease,
+		-webkit-backdrop-filter 100ms ease,
+		backdrop-filter 100ms ease;
+}
+
+/* The blur also hides one-time repaints of the page behind the translucent dim. */
+.modal[open] {
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
+}
+
+.modal:is(.modal-opening, .modal-closing) {
+	background-color: transparent;
+	-webkit-backdrop-filter: blur(0);
+	backdrop-filter: blur(0);
+}
+
+.modal-box {
+	transition:
+		scale 100ms ease,
+		opacity 100ms ease;
+}
+
+.modal:is(.modal-opening, .modal-closing) .modal-box {
+	opacity: 0;
+	scale: 0.95;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.modal,
+	.modal-box {
+		transition-duration: 0s;
+	}
+}
 body {
 	height: 100vh;
 }

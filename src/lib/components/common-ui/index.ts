@@ -9,6 +9,7 @@ import Label from './Label.svelte';
 import Menu from './Menu.svelte';
 import MenuItem from './MenuItem.svelte';
 import ScrollToTop from './ScrollToTop.svelte';
+import SearchTrigger from './SearchTrigger.svelte';
 import Swap from './Swap.svelte';
 import VisibleWhenInView from './VisibleWhenInView.svelte';
 
@@ -24,6 +25,7 @@ export {
 	Menu,
 	MenuItem,
 	ScrollToTop,
+	SearchTrigger,
 	Swap,
 	VisibleWhenInView
 };

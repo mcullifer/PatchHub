@@ -2,8 +2,7 @@
 	import '../app.css';
 	// sort-ignore
 	import { resolve } from '$app/paths';
-	import { Icon, ScrollToTop } from '$lib/components/common-ui';
-	import NavbarSearch from '$lib/components/common-ui/NavbarSearch.svelte';
+	import { Icon, ScrollToTop, SearchTrigger } from '$lib/components/common-ui';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import type { Snippet } from 'svelte';
@@ -28,9 +27,7 @@
 			</a>
 		{/snippet}
 		{#snippet center()}
-			<div class="hidden w-full sm:block">
-				<NavbarSearch />
-			</div>
+			<SearchTrigger />
 		{/snippet}
 		{#snippet end()}
 			<label class="swap swap-rotate">
