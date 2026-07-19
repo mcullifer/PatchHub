@@ -46,6 +46,7 @@
 	);
 
 	export function resume() {
+		max = Math.min(max + increment, items.length);
 		observer.resume();
 	}
 </script>
