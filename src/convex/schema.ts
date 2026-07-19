@@ -5,6 +5,14 @@ export const projectPostKind = v.union(v.literal('patch_notes'), v.literal('anno
 
 // Timestamps are Unix epoch milliseconds. Soft deletes use optional deletedAt.
 export default defineSchema({
+	cacheEntries: defineTable({
+		key: v.string(),
+		value: v.optional(v.string()),
+		expiresAt: v.number(),
+		updatedAt: v.number(),
+		refetchClaimedAt: v.optional(v.number())
+	}).index('by_key', ['key']),
+
 	users: defineTable({
 		authProviderId: v.string(),
 		// Stored normalized (trimmed, lowercase)

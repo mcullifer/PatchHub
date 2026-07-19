@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as cache from "../cache.js";
 import type * as catalog from "../catalog.js";
 import type * as crons from "../crons.js";
 import type * as favorites from "../favorites.js";
@@ -29,6 +30,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  cache: typeof cache;
   catalog: typeof catalog;
   crons: typeof crons;
   favorites: typeof favorites;

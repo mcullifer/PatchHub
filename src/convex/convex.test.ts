@@ -25,6 +25,115 @@ beforeEach(() => {
 	vi.stubEnv('SERVER_SECRET', SECRET);
 });
 
+describe('cache', () => {
+	it('roundtrips serialized values through set and get', async () => {
+		const t = createTest();
+
+		await t.mutation(api.cache.set, {
+			secret: SECRET,
+			key: 'roundtrip',
+			value: JSON.stringify({ games: [10, 20] }),
+			ttlMs: 60_000
+		});
+
+		const entry = await t.query(api.cache.get, { secret: SECRET, key: 'roundtrip' });
+		expect(entry).toMatchObject({ value: '{"games":[10,20]}' });
+		expect(entry?.expiresAt).toBeGreaterThan(Date.now());
+	});
+
+	it('returns expired entries as stale inventory', async () => {
+		const t = createTest();
+		await t.run(async (ctx) => {
+			await ctx.db.insert('cacheEntries', {
+				key: 'expired',
+				value: '"stale"',
+				expiresAt: Date.now() - 1000,
+				updatedAt: Date.now() - 2000
+			});
+		});
+
+		await expect(t.query(api.cache.get, { secret: SECRET, key: 'expired' })).resolves.toEqual({
+			value: '"stale"',
+			expiresAt: expect.any(Number)
+		});
+	});
+
+	it('allows only one concurrent claimant for a missing key', async () => {
+		const t = createTest();
+		const claim = () =>
+			t.mutation(api.cache.claimRefetch, {
+				secret: SECRET,
+				key: 'missing',
+				claimWindowMs: 30_000
+			});
+
+		const results = await Promise.all([claim(), claim()]);
+		expect(results.toSorted()).toEqual([false, true]);
+	});
+
+	it('allows only one concurrent claimant for an expired key', async () => {
+		const t = createTest();
+		await t.run(async (ctx) => {
+			await ctx.db.insert('cacheEntries', {
+				key: 'expired',
+				value: '"stale"',
+				expiresAt: Date.now() - 1000,
+				updatedAt: Date.now() - 2000
+			});
+		});
+		const claim = () =>
+			t.mutation(api.cache.claimRefetch, {
+				secret: SECRET,
+				key: 'expired',
+				claimWindowMs: 30_000
+			});
+
+		const results = await Promise.all([claim(), claim()]);
+		expect(results.toSorted()).toEqual([false, true]);
+	});
+
+	it('never allows a fresh key to be claimed', async () => {
+		const t = createTest();
+		await t.mutation(api.cache.set, {
+			secret: SECRET,
+			key: 'fresh',
+			value: '"fresh"',
+			ttlMs: 60_000
+		});
+
+		await expect(
+			t.mutation(api.cache.claimRefetch, {
+				secret: SECRET,
+				key: 'fresh',
+				claimWindowMs: 30_000
+			})
+		).resolves.toBe(false);
+	});
+
+	it('clears an outstanding claim when setting a value', async () => {
+		const t = createTest();
+		await t.mutation(api.cache.claimRefetch, {
+			secret: SECRET,
+			key: 'claimed',
+			claimWindowMs: 30_000
+		});
+		await t.mutation(api.cache.set, {
+			secret: SECRET,
+			key: 'claimed',
+			value: '"value"',
+			ttlMs: 60_000
+		});
+
+		const entry = await t.run(async (ctx) => {
+			return await ctx.db
+				.query('cacheEntries')
+				.withIndex('by_key', (index) => index.eq('key', 'claimed'))
+				.unique();
+		});
+		expect(entry?.refetchClaimedAt).toBeUndefined();
+	});
+});
+
 describe('users.getOrCreate', () => {
 	it('creates a user with a normalized username and returns it on repeat calls', async () => {
 		const t = createTest();

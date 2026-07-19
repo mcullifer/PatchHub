@@ -5,6 +5,7 @@
 	import { UpdateFeedHero } from '$lib/components/update-feed';
 	import { addProjectFavorite, removeProjectFavorite } from '$lib/remote/favorites.remote';
 	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
+	import { Time } from '$lib/util/time';
 
 	type Project = Awaited<ReturnType<typeof getProjectPosts>>['project'];
 
@@ -53,7 +54,7 @@
 
 		const timer = setInterval(() => {
 			void projectQuery.refresh();
-		}, 5000);
+		}, Time.SECOND * 5);
 		return () => clearInterval(timer);
 	});
 </script>

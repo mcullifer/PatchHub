@@ -1,4 +1,6 @@
+import { ConvexCache } from '$lib/server/cache/ConvexCache';
 import { getDefaultSteamHeaderImageUrl } from '$lib/util/SteamAssets';
+import { Time } from '$lib/util/time';
 
 type SteamAppDetailsResponse = Record<
 	string,
@@ -10,29 +12,38 @@ type SteamAppDetailsResponse = Record<
 	}
 >;
 
-const steamHeaderImageCache = new Map<number, string | null>();
+const headerImageTtlMs = Time.DAY * 7;
 
 export async function getSteamHeaderImageUrl(
 	fetchFn: typeof fetch,
 	appid: number
 ): Promise<string | null> {
-	if (steamHeaderImageCache.has(appid)) {
-		return steamHeaderImageCache.get(appid) ?? null;
+	try {
+		const result = await new ConvexCache().getOrCreate(
+			`steam:header:${appid}`,
+			async () => fetchSteamHeaderImageUrl(fetchFn, appid),
+			{ ttlMs: headerImageTtlMs }
+		);
+		return result?.value ?? null;
+	} catch {
+		return null;
 	}
+}
 
+async function fetchSteamHeaderImageUrl(
+	fetchFn: typeof fetch,
+	appid: number
+): Promise<string | null> {
 	const defaultHeaderImageUrl = getDefaultSteamHeaderImageUrl(appid);
 	if (await imageExists(fetchFn, defaultHeaderImageUrl)) {
-		steamHeaderImageCache.set(appid, defaultHeaderImageUrl);
 		return defaultHeaderImageUrl;
 	}
 
 	const appDetailsHeaderImageUrl = await getSteamAppDetailsHeaderImageUrl(fetchFn, appid);
 	if (appDetailsHeaderImageUrl && (await imageExists(fetchFn, appDetailsHeaderImageUrl))) {
-		steamHeaderImageCache.set(appid, appDetailsHeaderImageUrl);
 		return appDetailsHeaderImageUrl;
 	}
 
-	steamHeaderImageCache.set(appid, null);
 	return null;
 }
 
