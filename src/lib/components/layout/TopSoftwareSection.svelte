@@ -1,12 +1,49 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { Icon, InView } from '$lib/components/common-ui';
+	import { FavoriteHeart, Icon, InView } from '$lib/components/common-ui';
 	import SectionHeader from '$lib/components/layout/SectionHeader.svelte';
+	import {
+		addExternalItemFavorite,
+		removeExternalItemFavorite
+	} from '$lib/remote/favorites.remote';
 	import { getSoftwareSourceSummaries } from '$lib/remote/software.remote';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import type { ClassValue } from 'svelte/elements';
 
-	let { id, class: classNames }: { id?: string; class?: ClassValue } = $props();
+	let {
+		id,
+		class: classNames,
+		favoritedExternalItemIds = []
+	}: { id?: string; class?: ClassValue; favoritedExternalItemIds?: string[] } = $props();
+
+	// Optimistic overrides layered on top of the ids favorited at load.
+	const favoriteOverrides = new SvelteMap<string, boolean>();
+	const togglingIds = new SvelteSet<string>();
+
+	function isFavorited(externalItemId: string): boolean {
+		return (
+			favoriteOverrides.get(externalItemId) ?? favoritedExternalItemIds.includes(externalItemId)
+		);
+	}
+
+	async function toggleFavorite(externalItemId: string): Promise<void> {
+		if (togglingIds.has(externalItemId)) return;
+		togglingIds.add(externalItemId);
+
+		const wasFavorited = isFavorited(externalItemId);
+		favoriteOverrides.set(externalItemId, !wasFavorited);
+
+		try {
+			await (wasFavorited
+				? removeExternalItemFavorite(externalItemId)
+				: addExternalItemFavorite(externalItemId));
+		} catch {
+			favoriteOverrides.set(externalItemId, wasFavorited);
+		} finally {
+			togglingIds.delete(externalItemId);
+		}
+	}
 
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
@@ -76,12 +113,14 @@
 									</a>
 								</h3>
 							</div>
-							{#if page.data.user !== null}
-								<label class="swap">
-									<input type="checkbox" data-tip="Favorite" class="tooltip" />
-									<Icon icon="favorite" style="outlined" class="swap-off" />
-									<Icon icon="favorite" class="swap-on text-pink-500" />
-								</label>
+							{#if page.data.user !== null && summary.externalItemId}
+								{@const externalItemId = summary.externalItemId}
+								<FavoriteHeart
+									favorited={isFavorited(externalItemId)}
+									onToggle={() => toggleFavorite(externalItemId)}
+									data-tip="Favorite"
+									class="tooltip"
+								/>
 							{/if}
 						</div>
 

@@ -1,6 +1,7 @@
 import Button from './Button.svelte';
 import Card from './Card.svelte';
 import EmptyState from './EmptyState.svelte';
+import FavoriteHeart from './FavoriteHeart.svelte';
 import GameCard from './GameCard.svelte';
 import Icon from './Icon.svelte';
 import InView from './InView.svelte';
@@ -15,6 +16,7 @@ export {
 	Button,
 	Card,
 	EmptyState,
+	FavoriteHeart,
 	GameCard,
 	Icon,
 	InView,

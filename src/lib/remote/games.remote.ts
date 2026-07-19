@@ -78,7 +78,7 @@ export const getSteamHeaderImage = query(v.number(), async (appid): Promise<stri
 });
 
 async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteamGame[]> {
-	const appIds = rankedGames.map((g) => g.appid);
+	const appIds = rankedGames.map((game) => game.appid);
 	const appNames = await getSteamAppNamesByAppIds(appIds);
 	return attachSteamAppNames(rankedGames, appNames);
 }

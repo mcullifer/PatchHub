@@ -1,4 +1,5 @@
 import { v } from 'convex/values';
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import { upsertExternalItem } from './lib/externalItems';
 import { requireServerSecret } from './lib/serverSecret';
@@ -34,7 +35,7 @@ export const searchSteam = query({
 export const getSteamAppNamesByAppIds = query({
 	args: { appIds: v.array(v.number()) },
 	handler: async (ctx, args) => {
-		const appNames: Record<string, { name: string; slug: string }> = {};
+		const appNames: Record<string, { id: Id<'externalItems'>; name: string; slug: string }> = {};
 		const uniqueAppIds = [...new Set(args.appIds)].slice(0, MAX_APP_ID_LOOKUPS);
 
 		for (const appId of uniqueAppIds) {
@@ -45,7 +46,7 @@ export const getSteamAppNamesByAppIds = query({
 				)
 				.unique();
 			if (!item) continue;
-			appNames[appId.toString()] = { name: item.name, slug: item.slug };
+			appNames[appId.toString()] = { id: item._id, name: item.name, slug: item.slug };
 		}
 
 		return appNames;

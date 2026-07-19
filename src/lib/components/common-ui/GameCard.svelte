@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { Icon } from '$lib/components/common-ui';
+	import { FavoriteHeart, Icon } from '$lib/components/common-ui';
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import type { INamedSteamGame } from '$lib/models/Steam';
+	import {
+		addExternalItemFavorite,
+		removeExternalItemFavorite
+	} from '$lib/remote/favorites.remote';
 	import { getSteamHeaderImage } from '$lib/remote/games.remote';
 	import { getDefaultSteamHeaderImageUrl } from '$lib/util/SteamAssets';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
@@ -52,15 +56,27 @@
 		}
 	}
 
-	async function favoriteGame() {
-		// // TODO: We need to get our actual catalog item for each game
-		// let response = isFavorited
-		// 	? api.favorites.remove(game.catalogId)
-		// 	: api.favorites.add(game.catalogId);
-		// isFavorited = !isFavorited;
-		// if (!(await response).ok) {
-		// 	isFavorited = !isFavorited;
-		// }
+	let optimisticFavorited = $state<boolean | null>(null);
+	let favorited = $derived(optimisticFavorited ?? isFavorited);
+
+	let isTogglingFavorite = false;
+
+	async function toggleFavorite() {
+		const externalItemId = game.externalItemId;
+		if (!externalItemId || isTogglingFavorite) return;
+		isTogglingFavorite = true;
+
+		const next = !favorited;
+		optimisticFavorited = next;
+		try {
+			await (next
+				? addExternalItemFavorite(externalItemId)
+				: removeExternalItemFavorite(externalItemId));
+		} catch {
+			optimisticFavorited = !next;
+		} finally {
+			isTogglingFavorite = false;
+		}
 	}
 </script>
 
@@ -116,24 +132,16 @@
 		</span>
 	{/if}
 
-	{#if page.data.user !== null}
+	{#if page.data.user !== null && game.externalItemId}
 		<Tooltip>
 			{#snippet reference(floating)}
-				<label
+				<FavoriteHeart
+					{favorited}
+					onToggle={toggleFavorite}
 					{...floating.reference({
-						class: [
-							'swap bg-neutral/50 text-neutral-content absolute top-2 right-2 rounded-full p-1'
-						]
+						class: ['bg-neutral/50 text-neutral-content absolute top-2 right-2 rounded-full p-1']
 					})}
-				>
-					<input
-						type="checkbox"
-						checked={isFavorited}
-						onchange={async () => await favoriteGame()}
-					/>
-					<Icon icon="favorite" style="outlined" class="swap-off" size="sm" />
-					<Icon icon="favorite" class="swap-on text-pink-500" size="sm" />
-				</label>
+				/>
 			{/snippet}
 			<div class="bg-neutral text-neutral-content rounded-lg p-2 text-sm font-normal">Favorite</div>
 		</Tooltip>

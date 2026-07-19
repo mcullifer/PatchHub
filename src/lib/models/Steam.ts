@@ -9,6 +9,7 @@ export interface ITopSteamGames {
 export interface INamedSteamGame extends IRankedSteamGame {
 	name: string;
 	slug?: string;
+	externalItemId?: string | null;
 }
 
 export interface IRankedSteamGame {
