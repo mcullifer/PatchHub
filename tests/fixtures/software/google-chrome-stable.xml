@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Trimmed from https://chromereleases.googleblog.com/feeds/posts/default/-/Stable%20updates on 2026-07-18. -->
+<feed xmlns="http://www.w3.org/2005/Atom">
+	<id>tag:blogger.com,1999:blog-8982037438137564684</id>
+	<title>Chrome Releases</title>
+	<link rel="alternate" href="https://chromereleases.googleblog.com/search/label/Stable%20updates" />
+	<entry>
+		<id>tag:blogger.com,1999:blog-8982037438137564684.post-7520289485702501386</id>
+		<published>2026-07-16T14:07:01.231-07:00</published>
+		<updated>2026-07-16T14:07:01.231-07:00</updated>
+		<title>Chrome for Android Update</title>
+		<content type="html">&lt;p&gt;Hi, everyone! We&#39;ve just released &lt;b&gt;Chrome 150 (150.0.7871.128)&lt;/b&gt; for Android. It&#39;ll become available on Google Play over the next few days.&lt;/p&gt;&lt;p&gt;This release includes stability and performance improvements.&lt;/p&gt;</content>
+		<link rel="alternate" href="https://chromereleases.googleblog.com/2026/07/chrome-for-android-update_01639733530.html" />
+		<author><name>Krishna Govind</name></author>
+	</entry>
+	<entry>
+		<id>tag:blogger.com,1999:blog-8982037438137564684.post-101236905006470995</id>
+		<published>2026-07-16T13:56:30.226-07:00</published>
+		<updated>2026-07-16T16:30:26.517-07:00</updated>
+		<title>Stable Channel Update for Desktop</title>
+		<content type="html">&lt;p&gt;&lt;span&gt;The Stable channel has been updated to 150.0.7871.128/.129 for Windows and Mac and 150.0.7871.128 for Linux, which will roll out over the coming days/weeks.&lt;/span&gt; A full list of changes in this build is available in the Log.&lt;/p&gt;&lt;p&gt;Security Fixes and Rewards&lt;/p&gt;</content>
+		<link rel="alternate" href="https://chromereleases.googleblog.com/2026/07/stable-channel-update-for-desktop_049796704.html" />
+		<author><name>Daniel Yip</name></author>
+	</entry>
+	<entry>
+		<id>tag:blogger.com,1999:blog-8982037438137564684.post-2493992227297434866</id>
+		<published>2026-07-10T13:16:50.473-07:00</published>
+		<updated>2026-07-10T13:16:50.473-07:00</updated>
+		<title>Stable Channel Update for ChromeOS / ChromeOS Flex</title>
+		<content type="html">&lt;p&gt;The ChromeOS Stable channel is being updated to OS version &lt;b&gt;16667.62.0&lt;/b&gt; (Browser version 149.0.7827.238) for most ChromeOS devices.&lt;/p&gt;&lt;p&gt;If you find new issues, please let us know.&lt;/p&gt;</content>
+		<link rel="alternate" href="https://chromereleases.googleblog.com/2026/07/stable-channel-update-for-chromeos_0163471507.html" />
+		<author><name>Luis Menezes</name></author>
+	</entry>
+</feed>

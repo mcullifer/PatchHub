@@ -1,0 +1,28 @@
+import { getRequestEvent } from '$app/server';
+import { env } from '$env/dynamic/private';
+import { PUBLIC_CONVEX_URL } from '$env/static/public';
+import { ConvexHttpClient } from 'convex/browser';
+
+// Server-side Convex client factory. User-scoped Convex functions are gated
+// by a shared secret so they can only be called by this server, which owns
+// the WorkOS session and passes the verified authProviderId along. Clients
+// are created per operation because Worker module globals outlive requests.
+export function createConvexClient(): ConvexHttpClient {
+	return new ConvexHttpClient(PUBLIC_CONVEX_URL, { fetch: getRequestFetch() });
+}
+
+// SvelteKit warns on global fetch during SSR; use the event's fetch when a
+// request context exists (e.g. not inside Convex-agnostic scripts/tests).
+function getRequestFetch(): typeof fetch {
+	try {
+		return getRequestEvent().fetch;
+	} catch {
+		return fetch;
+	}
+}
+
+export function getConvexServerSecret(): string {
+	const secret = env.CONVEX_SERVER_SECRET;
+	if (!secret) throw new Error('CONVEX_SERVER_SECRET is not set');
+	return secret;
+}
