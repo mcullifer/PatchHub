@@ -1,7 +1,8 @@
 import { v } from 'convex/values';
 import type { Doc, Id } from './_generated/dataModel';
-import { mutation, query, type QueryCtx } from './_generated/server';
+import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import { findOwner, findProjectByOwnerAndSlug, type ProjectOwner } from './projects';
+import { rateLimiter } from './lib/rateLimits';
 import { requireServerSecret } from './lib/serverSecret';
 import { createSlug } from './lib/strings';
 import { projectPostKind } from './schema';
@@ -131,6 +132,11 @@ export const create = mutation({
 			throw new Error('Not authorized');
 		}
 
+		const rateLimit = await rateLimiter.limit(ctx, 'createProjectPost', { key: user._id });
+		if (!rateLimit.ok) {
+			throw new Error('Too many new posts — please try again later.');
+		}
+
 		const title = normalizeProjectPostTitle(args.title);
 		validateProjectPostContent(args.content);
 
@@ -168,6 +174,103 @@ export const create = mutation({
 		return { id, slug };
 	}
 });
+
+export const update = mutation({
+	args: {
+		secret: v.string(),
+		authProviderId: v.string(),
+		postId: v.id('projectPosts'),
+		kind: projectPostKind,
+		title: v.string(),
+		content: v.string()
+	},
+	handler: async (ctx, args) => {
+		requireServerSecret(args.secret);
+		const { post, project } = await requireOwnedActivePost(ctx, args.authProviderId, args.postId);
+		const title = normalizeProjectPostTitle(args.title);
+		validateProjectPostContent(args.content);
+		const now = Date.now();
+		await ctx.db.patch(post._id, {
+			kind: args.kind,
+			title,
+			content: args.content,
+			updatedAt: now
+		});
+		await ctx.db.patch(project._id, { updatedAt: now });
+
+		return { slug: post.slug };
+	}
+});
+
+export const setStatus = mutation({
+	args: {
+		secret: v.string(),
+		authProviderId: v.string(),
+		postId: v.id('projectPosts'),
+		status: v.union(v.literal('draft'), v.literal('published'))
+	},
+	handler: async (ctx, args) => {
+		requireServerSecret(args.secret);
+		const { post, project } = await requireOwnedActivePost(ctx, args.authProviderId, args.postId);
+		if (post.status === args.status) {
+			return {
+				slug: post.slug,
+				status: args.status,
+				publishedAt: post.publishedAt ?? null
+			};
+		}
+
+		const now = Date.now();
+		const publishedAt = args.status === 'published' ? now : undefined;
+		await ctx.db.patch(post._id, {
+			status: args.status,
+			publishedAt,
+			updatedAt: now
+		});
+		await ctx.db.patch(project._id, { updatedAt: now });
+
+		return { slug: post.slug, status: args.status, publishedAt: publishedAt ?? null };
+	}
+});
+
+export const remove = mutation({
+	args: {
+		secret: v.string(),
+		authProviderId: v.string(),
+		postId: v.id('projectPosts')
+	},
+	handler: async (ctx, args) => {
+		requireServerSecret(args.secret);
+		const { post, project } = await requireOwnedActivePost(ctx, args.authProviderId, args.postId);
+		const now = Date.now();
+		await ctx.db.patch(post._id, { deletedAt: now, updatedAt: now });
+		await ctx.db.patch(project._id, { updatedAt: now });
+		return null;
+	}
+});
+
+async function requireOwnedActivePost(
+	ctx: Pick<MutationCtx, 'auth' | 'db'>,
+	authProviderId: string,
+	postId: Id<'projectPosts'>
+): Promise<{ post: Doc<'projectPosts'>; project: Doc<'projects'> }> {
+	const user = await findUserByAuthProviderId(ctx, authProviderId);
+	if (!user || user.deletedAt) {
+		throw new Error('User not found');
+	}
+
+	const post = await ctx.db.get(postId);
+	if (!post || post.deletedAt) {
+		throw new Error('Not authorized');
+	}
+
+	const project = await ctx.db.get(post.projectId);
+	if (!project || project.deletedAt || project.userId !== user._id) {
+		throw new Error('Not authorized');
+	}
+
+	return { post, project };
+}
 
 async function resolveProjectForViewer(
 	ctx: QueryCtx,
@@ -370,10 +473,7 @@ async function createUniquePostSlug(
 ): Promise<string> {
 	for (let attempt = 1; attempt <= MAX_SLUG_ATTEMPTS; attempt++) {
 		const candidate = appendSlugSuffix(baseSlug, attempt);
-		if (
-			!RESERVED_POST_SLUGS.has(candidate) &&
-			!(await activePostSlugExists(ctx, projectId, candidate))
-		) {
+		if (!RESERVED_POST_SLUGS.has(candidate) && !(await postSlugExists(ctx, projectId, candidate))) {
 			return candidate;
 		}
 	}
@@ -381,7 +481,7 @@ async function createUniquePostSlug(
 	throw new Error('Unable to create a unique post slug');
 }
 
-async function activePostSlugExists(
+async function postSlugExists(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
 	slug: string
@@ -389,9 +489,9 @@ async function activePostSlugExists(
 	const post = await ctx.db
 		.query('projectPosts')
 		.withIndex('by_projectId_and_slug_and_deletedAt', (q) =>
-			q.eq('projectId', projectId).eq('slug', slug).eq('deletedAt', undefined)
+			q.eq('projectId', projectId).eq('slug', slug)
 		)
-		.unique();
+		.first();
 
 	return post !== null;
 }

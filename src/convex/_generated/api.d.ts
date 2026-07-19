@@ -12,6 +12,7 @@ import type * as catalog from "../catalog.js";
 import type * as crons from "../crons.js";
 import type * as favorites from "../favorites.js";
 import type * as lib_externalItems from "../lib/externalItems.js";
+import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_serverSecret from "../lib/serverSecret.js";
 import type * as lib_steam from "../lib/steam.js";
 import type * as lib_strings from "../lib/strings.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   favorites: typeof favorites;
   "lib/externalItems": typeof lib_externalItems;
+  "lib/rateLimits": typeof lib_rateLimits;
   "lib/serverSecret": typeof lib_serverSecret;
   "lib/steam": typeof lib_steam;
   "lib/strings": typeof lib_strings;
@@ -68,4 +70,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};

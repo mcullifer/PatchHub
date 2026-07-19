@@ -53,6 +53,7 @@
 		"wrangler": "^4.112.0"
 	},
 	"dependencies": {
+		"@convex-dev/rate-limiter": "^0.3.2",
 		"@floating-ui/dom": "^1.7.6",
 		"@lexical/html": "^0.46.0",
 		"@lexical/rich-text": "^0.46.0",

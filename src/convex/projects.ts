@@ -8,6 +8,7 @@ import {
 	type MutationCtx,
 	type QueryCtx
 } from './_generated/server';
+import { rateLimiter } from './lib/rateLimits';
 import { requireServerSecret } from './lib/serverSecret';
 import { createSlug, normalizeName } from './lib/strings';
 import { normalizeUsername } from './lib/usernames';
@@ -139,6 +140,11 @@ export const create = mutation({
 		requireServerSecret(args.secret);
 
 		const user = await requireProjectUser(ctx, args.authProviderId);
+		const rateLimit = await rateLimiter.limit(ctx, 'createProject', { key: user._id });
+		if (!rateLimit.ok) {
+			throw new Error('Too many new projects — please try again later.');
+		}
+
 		const name = normalizeProjectName(args.name);
 		const description = normalizeProjectDescription(args.description);
 		const slug = await createUniqueProjectSlug(ctx, user._id, createSlug(name, 'project'));
@@ -201,6 +207,31 @@ export const create = mutation({
 			slug,
 			bannerUpload: attemptId && uploadUrl ? { attemptId, uploadUrl } : null
 		};
+	}
+});
+
+export const update = mutation({
+	args: {
+		secret: v.string(),
+		authProviderId: v.string(),
+		projectId: v.id('projects'),
+		name: v.string(),
+		description: v.optional(v.string())
+	},
+	handler: async (ctx, args) => {
+		requireServerSecret(args.secret);
+		const user = await requireProjectUser(ctx, args.authProviderId);
+		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		const name = normalizeProjectName(args.name);
+		const description = normalizeProjectDescription(args.description);
+		await ctx.db.patch(project._id, {
+			name,
+			normalizedName: normalizeName(name),
+			description,
+			updatedAt: Date.now()
+		});
+
+		return { slug: project.slug };
 	}
 });
 
