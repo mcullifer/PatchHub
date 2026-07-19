@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import Seo from '$lib/components/Seo.svelte';
 	import { EmptyState, Icon } from '$lib/components/common-ui';
 
 	type OwnerRouteErrorParams = {
@@ -29,7 +30,7 @@
 			return {
 				title: 'Post not found',
 				description: 'That post does not exist or is not visible.',
-				icon: 'article_off',
+				icon: 'search_off',
 				showOwnerLink: params.createdBy !== undefined
 			};
 		}
@@ -61,9 +62,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{details.title} - PatchHub</title>
-</svelte:head>
+<Seo title="{details.title} - PatchHub" noindex />
 
 <section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-16 sm:px-6 lg:px-8">
 	<EmptyState icon={details.icon} title={details.title} description={details.description}>
