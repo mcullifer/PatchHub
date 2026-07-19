@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { Icon } from '$lib/components/common-ui';
 	import {
 		UpdateFeedArticle,
@@ -81,9 +82,10 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{data.detail.source.name}</title>
-</svelte:head>
+<Seo
+	title={data.detail.source.name}
+	description="Release notes and updates for {data.detail.source.name}, tracked on PatchHub."
+/>
 
 <div class="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-3 p-2 sm:gap-4 sm:p-4 lg:p-6">
 	{#snippet fallbackIcon()}

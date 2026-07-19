@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import Seo from '$lib/components/Seo.svelte';
 	import Card from '$lib/components/common-ui/Card.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 
@@ -47,9 +48,11 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Authentication Error - PatchHub</title>
-</svelte:head>
+<Seo
+	title="Authentication Error - PatchHub"
+	description="Something went wrong while signing you in to PatchHub."
+	noindex
+/>
 
 <section
 	class="bg-base-100 text-base-content flex min-h-[60vh] items-center justify-center px-4 py-10"

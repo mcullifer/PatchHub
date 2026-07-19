@@ -9,10 +9,13 @@ export const RESERVED_USERNAME_MESSAGE = 'This username is reserved';
 export const RESERVED_OWNER_SLUGS = [
 	'auth',
 	'demo',
+	'privacy',
 	'profile',
 	'settings',
+	'sitemap.xml',
 	'software',
-	'steam'
+	'steam',
+	'terms'
 ] as const;
 
 type ReservedOwnerSlug = (typeof RESERVED_OWNER_SLUGS)[number];

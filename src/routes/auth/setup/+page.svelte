@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import Card from '$lib/components/common-ui/Card.svelte';
 	import Icon from '$lib/components/common-ui/Icon.svelte';
 	import { setupAccount } from '$lib/remote/auth.remote';
@@ -7,9 +8,11 @@
 	let { data }: { data: PageData } = $props();
 </script>
 
-<svelte:head>
-	<title>Account Setup - PatchHub</title>
-</svelte:head>
+<Seo
+	title="Account Setup - PatchHub"
+	description="Finish setting up your PatchHub account."
+	noindex
+/>
 
 <section class="hero my-auto">
 	<div class="hero-content w-full max-w-md">

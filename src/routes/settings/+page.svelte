@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import Seo from '$lib/components/Seo.svelte';
 	import { Icon } from '$lib/components/common-ui';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 </script>
 
-<svelte:head>
-	<title>Settings - PatchHub</title>
-</svelte:head>
+<Seo title="Settings - PatchHub" description="Manage your PatchHub account settings." noindex />
 
 <section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
 	<div>

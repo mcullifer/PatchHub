@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import TipTap, {
 		type TipTapJsonContent,
 		type TipTapSavePayload
@@ -166,9 +167,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Editor playground | PatchHub</title>
-</svelte:head>
+<Seo title="Editor playground | PatchHub" noindex />
 
 <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6">
 	<div class="flex flex-wrap items-center gap-4">

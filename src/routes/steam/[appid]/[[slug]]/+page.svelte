@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import Seo from '$lib/components/Seo.svelte';
 	import { Icon } from '$lib/components/common-ui';
 	import {
 		UpdateFeedArticle,
@@ -108,9 +109,13 @@
 	});
 </script>
 
-<svelte:head>
-	<title>{game?.name ?? 'PatchHub'}</title>
-</svelte:head>
+<Seo
+	title={game?.name ?? 'PatchHub'}
+	description={game
+		? `${game.name} patch notes, updates, and announcements, tracked on PatchHub.`
+		: undefined}
+	image={game ? getDefaultSteamHeaderImageUrl(game.appid) : undefined}
+/>
 
 <div class="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-3 p-2 sm:gap-4 sm:p-4 lg:p-6">
 	{#snippet newsSkeleton()}
