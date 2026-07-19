@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="PatchHub">
+	<rect x="4" y="4" width="120" height="120" rx="28" fill="#171c25" />
+	<text
+		x="63"
+		y="84"
+		font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+		font-size="70"
+		font-weight="800"
+		letter-spacing="-6"
+		text-anchor="middle"
+	>
+		<tspan fill="#edf7ff">p</tspan><tspan fill="#5b55ff">h</tspan>
+	</text>
+</svg>

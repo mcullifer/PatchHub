@@ -6,6 +6,7 @@
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import type { Snippet } from 'svelte';
+	import { version as appVersion } from '../../package.json';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
@@ -61,6 +62,6 @@
 			<a class="link link-hover" href={resolve('/privacy')}>Privacy</a>
 			<a class="link link-hover" href={resolve('/terms')}>Terms</a>
 		</nav>
-		<p>PatchHub · beta</p>
+		<p>PatchHub · beta · v{appVersion}</p>
 	</footer>
 </div>
