@@ -1,4 +1,5 @@
 import type { SoftwareSource, SoftwareUpdateEntry } from '$lib/models/Software';
+import { UPSTREAM_FETCH_OPTIONS, boundedFetch } from '$lib/server/http/boundedFetch';
 
 type NvidiaDriverRelease = {
 	id: string;
@@ -13,7 +14,6 @@ type NvidiaDriverRelease = {
 };
 
 const nvidiaBaseUrl = 'https://www.nvidia.com';
-
 export async function fetchNvidiaGameReadyDrivers(
 	source: SoftwareSource,
 	fetchFn: typeof fetch = fetch
@@ -22,12 +22,7 @@ export async function fetchNvidiaGameReadyDrivers(
 		throw new Error('NVIDIA source is missing a search URL');
 	}
 
-	const response = await fetchFn(source.searchUrl, {
-		headers: {
-			accept: 'text/html,application/xhtml+xml',
-			'user-agent': 'PatchHub/1.0'
-		}
-	});
+	const response = await boundedFetch(fetchFn, source.searchUrl, UPSTREAM_FETCH_OPTIONS);
 
 	if (!response.ok) {
 		throw new Error(`NVIDIA driver search returned ${response.status}`);

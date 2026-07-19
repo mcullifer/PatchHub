@@ -1,4 +1,5 @@
 import type { SoftwareSource } from '$lib/models/Software';
+import { Time } from '$lib/util/time';
 
 export const softwareSources = {
 	'windows-11': {
@@ -19,7 +20,8 @@ export const softwareSources = {
 		supportUrl: 'https://support.microsoft.com/en-us/windows/windows-11-release-information',
 		releaseInfoUrl:
 			'https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information',
-		cacheTtlSeconds: 60 * 60
+		cacheTtlMs: Time.HOUR,
+		rendering: 'full'
 	},
 	'nvidia-game-ready-drivers': {
 		id: 'nvidia-game-ready-drivers',
@@ -39,7 +41,46 @@ export const softwareSources = {
 			'https://www.nvidia.com/Download/processFind.aspx?psid=131&pfid=1066&osid=135&lid=1&whql=1&ctk=0&dtcid=1',
 		supportUrl: 'https://www.nvidia.com/en-us/geforce/drivers/',
 		releaseInfoUrl: null,
-		cacheTtlSeconds: 60 * 60
+		cacheTtlMs: Time.HOUR,
+		rendering: 'full'
+	},
+	'google-chrome': {
+		id: 'google-chrome',
+		name: 'Google Chrome',
+		slug: 'google-chrome',
+		vendor: 'Google',
+		provider: 'Google Chrome Releases',
+		sourceType: 'Atom feed',
+		description: 'Stable channel updates for Chrome desktop, mobile, and ChromeOS releases.',
+		icon: 'web',
+		imageUrl: '/google-chrome.png',
+		imageAlt: 'Google Chrome browser',
+		adapter: 'atom-feed',
+		feedUrl: 'https://chromereleases.googleblog.com/feeds/posts/default/-/Stable%20updates',
+		searchUrl: null,
+		supportUrl: 'https://support.google.com/chrome/',
+		releaseInfoUrl: 'https://chromereleases.googleblog.com/',
+		cacheTtlMs: Time.HOUR,
+		rendering: 'excerpt'
+	},
+	'github-changelog': {
+		id: 'github-changelog',
+		name: 'GitHub Changelog',
+		slug: 'github-changelog',
+		vendor: 'GitHub',
+		provider: 'GitHub Changelog',
+		sourceType: 'RSS feed',
+		description: 'Product and platform updates published in the GitHub Changelog.',
+		icon: 'code',
+		imageUrl: '/github-changelog.png',
+		imageAlt: 'GitHub logo mark',
+		adapter: 'atom-feed',
+		feedUrl: 'https://github.blog/changelog/feed/',
+		searchUrl: null,
+		supportUrl: 'https://support.github.com/',
+		releaseInfoUrl: 'https://github.blog/changelog/',
+		cacheTtlMs: Time.MINUTE * 30,
+		rendering: 'excerpt'
 	}
 } as const satisfies Record<string, SoftwareSource>;
 

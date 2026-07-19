@@ -1,4 +1,8 @@
-import type { SoftwareUpdateEntry, SoftwareUpdateMetadata } from '$lib/models/Software';
+import type {
+	SoftwareSource,
+	SoftwareUpdateEntry,
+	SoftwareUpdateMetadata
+} from '$lib/models/Software';
 import { createSlug } from '$convex/lib/strings';
 
 export type FeedItemLike = {
@@ -7,6 +11,7 @@ export type FeedItemLike = {
 	url?: string | null;
 	content?: string | null;
 	summary?: string | null;
+	description?: string | null;
 	published?: string | Date | null;
 	updated?: string | Date | null;
 	authors?: Array<string | { name?: string | null }> | null;
@@ -14,22 +19,32 @@ export type FeedItemLike = {
 
 export function normalizeSoftwareFeedItem(
 	item: FeedItemLike,
-	sourceSlug: string
+	sourceSlug: string,
+	rendering: SoftwareSource['rendering']
 ): SoftwareUpdateEntry {
 	const title = item.title?.trim() || 'Untitled update';
 	const sourceUrl = item.url?.trim() || '';
 	const publishedAt = normalizeDate(item.published);
 	const updatedAt = normalizeDate(item.updated);
-	const metadata = getWindowsUpdateMetadata(title, item.content ?? item.summary ?? '');
+	const metadata = getWindowsUpdateMetadata(
+		title,
+		item.content ?? item.summary ?? item.description ?? ''
+	);
 	const fallbackId = createSlug(title, sourceSlug);
 	const id = item.id?.trim() || sourceUrl || `${sourceSlug}-${fallbackId}`;
-	const summary = getSummary(item.summary ?? item.content ?? '');
+	const feedSummary = item.summary?.trim() || item.description?.trim() || null;
+	const summarySource =
+		rendering === 'excerpt'
+			? (feedSummary ?? item.content ?? '')
+			: (item.summary ?? item.content ?? item.description ?? '');
+	const maxSummaryLength = rendering === 'excerpt' && !feedSummary ? 200 : 220;
+	const summary = getSummary(summarySource, maxSummaryLength, rendering === 'excerpt');
 
 	return {
 		id,
 		title,
 		summary,
-		contentHtml: item.content ?? null,
+		contentHtml: rendering === 'full' ? (item.content ?? null) : null,
 		sourceUrl,
 		publishedAt,
 		updatedAt,
@@ -59,14 +74,33 @@ function normalizeAuthors(authors: FeedItemLike['authors']): string[] {
 		.filter((author) => author.length > 0);
 }
 
-function getSummary(value: string): string {
-	const text = value
-		.replace(/<[^>]*>/g, ' ')
+function getSummary(value: string, maxLength: number, decodeEntities: boolean): string {
+	const withoutHtml = value.replace(/<[^>]*>/g, ' ');
+	const text = (decodeEntities ? decodeHtmlEntities(withoutHtml) : withoutHtml)
 		.replace(/\s+/g, ' ')
 		.trim();
 
-	if (text.length <= 220) return text;
-	return `${text.slice(0, 217)}...`;
+	if (text.length <= maxLength) return text;
+	return `${text.slice(0, maxLength - 3)}...`;
+}
+
+function decodeHtmlEntities(value: string): string {
+	return value
+		.replace(/&#(\d+);/g, (entity, code: string) => decodeCodePoint(entity, Number(code)))
+		.replace(/&#x([\da-f]+);/gi, (entity, code: string) =>
+			decodeCodePoint(entity, Number.parseInt(code, 16))
+		)
+		.replace(/&nbsp;/gi, ' ')
+		.replace(/&amp;/gi, '&')
+		.replace(/&quot;/gi, '"')
+		.replace(/&apos;|&#39;/gi, "'")
+		.replace(/&lt;/gi, '<')
+		.replace(/&gt;/gi, '>');
+}
+
+function decodeCodePoint(entity: string, codePoint: number): string {
+	if (!Number.isInteger(codePoint) || codePoint < 0 || codePoint > 0x10ffff) return entity;
+	return String.fromCodePoint(codePoint);
 }
 
 function getWindowsUpdateMetadata(title: string, content: string): SoftwareUpdateMetadata {

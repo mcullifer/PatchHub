@@ -1,25 +1,19 @@
 import type {
+	SoftwareSource,
 	SoftwareSourceDetail,
 	SoftwareSourceHealth,
 	SoftwareSourceSummary,
 	SoftwareUpdateEntry
 } from '$lib/models/Software';
-import {
-	normalizeSoftwareFeedItem,
-	type FeedItemLike
-} from '$lib/server/software/SoftwareFeedNormalizer';
+import { normalizeSoftwareFeedItem } from '$lib/server/software/SoftwareFeedNormalizer';
 import { fetchNvidiaGameReadyDrivers } from '$lib/server/software/NvidiaDriverSearchAdapter';
 import { SoftwareCatalogService } from '$lib/server/software/SoftwareCatalogService';
 import { getSoftwareSource, getSoftwareSources } from '$lib/server/software/SoftwareSourceRegistry';
+import { ConvexCache } from '$lib/server/cache/ConvexCache';
+import { UPSTREAM_FETCH_OPTIONS, boundedFetch } from '$lib/server/http/boundedFetch';
 import { parseFeed } from '@rowanmanning/feed-parser';
 
-type CacheEntry = {
-	expiresAt: number;
-	detail: SoftwareSourceDetail;
-};
-
-const sourceCache = new Map<string, CacheEntry>();
-
+const maximumSourceEntries = 25;
 export class SoftwareUpdateService {
 	static async getSourceDetail(
 		slug: string,
@@ -29,70 +23,42 @@ export class SoftwareUpdateService {
 		const source = getSoftwareSource(slug);
 		if (!source) return null;
 
-		const cached = sourceCache.get(source.slug);
-		if (cached && cached.expiresAt > Date.now()) {
-			return {
-				...cached.detail,
-				entries: cached.detail.entries.slice(0, limit),
-				health: {
-					...cached.detail.health,
-					status: 'cached'
-				}
-			};
-		}
-
+		let fetchedFromUpstream = false;
+		let upstreamError: string | null = null;
 		try {
-			const checkedAt = new Date();
-			const entries = (await fetchEntries(source, fetchFn)).sort(compareEntriesByDate);
-			const latestItemAt = getEntryDate(entries[0]) ?? null;
-			const detail: SoftwareSourceDetail = {
-				source,
-				entries,
-				health: {
-					status: 'fresh',
-					checkedAt: checkedAt.toISOString(),
-					latestItemAt: latestItemAt?.toISOString() ?? null,
-					error: null
-				}
-			};
-
-			sourceCache.set(source.slug, {
-				expiresAt: Date.now() + source.cacheTtlSeconds * 1000,
-				detail
-			});
-
-			await SoftwareCatalogService.upsertSource(source.slug);
-
-			return {
-				...detail,
-				entries: detail.entries.slice(0, limit)
-			};
-		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Unknown source error';
-			const stale = sourceCache.get(source.slug);
-
-			if (stale) {
-				return {
-					...stale.detail,
-					entries: stale.detail.entries.slice(0, limit),
-					health: {
-						...stale.detail.health,
-						status: 'cached',
-						error: message
+			const result = await new ConvexCache().getOrCreate(
+				`software:source:${source.slug}`,
+				async () => {
+					try {
+						const detail = await fetchSourceDetail(source, fetchFn);
+						fetchedFromUpstream = true;
+						return detail;
+					} catch (error) {
+						upstreamError = getErrorMessage(error);
+						throw error;
 					}
-				};
+				},
+				{ ttlMs: source.cacheTtlMs }
+			);
+			if (!result) return createUnavailableDetail(source, 'Source could not be loaded');
+
+			if (fetchedFromUpstream) {
+				try {
+					await SoftwareCatalogService.upsertSource(source.slug);
+				} catch (error) {
+					return presentDetail(result.value, source, limit, true, getErrorMessage(error));
+				}
 			}
 
-			return {
+			return presentDetail(
+				result.value,
 				source,
-				entries: [],
-				health: {
-					status: 'unavailable',
-					checkedAt: new Date().toISOString(),
-					latestItemAt: null,
-					error: message
-				}
-			};
+				limit,
+				result.servedStale || !fetchedFromUpstream,
+				upstreamError
+			);
+		} catch (error) {
+			return createUnavailableDetail(source, getErrorMessage(error));
 		}
 	}
 
@@ -121,35 +87,114 @@ export class SoftwareUpdateService {
 	}
 }
 
+async function fetchSourceDetail(
+	source: NonNullable<ReturnType<typeof getSoftwareSource>>,
+	fetchFn: typeof fetch
+): Promise<SoftwareSourceDetail> {
+	const checkedAt = new Date();
+	const entries = (await fetchEntries(source, fetchFn))
+		.sort(compareEntriesByDate)
+		.slice(0, maximumSourceEntries);
+	const latestItemAt = getEntryDate(entries[0]) ?? null;
+	return {
+		source,
+		entries,
+		health: {
+			status: 'fresh',
+			checkedAt: checkedAt.toISOString(),
+			latestItemAt: latestItemAt?.toISOString() ?? null,
+			error: null
+		}
+	};
+}
+
+function presentDetail(
+	detail: SoftwareSourceDetail,
+	source: SoftwareSource,
+	limit: number,
+	servedFromCache: boolean,
+	error: string | null
+): SoftwareSourceDetail {
+	return {
+		...detail,
+		source,
+		entries: applyRenderingPolicy(source, detail.entries.slice(0, limit)),
+		health: {
+			...detail.health,
+			status: servedFromCache ? 'cached' : 'fresh',
+			error: error ?? detail.health.error
+		}
+	};
+}
+
+function createUnavailableDetail(
+	source: NonNullable<ReturnType<typeof getSoftwareSource>>,
+	error: string
+): SoftwareSourceDetail {
+	return {
+		source,
+		entries: [],
+		health: {
+			status: 'unavailable',
+			checkedAt: new Date().toISOString(),
+			latestItemAt: null,
+			error
+		}
+	};
+}
+
+function getErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : 'Unknown source error';
+}
+
 async function fetchEntries(
 	source: NonNullable<ReturnType<typeof getSoftwareSource>>,
 	fetchFn: typeof fetch
 ): Promise<SoftwareUpdateEntry[]> {
 	switch (source.adapter) {
 		case 'atom-feed':
-			return fetchAtomEntries(source.feedUrl, source.slug, fetchFn);
+			return fetchAtomEntries(source, fetchFn);
 		case 'nvidia-driver-search':
 			return fetchNvidiaGameReadyDrivers(source, fetchFn);
 	}
 }
 
-async function fetchAtomEntries(feedUrl: string | null, sourceSlug: string, fetchFn: typeof fetch) {
-	if (!feedUrl) {
+async function fetchAtomEntries(source: SoftwareSource, fetchFn: typeof fetch) {
+	if (!source.feedUrl) {
 		throw new Error('Atom source is missing a feed URL');
 	}
 
-	const response = await fetchFn(feedUrl, {
-		headers: {
-			accept: 'application/atom+xml, application/rss+xml, application/xml, text/xml'
-		}
-	});
+	const response = await boundedFetch(fetchFn, source.feedUrl, UPSTREAM_FETCH_OPTIONS);
 
 	if (!response.ok) {
 		throw new Error(`Feed returned ${response.status}`);
 	}
 
 	const parsed = parseFeed(await response.text());
-	return parsed.items.map((item) => normalizeSoftwareFeedItem(item as FeedItemLike, sourceSlug));
+	return parsed.items.map((item) =>
+		normalizeSoftwareFeedItem(
+			{
+				id: item.id,
+				title: item.title,
+				url: item.url,
+				content: item.content,
+				description: item.description,
+				published: item.published,
+				updated: item.updated,
+				authors: item.authors
+			},
+			source.slug,
+			source.rendering
+		)
+	);
+}
+
+function applyRenderingPolicy(
+	source: SoftwareSource,
+	entries: SoftwareUpdateEntry[]
+): SoftwareUpdateEntry[] {
+	if (source.rendering === 'full') return entries;
+	return entries.map((entry) => ({ ...entry, contentHtml: null }));
 }
 
 function compareEntriesByDate(a: SoftwareUpdateEntry, b: SoftwareUpdateEntry): number {

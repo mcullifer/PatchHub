@@ -23,7 +23,8 @@ export type SoftwareSource = {
 	searchUrl: string | null;
 	supportUrl: string;
 	releaseInfoUrl: string | null;
-	cacheTtlSeconds: number;
+	cacheTtlMs: number;
+	rendering: 'excerpt' | 'full';
 };
 
 export type SoftwareUpdateMetadata = {

@@ -13,7 +13,8 @@ describe('SoftwareFeedNormalizer', () => {
 				published: '2026-05-09T16:00:00Z',
 				authors: [{ name: 'Microsoft Support' }]
 			},
-			'windows-11'
+			'windows-11',
+			'full'
 		);
 
 		expect(entry).toMatchObject({
@@ -29,6 +30,38 @@ describe('SoftwareFeedNormalizer', () => {
 			}
 		});
 		expect(entry.summary).toBe('Windows 11, version 25H2 cumulative update.');
+		expect(entry.contentHtml).toBe('<p>Windows 11, version 25H2 cumulative update.</p>');
+	});
+
+	it('omits body HTML and prefers the feed description for excerpt sources', () => {
+		const entry = normalizeSoftwareFeedItem(
+			{
+				title: 'Product update',
+				description: '<p>A concise feed description.</p>',
+				content: '<article><p>Complete third-party article body.</p></article>'
+			},
+			'excerpt-source',
+			'excerpt'
+		);
+
+		expect(entry.summary).toBe('A concise feed description.');
+		expect(entry.contentHtml).toBeNull();
+	});
+
+	it('derives a bounded plain-text summary when an excerpt feed has no description', () => {
+		const entry = normalizeSoftwareFeedItem(
+			{
+				title: 'Product update',
+				content: `<p>${'Body text &amp; details '.repeat(20)}</p>`
+			},
+			'excerpt-source',
+			'excerpt'
+		);
+
+		expect(entry.summary.length).toBeLessThanOrEqual(200);
+		expect(entry.summary).not.toContain('<p>');
+		expect(entry.summary).toContain('Body text & details');
+		expect(entry.contentHtml).toBeNull();
 	});
 
 	it('falls back to a stable local id and safe defaults', () => {
@@ -36,7 +69,8 @@ describe('SoftwareFeedNormalizer', () => {
 			{
 				title: 'Release notes'
 			},
-			'example-app'
+			'example-app',
+			'full'
 		);
 
 		expect(entry.id).toBe('example-app-release-notes');

@@ -6,6 +6,7 @@
 		UpdateFeedEmptyState,
 		UpdateFeedHero,
 		UpdateFeedPostList,
+		type UpdateFeedBadge,
 		type UpdateFeedMetaItem,
 		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
@@ -26,6 +27,10 @@
 		year: 'numeric'
 	});
 	const selectedUpdate = $derived(getSelectedUpdate(data.detail.entries));
+	const isExcerptSource = $derived(data.detail.source.rendering === 'excerpt');
+	const articleBadges = $derived<UpdateFeedBadge[]>(
+		isExcerptSource ? [{ label: data.detail.source.provider, tone: 'info' }] : []
+	);
 	const navItems = $derived<UpdateFeedPostListItem[]>(
 		data.detail.entries.map((entry, index) => ({
 			id: entry.id,
@@ -122,9 +127,27 @@
 					title={selectedUpdate.title}
 					sourceLabel="Source"
 					sourceUrl={selectedUpdate.sourceUrl}
+					badges={articleBadges}
 					meta={getArticleMeta(selectedUpdate)}
 				>
-					{#if selectedUpdate.contentHtml}
+					{#if isExcerptSource}
+						<div class="flex flex-col gap-4">
+							<p class="text-base-content/80 leading-relaxed text-pretty">
+								{selectedUpdate.summary}
+							</p>
+							<!-- eslint-disable svelte/no-navigation-without-resolve -->
+							<a
+								href={selectedUpdate.sourceUrl}
+								class="btn btn-primary w-fit"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								<Icon icon="open_in_new" size="sm" />
+								Read at {data.detail.source.provider}
+							</a>
+							<!-- eslint-enable svelte/no-navigation-without-resolve -->
+						</div>
+					{:else if selectedUpdate.contentHtml}
 						{#if canRenderSanitizedHtml}
 							<div
 								class="patchhub-rich-text prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
