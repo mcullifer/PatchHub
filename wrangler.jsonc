@@ -6,8 +6,8 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"keep_vars": true,
 	"vars": {
-		"WORKOS_CLIENT_ID": "client_01K7AFKQDFQPQK9NAW62CXWSM6",
-		"WORKOS_REDIRECT_URI": "https://patchhub.maxcullifer.workers.dev/auth/callback",
+		"WORKOS_CLIENT_ID": "client_01K7AFKQSAFK6TCY8B2VWQY0YB",
+		"WORKOS_REDIRECT_URI": "https://patchhub.io/auth/callback",
 		"STEAM_API_URL": "https://api.steampowered.com"
 	},
 	"assets": {
