@@ -16,27 +16,36 @@ export const getOwnerProfile = query(v.string(), async (createdBy) => {
 const PROJECT_NAME_MAX_LENGTH = 100;
 const PROJECT_DESCRIPTION_MAX_LENGTH = 500;
 
-const createProjectSchema = v.object({
-	name: v.pipe(
+const projectNameSchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.minLength(1, 'Project name is required'),
+	v.maxLength(
+		PROJECT_NAME_MAX_LENGTH,
+		`Project name must be at most ${PROJECT_NAME_MAX_LENGTH} characters`
+	)
+);
+const projectDescriptionSchema = v.optional(
+	v.pipe(
 		v.string(),
 		v.trim(),
-		v.minLength(1, 'Project name is required'),
 		v.maxLength(
-			PROJECT_NAME_MAX_LENGTH,
-			`Project name must be at most ${PROJECT_NAME_MAX_LENGTH} characters`
+			PROJECT_DESCRIPTION_MAX_LENGTH,
+			`Project description must be at most ${PROJECT_DESCRIPTION_MAX_LENGTH} characters`
 		)
-	),
-	description: v.optional(
-		v.pipe(
-			v.string(),
-			v.trim(),
-			v.maxLength(
-				PROJECT_DESCRIPTION_MAX_LENGTH,
-				`Project description must be at most ${PROJECT_DESCRIPTION_MAX_LENGTH} characters`
-			)
-		)
-	),
+	)
+);
+
+const createProjectSchema = v.object({
+	name: projectNameSchema,
+	description: projectDescriptionSchema,
 	bannerRequested: v.optional(v.literal('yes'))
+});
+
+const updateProjectSchema = v.object({
+	projectId: v.string(),
+	name: projectNameSchema,
+	description: projectDescriptionSchema
 });
 
 export const createProject = form(
@@ -77,6 +86,25 @@ export const createProject = form(
 
 			invalid(issue.name(message));
 		}
+	}
+);
+
+export const updateProject = command(
+	updateProjectSchema,
+	async ({ projectId, name, description }) => {
+		const dbUser = await requireInternalUser(getRequestEvent());
+		const project = await createConvexClient().mutation(api.projects.update, {
+			secret: getConvexServerSecret(),
+			authProviderId: dbUser.authProviderId,
+			projectId: projectId as Id<'projects'>,
+			name,
+			description: description || undefined
+		});
+
+		await requested(getOwnerProfile, 1).refreshAll();
+		await requested(getProjectPosts, 1).refreshAll();
+
+		return { slug: project.slug };
 	}
 );
 
@@ -204,6 +232,10 @@ function getProjectCreateErrorMessage(error: unknown): string {
 
 	if (message.includes('Unable to create a unique project slug') || message.includes('already')) {
 		return 'Choose a different project name';
+	}
+
+	if (message.includes('Too many new projects')) {
+		return 'Too many new projects — please try again later.';
 	}
 
 	return 'Unable to create project';
