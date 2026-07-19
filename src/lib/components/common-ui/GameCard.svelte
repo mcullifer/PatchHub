@@ -9,7 +9,7 @@
 		removeExternalItemFavorite
 	} from '$lib/remote/favorites.remote';
 	import { getSteamHeaderImage } from '$lib/remote/games.remote';
-	import { getDefaultSteamHeaderImageUrl } from '$lib/util/SteamAssets';
+	import { getDefaultSteamHeaderImageUrl, getSteamLibraryHeroUrl } from '$lib/util/SteamAssets';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 
 	let {
@@ -18,7 +18,9 @@
 		featured = false
 	}: { game: INamedSteamGame; isFavorited: boolean; featured?: boolean } = $props();
 
-	let defaultHeaderImageUrl = $derived(getDefaultSteamHeaderImageUrl(game.appid));
+	let defaultHeaderImageUrl = $derived(
+		featured ? getSteamLibraryHeroUrl(game.appid) : getDefaultSteamHeaderImageUrl(game.appid)
+	);
 	let resolvedHeaderImage = $state<{ appid: number; url: string } | null>(null);
 	let loadedHeaderImage = $state<{ appid: number; url: string } | null>(null);
 	let triedResolvedHeaderImageAppId = $state<number | null>(null);
@@ -97,7 +99,8 @@
 		{#if imageSrc}
 			<img
 				class={[
-					'absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105',
+					'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:duration-[350ms] motion-reduce:group-hover:scale-100',
+					featured ? 'group-hover:scale-[1.025]' : 'group-hover:scale-[1.04]',
 					!imageLoaded && 'invisible'
 				]}
 				src={imageSrc}
@@ -148,7 +151,7 @@
 	{/if}
 
 	<span
-		class="badge badge-primary badge-sm pointer-events-none absolute right-4 bottom-4 gap-1 opacity-0 transition group-hover:opacity-100"
+		class="badge badge-primary badge-sm pointer-events-none absolute right-4 bottom-4 translate-y-1 gap-1 opacity-0 transition-[opacity,translate] duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:translate-y-0"
 	>
 		Patch notes
 		<Icon icon="arrow_forward" size="xs" />

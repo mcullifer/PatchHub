@@ -82,11 +82,13 @@
 		{@const summaries = await getSoftwareSourceSummaries()}
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each summaries as summary (summary.source.id)}
-				<article class="card card-border card-sm border-base-content/20 bg-base-200 shadow-md">
-					<figure class="bg-base-300 relative aspect-[460/215] overflow-hidden">
+				<article
+					class="group card card-border card-sm border-base-content/20 bg-base-200 shadow-md"
+				>
+					<figure class="bg-base-300 relative aspect-[1200/630] overflow-hidden">
 						<a data-sveltekit-preload-data="off" href={resolve(`/software/${summary.source.slug}`)}>
 							<img
-								class="h-full w-full object-cover duration-500 hover:scale-110"
+								class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:duration-[350ms] group-hover:scale-[1.04] motion-reduce:group-hover:scale-100"
 								src={summary.source.imageUrl}
 								alt={summary.source.imageAlt}
 								loading="lazy"
