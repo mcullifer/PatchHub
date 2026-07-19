@@ -1,30 +1,20 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import Seo from '$lib/components/Seo.svelte';
 	import { Card, EmptyState, Icon } from '$lib/components/common-ui';
-	import {
-		PROJECT_BANNER_ACCEPT,
-		PROJECT_BANNER_MAX_SIZE_LABEL,
-		getProjectBannerValidationError
-	} from '$lib/projects/projectBanner';
-	import { runProjectBannerUpload } from '$lib/projects/projectBannerUpload';
-	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
-	import { createProject, getOwnerProfile } from '$lib/remote/projects.remote';
+	import ProjectFormModal from '$lib/components/projects/ProjectFormModal.svelte';
+	import { getOwnerProfile } from '$lib/remote/projects.remote';
 	import type { PageProps } from './$types';
 
 	let { params }: PageProps = $props();
 
-	let projectDialog = $state<HTMLDialogElement | null>(null);
-	let selectedBanner = $state<File | null>(null);
-	let bannerIssue = $state<string | null>(null);
-	let isCreatingProject = $state(false);
+	let createModal = $state<{ open: () => void } | null>(null);
 
 	const profile = $derived(await getOwnerProfile(params.createdBy));
 	const ownerName = $derived(profile.owner.name);
 	const profilePictureUrl = $derived(profile.owner.profilePictureUrl);
 	const projectCount = $derived(profile.projects.length);
 	const avatarLetter = $derived(ownerName.charAt(0).toUpperCase());
-	const isSubmittingProject = $derived(createProject.pending > 0 || isCreatingProject);
 	const ownerKindLabel = $derived(
 		profile.owner.kind === 'org' ? 'Organization' : 'Personal account'
 	);
@@ -39,27 +29,19 @@
 	function formatDate(timestamp: number): string {
 		return new Date(timestamp).toLocaleDateString();
 	}
-
-	function openProjectDialog(): void {
-		projectDialog?.showModal();
-	}
-
-	function selectBanner(event: Event): void {
-		selectedBanner = (event.currentTarget as HTMLInputElement).files?.[0] ?? null;
-		bannerIssue = null;
-	}
 </script>
 
 {#snippet newProjectButton()}
-	<button type="button" class="btn btn-primary btn-sm" onclick={openProjectDialog}>
+	<button type="button" class="btn btn-primary btn-sm" onclick={() => createModal?.open()}>
 		<Icon icon="add" size="sm" />
 		New project
 	</button>
 {/snippet}
 
-<svelte:head>
-	<title>{ownerName} - PatchHub</title>
-</svelte:head>
+<Seo
+	title="{ownerName} - PatchHub"
+	description="Projects and patch notes from {ownerName} on PatchHub."
+/>
 
 <svelte:boundary>
 	<section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -186,125 +168,4 @@
 	{/snippet}
 </svelte:boundary>
 
-<dialog
-	id="new-project-modal"
-	bind:this={projectDialog}
-	class="modal modal-bottom sm:modal-middle"
-	oncancel={(event) => {
-		if (isSubmittingProject) event.preventDefault();
-	}}
->
-	<div class="modal-box">
-		<h2 class="text-lg font-semibold">New project</h2>
-		<p class="text-base-content/60 mt-1 text-sm">Create a home for your posts.</p>
-		<form
-			{...createProject.enhance(async (form) => {
-				const banner = selectedBanner;
-				bannerIssue = banner ? await getProjectBannerValidationError(banner) : null;
-				if (bannerIssue) return;
-
-				isCreatingProject = true;
-				try {
-					const succeeded = await form.submit().updates(getOwnerProfile(params.createdBy));
-					const result = form.result;
-					if (!succeeded || !result) return;
-
-					const destination = {
-						createdBy: result.project.createdBy,
-						projectSlug: result.project.slug
-					};
-					let uploadTask: ReturnType<typeof runProjectBannerUpload> | null = null;
-					if (banner && result.bannerUpload) {
-						uploadTask = runProjectBannerUpload({
-							projectQuery: getProjectPosts(destination),
-							projectId: result.project.id,
-							file: banner,
-							attemptId: result.bannerUpload.attemptId,
-							uploadUrl: result.bannerUpload.uploadUrl
-						});
-					}
-
-					await goto(
-						resolve('/[createdBy=owner]/[project]', {
-							createdBy: destination.createdBy,
-							project: destination.projectSlug
-						})
-					);
-					if (uploadTask) {
-						await uploadTask;
-					}
-				} finally {
-					isCreatingProject = false;
-				}
-			})}
-			class="mt-4 flex flex-col gap-4"
-		>
-			<fieldset class="fieldset">
-				<legend class="fieldset-legend">Name</legend>
-				<input
-					{...createProject.fields.name.as('text')}
-					class="input w-full"
-					required
-					maxlength={100}
-					autocomplete="off"
-					placeholder="Project name"
-				/>
-				{#each createProject.fields.name.issues() ?? [] as issue (issue.message)}
-					<p class="text-error text-sm">{issue.message}</p>
-				{/each}
-			</fieldset>
-
-			<fieldset class="fieldset">
-				<legend class="fieldset-legend">Description</legend>
-				<textarea
-					{...createProject.fields.description.as('text')}
-					class="textarea w-full"
-					maxlength={500}
-					rows="4"
-					placeholder="What is this project about?"></textarea>
-				{#each createProject.fields.description.issues() ?? [] as issue (issue.message)}
-					<p class="text-error text-sm">{issue.message}</p>
-				{/each}
-			</fieldset>
-
-			<fieldset class="fieldset">
-				<legend class="fieldset-legend">Banner image</legend>
-				<input
-					type="file"
-					class="file-input w-full"
-					accept={PROJECT_BANNER_ACCEPT}
-					onchange={selectBanner}
-				/>
-				{#if selectedBanner}
-					<input {...createProject.fields.bannerRequested.as('hidden', 'yes')} />
-				{/if}
-				<p class="label">
-					Optional. JPEG, PNG, WebP, GIF, or AVIF up to {PROJECT_BANNER_MAX_SIZE_LABEL}.
-				</p>
-				{#if bannerIssue}
-					<p class="text-error text-sm">{bannerIssue}</p>
-				{/if}
-			</fieldset>
-
-			<div class="modal-action">
-				<button
-					type="button"
-					class="btn btn-ghost"
-					disabled={isSubmittingProject}
-					onclick={() => projectDialog?.close()}
-				>
-					Cancel
-				</button>
-				<button type="submit" class="btn btn-primary" disabled={isSubmittingProject}>
-					{#if isSubmittingProject}
-						<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
-					{/if}
-					Create
-				</button>
-			</div>
-		</form>
-	</div>
-	<form method="dialog" class="modal-backdrop">
-		<button disabled={isSubmittingProject}>close</button>
-	</form>
-</dialog>
+<ProjectFormModal bind:this={createModal} mode={{ kind: 'create', createdBy: params.createdBy }} />

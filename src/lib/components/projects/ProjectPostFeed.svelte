@@ -137,7 +137,20 @@
 						{:else}
 							<p class="text-base-content/60 text-sm italic">This post can't be displayed.</p>
 						{/if}
-						<div class="flex justify-end">
+						<div class="flex flex-wrap justify-end gap-2">
+							{#if project.isOwner && selectedPost.status === 'draft'}
+								<a
+									class="btn btn-soft btn-sm"
+									href={resolve('/[createdBy=owner]/[project]/[post]/edit', {
+										createdBy,
+										project: project.slug,
+										post: selectedPost.slug
+									})}
+								>
+									<Icon icon="edit_square" size="sm" />
+									Continue editing
+								</a>
+							{/if}
 							<a
 								class="btn btn-ghost btn-sm"
 								href={resolve('/[createdBy=owner]/[project]/[post]', {
