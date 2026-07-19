@@ -1,13 +1,15 @@
+import { v, type Infer } from 'convex/values';
 import { createSlug, normalizeName, normalizeSearchName } from './strings';
 
 export const STEAM_SOURCE = 'steam';
 
-export type SteamAppListItem = {
-	appid: number;
-	name: string;
-	last_modified?: number;
-	price_change_number?: number;
-};
+export const steamAppValidator = v.object({
+	appid: v.number(),
+	name: v.string(),
+	last_modified: v.optional(v.number()),
+	price_change_number: v.optional(v.number())
+});
+export type SteamAppListItem = Infer<typeof steamAppValidator>;
 
 export type SteamAppListPage = {
 	apps: SteamAppListItem[];
@@ -67,12 +69,14 @@ export async function fetchSteamAppListPage({
 		throw new Error(`Steam app list request failed with status ${response.status}`);
 	}
 
-	const data = await response.json();
+	const data: unknown = await response.json();
 	if (!isSteamAppListResponse(data)) {
 		throw new Error('Steam app list response had an unexpected shape');
 	}
 
-	const apps = data.response.apps ?? [];
+	// Skip individual malformed rows so one bad record cannot sink a whole
+	// page; only a wholesale shape change rejects the response.
+	const apps = (data.response.apps ?? []).filter(isSteamAppListItem);
 
 	return {
 		apps,
@@ -83,7 +87,7 @@ export async function fetchSteamAppListPage({
 
 type RawSteamAppListResponse = {
 	response: {
-		apps?: SteamAppListItem[];
+		apps?: unknown[];
 		have_more_results?: boolean;
 		last_appid?: number;
 	};
@@ -98,10 +102,13 @@ function isSteamAppListResponse(value: unknown): value is RawSteamAppListRespons
 	if ('have_more_results' in response && typeof response.have_more_results !== 'boolean') {
 		return false;
 	}
-	if ('last_appid' in response && typeof response.last_appid !== 'number') return false;
+	return !('last_appid' in response) || isValidAppId(response.last_appid);
+}
 
-	const apps = 'apps' in response && Array.isArray(response.apps) ? response.apps : [];
-	return apps.every(isSteamAppListItem);
+// App ids feed the sync cursor, so anything but a positive safe integer
+// (fractions, negatives, JSON-parsable Infinity) is rejected at the boundary.
+function isValidAppId(value: unknown): value is number {
+	return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 function isSteamAppListItem(value: unknown): value is SteamAppListItem {
@@ -109,7 +116,7 @@ function isSteamAppListItem(value: unknown): value is SteamAppListItem {
 
 	const hasRequiredFields =
 		'appid' in value &&
-		typeof value.appid === 'number' &&
+		isValidAppId(value.appid) &&
 		'name' in value &&
 		typeof value.name === 'string';
 	const hasValidLastModified =

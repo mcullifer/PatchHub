@@ -2,7 +2,7 @@
 /// <reference types="vite/client" />
 import { register as registerRateLimiter } from '@convex-dev/rate-limiter/test';
 import { convexTest } from 'convex-test';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api, internal } from './_generated/api';
 import { fetchSteamAppListPage } from './lib/steam';
 import schema from './schema';
@@ -24,6 +24,53 @@ function createTest() {
 beforeEach(() => {
 	vi.stubEnv('SERVER_SECRET', SECRET);
 });
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
+	vi.useRealTimers();
+});
+
+type MockSteamPage = {
+	apps?: Array<Record<string, unknown>>;
+	haveMore?: boolean;
+	lastAppId?: number;
+	status?: number;
+};
+
+// Serves the given pages in request order and records each request URL so
+// tests can assert which last_appid cursor was sent to Steam.
+function stubSteamFetch(pages: MockSteamPage[]) {
+	const requests: URL[] = [];
+	vi.stubEnv('STEAM_API_KEY', 'steam-key');
+	vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+		const url = new URL(String(input));
+		requests.push(url);
+		const page = pages[requests.length - 1] ?? { apps: [] };
+		if (page.status !== undefined) return new Response('steam error', { status: page.status });
+		const apps = page.apps ?? [];
+		const lastAppId = apps.at(-1)?.appid;
+		return new Response(
+			JSON.stringify({
+				response: {
+					apps,
+					have_more_results: page.haveMore ?? false,
+					last_appid: page.lastAppId ?? (typeof lastAppId === 'number' ? lastAppId : undefined)
+				}
+			})
+		);
+	});
+	return requests;
+}
+
+async function getSyncState(t: ReturnType<typeof createTest>) {
+	return await t.run(async (ctx) => {
+		return await ctx.db
+			.query('steamCatalogSyncState')
+			.withIndex('by_key', (q) => q.eq('key', 'singleton'))
+			.unique();
+	});
+}
 
 describe('cache', () => {
 	it('roundtrips serialized values through set and get', async () => {
@@ -402,20 +449,68 @@ describe('steamSync.importBatch', () => {
 		expect(items[0].type).toBe('steam');
 	});
 
+	it('does not duplicate an app repeated within a single batch', async () => {
+		const t = createTest();
+
+		const imported = await t.mutation(internal.steamSync.importBatch, {
+			apps: [
+				{ appid: 10, name: 'First Name' },
+				{ appid: 10, name: 'Second Name' }
+			]
+		});
+		expect(imported).toBe(1);
+
+		const items = await t.run(async (ctx) => {
+			return await ctx.db.query('externalItems').collect();
+		});
+		expect(items).toHaveLength(1);
+		expect(items[0].name).toBe('Second Name');
+	});
+
+	it('skips malformed records without aborting the batch', async () => {
+		const t = createTest();
+
+		const imported = await t.mutation(internal.steamSync.importBatch, {
+			apps: [
+				{ appid: Number.NaN, name: 'Broken' },
+				{ appid: -5, name: 'Negative' },
+				{ appid: 10, name: 'Valid' }
+			]
+		});
+		expect(imported).toBe(1);
+
+		const items = await t.run(async (ctx) => {
+			return await ctx.db.query('externalItems').collect();
+		});
+		expect(items).toHaveLength(1);
+		expect(items[0].externalId).toBe('10');
+	});
+
+	it('advances the cursor in the same transaction as the batch', async () => {
+		const t = createTest();
+
+		await t.mutation(internal.steamSync.importBatch, {
+			apps: [
+				{ appid: 10, name: 'Counter-Strike' },
+				{ appid: 440, name: 'Team Fortress 2' }
+			]
+		});
+		expect(await getSyncState(t)).toMatchObject({ lastAppId: '440', status: 'running' });
+
+		const skipped = await t.mutation(internal.steamSync.importBatch, {
+			apps: [{ appid: Number.NaN, name: 'Broken' }]
+		});
+		expect(skipped).toBe(0);
+		expect(await getSyncState(t)).toMatchObject({ lastAppId: '440' });
+	});
+
 	it('preserves the prior cursor when marking a sync failed', async () => {
 		const t = createTest();
 
 		await t.mutation(internal.steamSync.markStarted, { cursor: 10 });
 		await t.mutation(internal.steamSync.markFailed, { message: 'Steam API unavailable' });
 
-		const syncState = await t.run(async (ctx) => {
-			return await ctx.db
-				.query('steamCatalogSyncState')
-				.withIndex('by_key', (q) => q.eq('key', 'singleton'))
-				.unique();
-		});
-
-		expect(syncState).toMatchObject({
+		expect(await getSyncState(t)).toMatchObject({
 			lastAppId: '10',
 			status: 'failed',
 			lastError: 'Steam API unavailable'
@@ -425,7 +520,7 @@ describe('steamSync.importBatch', () => {
 	it('rejects invalid run options before marking the sync running', async () => {
 		const t = createTest();
 
-		await t.mutation(internal.steamSync.setFinished, { cursor: 10, status: 'complete' });
+		await t.mutation(internal.steamSync.recordProgress, { cursor: 10, status: 'complete' });
 
 		await expect(
 			t.action(api.steamSync.runManual, {
@@ -434,17 +529,132 @@ describe('steamSync.importBatch', () => {
 			})
 		).rejects.toThrow('Steam sync maxPages must be a positive integer');
 
-		const syncState = await t.run(async (ctx) => {
-			return await ctx.db
-				.query('steamCatalogSyncState')
-				.withIndex('by_key', (q) => q.eq('key', 'singleton'))
-				.unique();
-		});
+		await expect(
+			t.action(api.steamSync.runManual, {
+				secret: SECRET,
+				batchSize: 5000
+			})
+		).rejects.toThrow('Steam app import batch size must be at most 2000');
 
-		expect(syncState).toMatchObject({
+		expect(await getSyncState(t)).toMatchObject({
 			lastAppId: '10',
 			status: 'complete'
 		});
+	});
+});
+
+describe('steamSync.runScheduled', () => {
+	it('pages until the catalog is exhausted, continuing across scheduled actions', async () => {
+		vi.useFakeTimers();
+		const requests = stubSteamFetch([
+			{
+				apps: [
+					{ appid: 10, name: 'Counter-Strike' },
+					{ appid: 20, name: 'Team Fortress Classic' }
+				],
+				haveMore: true
+			},
+			{ apps: [{ appid: 30, name: 'Day of Defeat' }], haveMore: true },
+			{ apps: [{ appid: 40, name: 'Deathmatch Classic' }] }
+		]);
+		const t = createTest();
+
+		await t.action(internal.steamSync.runScheduled, { maxPages: 1 });
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+		expect(requests).toHaveLength(3);
+		expect(requests[0].searchParams.get('last_appid')).toBeNull();
+		expect(requests[1].searchParams.get('last_appid')).toBe('20');
+		expect(requests[2].searchParams.get('last_appid')).toBe('30');
+
+		const items = await t.run(async (ctx) => {
+			return await ctx.db.query('externalItems').collect();
+		});
+		expect(items).toHaveLength(4);
+		expect(await getSyncState(t)).toMatchObject({ lastAppId: '40', status: 'complete' });
+	});
+
+	it('keeps paging when every row on a page is malformed', async () => {
+		const requests = stubSteamFetch([
+			{ apps: [{ appid: 'bad', name: 'Broken' }], haveMore: true, lastAppId: 20 },
+			{ apps: [{ appid: 30, name: 'Day of Defeat' }] }
+		]);
+		const t = createTest();
+
+		await t.action(internal.steamSync.runScheduled, {});
+
+		expect(requests).toHaveLength(2);
+		expect(requests[1].searchParams.get('last_appid')).toBe('20');
+		const items = await t.run(async (ctx) => {
+			return await ctx.db.query('externalItems').collect();
+		});
+		expect(items).toHaveLength(1);
+		expect(await getSyncState(t)).toMatchObject({ lastAppId: '30', status: 'complete' });
+	});
+
+	it('stops when Steam reports more results but the cursor cannot advance', async () => {
+		const requests = stubSteamFetch([{ apps: [], haveMore: true }]);
+		const t = createTest();
+
+		await t.action(internal.steamSync.runScheduled, {});
+
+		expect(requests).toHaveLength(1);
+		expect(await getSyncState(t)).toMatchObject({ status: 'complete' });
+	});
+
+	it('completes immediately when the API returns no results', async () => {
+		const requests = stubSteamFetch([{ apps: [] }]);
+		const t = createTest();
+
+		const result = await t.action(internal.steamSync.runScheduled, {});
+
+		expect(requests).toHaveLength(1);
+		expect(result).toMatchObject({ pagesFetched: 1, appsImported: 0, haveMoreResults: false });
+		expect(await getSyncState(t)).toMatchObject({ status: 'complete' });
+	});
+
+	it('stops and records an error after too many continuations', async () => {
+		const requests = stubSteamFetch([]);
+		const t = createTest();
+
+		const result = await t.action(internal.steamSync.runScheduled, { continuation: 25 });
+
+		expect(result).toBeNull();
+		expect(requests).toHaveLength(0);
+		expect(await getSyncState(t)).toMatchObject({
+			status: 'failed',
+			lastError: expect.stringContaining('continuations')
+		});
+	});
+
+	it('records a mid-run failure at the last durable cursor and resumes from it', async () => {
+		const requests = stubSteamFetch([
+			{ apps: [{ appid: 10, name: 'Counter-Strike' }], haveMore: true },
+			{ status: 500 }
+		]);
+		const t = createTest();
+
+		await expect(t.action(internal.steamSync.runScheduled, {})).rejects.toThrow(
+			'Steam app list request failed with status 500'
+		);
+		expect(requests).toHaveLength(2);
+		expect(await getSyncState(t)).toMatchObject({
+			lastAppId: '10',
+			status: 'failed',
+			lastError: 'Steam app list request failed with status 500'
+		});
+
+		vi.unstubAllGlobals();
+		const resumeRequests = stubSteamFetch([{ apps: [{ appid: 20, name: 'Half-Life' }] }]);
+
+		await t.action(internal.steamSync.runScheduled, {});
+
+		expect(resumeRequests[0].searchParams.get('last_appid')).toBe('10');
+		const items = await t.run(async (ctx) => {
+			return await ctx.db.query('externalItems').collect();
+		});
+		expect(items).toHaveLength(2);
+		expect(await getSyncState(t)).toMatchObject({ lastAppId: '20', status: 'complete' });
 	});
 });
 
@@ -472,15 +682,31 @@ describe('fetchSteamAppListPage', () => {
 		});
 	});
 
-	it('rejects malformed app rows', async () => {
+	it('skips malformed app rows without dropping the page', async () => {
 		const fetchFn: typeof fetch = async () =>
 			new Response(
 				JSON.stringify({
 					response: {
-						apps: [{ appid: '25', name: 'Cursor Game' }]
+						apps: [
+							{ appid: '25', name: 'Wrong Type' },
+							{ name: 'Missing Id' },
+							{ appid: 30, name: 'Good Game' }
+						]
 					}
 				})
 			);
+
+		const page = await fetchSteamAppListPage({ apiKey: 'steam-key', fetchFn });
+
+		expect(page).toEqual({
+			apps: [{ appid: 30, name: 'Good Game' }],
+			haveMoreResults: false,
+			lastAppId: 30
+		});
+	});
+
+	it('rejects responses whose overall shape is unexpected', async () => {
+		const fetchFn: typeof fetch = async () => new Response(JSON.stringify({ nope: true }));
 
 		await expect(fetchSteamAppListPage({ apiKey: 'steam-key', fetchFn })).rejects.toThrow(
 			'Steam app list response had an unexpected shape'

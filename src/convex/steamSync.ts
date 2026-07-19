@@ -1,4 +1,4 @@
-import { v } from 'convex/values';
+import { v, type Infer } from 'convex/values';
 import { internal } from './_generated/api';
 import {
 	action,
@@ -9,47 +9,44 @@ import {
 	type MutationCtx
 } from './_generated/server';
 import { requireServerSecret } from './lib/serverSecret';
-import { createSteamExternalItemValues, fetchSteamAppListPage } from './lib/steam';
+import {
+	createSteamExternalItemValues,
+	fetchSteamAppListPage,
+	steamAppValidator,
+	type SteamAppListItem
+} from './lib/steam';
 import { upsertExternalItem } from './lib/externalItems';
 
-// Keep each import mutation small because externalItems has a search index.
-// Larger batches make Convex's search-index metadata writer more likely to
-// contend with the import transaction.
-const IMPORT_MUTATION_BATCH_SIZE = 50;
-const MAX_IMPORT_MUTATION_BATCH_SIZE = 500;
+// A batch of 500 keeps each import transaction far under the per-transaction
+// limits (4,096 index ranges, 32k documents scanned, 16k written, 16 MiB) while
+// keeping the blast radius of a failed batch small.
+const IMPORT_MUTATION_BATCH_SIZE = 500;
+const MAX_IMPORT_MUTATION_BATCH_SIZE = 2000;
 const MAX_SYNC_PAGES_PER_ACTION = 10;
 const MAX_SYNC_DELAY_MS = 60_000;
+// A full from-scratch catalog sync needs ~3 continuations; hitting this cap
+// means the run is looping, so stop and leave recovery to the manual script.
+const MAX_SCHEDULED_CONTINUATIONS = 25;
 
-const steamAppValidator = v.object({
-	appid: v.number(),
-	name: v.string(),
-	last_modified: v.optional(v.number()),
-	price_change_number: v.optional(v.number())
-});
-const syncOptionsValidator = {
+const syncOptionsValidator = v.object({
 	maxPages: v.optional(v.number()),
 	delayMs: v.optional(v.number()),
 	startCursor: v.optional(v.number()),
 	batchSize: v.optional(v.number())
-};
+});
 
 const syncStatusValidator = v.union(v.literal('partial'), v.literal('complete'));
 type SyncStateStatus = 'idle' | 'running' | 'partial' | 'complete' | 'failed';
-type SteamSyncOptions = {
-	maxPages?: number;
-	delayMs?: number;
-	startCursor?: number;
-	batchSize?: number;
-};
+type SteamSyncOptions = Infer<typeof syncOptionsValidator>;
 type NormalizedSteamSyncOptions = {
-	maxPages?: number;
+	maxPages: number;
 	delayMs: number;
 	startCursor?: number;
 	batchSize: number;
 };
 
 export type SteamSyncResult = {
-	batchesFetched: number;
+	pagesFetched: number;
 	appsImported: number;
 	finalCursor: number | null;
 	haveMoreResults: boolean;
@@ -64,6 +61,7 @@ async function upsertSyncState(
 		.withIndex('by_key', (q) => q.eq('key', 'singleton'))
 		.unique();
 
+	// undefined = keep the stored value, null = clear it, a value = set it.
 	const lastAppId = fields.lastAppId === undefined ? state?.lastAppId : fields.lastAppId;
 	const lastError = fields.lastError === undefined ? state?.lastError : fields.lastError;
 	const nextState: {
@@ -128,7 +126,7 @@ export const markFailed = internalMutation({
 	}
 });
 
-export const setFinished = internalMutation({
+export const recordProgress = internalMutation({
 	args: { cursor: v.union(v.number(), v.null()), status: syncStatusValidator },
 	handler: async (ctx, args) => {
 		await upsertSyncState(ctx, {
@@ -140,40 +138,70 @@ export const setFinished = internalMutation({
 	}
 });
 
+// The args validator only guarantees numbers; values like NaN would corrupt
+// the externalId key and the cursor, so skip them instead of failing the batch.
+function isImportableSteamApp(app: SteamAppListItem): boolean {
+	return Number.isSafeInteger(app.appid) && app.appid > 0;
+}
+
 export const importBatch = internalMutation({
 	args: { apps: v.array(steamAppValidator) },
 	handler: async (ctx, args) => {
 		const now = Date.now();
-		let appsWritten = 0;
-		for (const app of args.apps) {
-			if (await upsertExternalItem(ctx, createSteamExternalItemValues(app, now))) {
-				appsWritten++;
-			}
+		// Dedupe by appid so a repeated row cannot race itself into two inserts.
+		const apps = [
+			...new Map(args.apps.filter(isImportableSteamApp).map((app) => [app.appid, app])).values()
+		];
+		const written = await Promise.all(
+			apps.map((app) => upsertExternalItem(ctx, createSteamExternalItemValues(app, now)))
+		);
+
+		// Advance the cursor in the same transaction so an interrupted run
+		// resumes after the last batch that durably landed.
+		if (apps.length > 0) {
+			await upsertSyncState(ctx, {
+				lastAppId: Math.max(...apps.map((app) => app.appid)).toString(),
+				status: 'running'
+			});
 		}
-		return appsWritten;
+
+		return written.filter(Boolean).length;
 	}
 });
 
-// The full catalog sync (~175k apps) takes longer than a single action is
-// allowed to run; use maxPages to sync in chunks, or rely on the cursor to
-// resume where the last run stopped.
+// The cron kicks off one run per day; each action imports a bounded chunk of
+// pages, then reschedules itself until Steam reports no more results.
 export const runScheduled = internalAction({
 	args: {
-		...syncOptionsValidator
+		...syncOptionsValidator.omit('startCursor').fields,
+		continuation: v.optional(v.number())
 	},
-	handler: async (ctx, args): Promise<SteamSyncResult> => {
-		return await runSync(ctx, args);
+	handler: async (ctx, args): Promise<SteamSyncResult | null> => {
+		const { continuation = 0, ...options } = args;
+		if (continuation >= MAX_SCHEDULED_CONTINUATIONS) {
+			await ctx.runMutation(internal.steamSync.markFailed, {
+				message: `Steam sync stopped after ${MAX_SCHEDULED_CONTINUATIONS} continuations without finishing; resume with npm run steam:sync`
+			});
+			return null;
+		}
+
+		const result = await runSync(ctx, options);
+		if (result.haveMoreResults) {
+			await ctx.scheduler.runAfter(options.delayMs ?? 0, internal.steamSync.runScheduled, {
+				...options,
+				continuation: continuation + 1
+			});
+		}
+		return result;
 	}
 });
 
 export const runManual = action({
-	args: {
-		secret: v.string(),
-		...syncOptionsValidator
-	},
+	args: { secret: v.string(), ...syncOptionsValidator.fields },
 	handler: async (ctx, args): Promise<SteamSyncResult> => {
-		requireServerSecret(args.secret);
-		return await runSync(ctx, args);
+		const { secret, ...options } = args;
+		requireServerSecret(secret);
+		return await runSync(ctx, options);
 	}
 });
 
@@ -185,30 +213,27 @@ async function runSync(ctx: ActionCtx, options: SteamSyncOptions): Promise<Steam
 	}
 
 	let cursor = syncOptions.startCursor ?? (await ctx.runQuery(internal.steamSync.getCursor, {}));
-	let batchesFetched = 0;
+	let pagesFetched = 0;
 	let appsImported = 0;
 	let haveMoreResults = false;
 
 	await ctx.runMutation(internal.steamSync.markStarted, { cursor });
 
 	try {
-		for (let page = 0; syncOptions.maxPages === undefined || page < syncOptions.maxPages; page++) {
+		for (let page = 0; page < syncOptions.maxPages; page++) {
 			const response = await fetchSteamAppListPage({ apiKey, lastAppId: cursor });
+			const nextCursor = response.lastAppId ?? cursor;
 
-			if (response.apps.length === 0) {
-				haveMoreResults = false;
-				await ctx.runMutation(internal.steamSync.setFinished, {
-					cursor,
-					status: 'complete'
-				});
-				break;
-			}
-
-			const nextCursor = response.lastAppId;
-			haveMoreResults = response.haveMoreResults;
-			const status = haveMoreResults ? 'partial' : 'complete';
+			// A page can come back empty because the catalog is exhausted or
+			// because every row was malformed and got filtered. Keep paging as
+			// long as Steam reports more results and the cursor can advance;
+			// otherwise an all-malformed page would stall the sync forever.
+			haveMoreResults =
+				response.haveMoreResults && (response.apps.length > 0 || nextCursor !== cursor);
 
 			for (let index = 0; index < response.apps.length; index += syncOptions.batchSize) {
+				// Project to exactly the validated fields; the strict importBatch
+				// validator rejects extra keys the Steam JSON carried through.
 				const batch = response.apps.slice(index, index + syncOptions.batchSize).map((app) => ({
 					appid: app.appid,
 					name: app.name,
@@ -220,20 +245,22 @@ async function runSync(ctx: ActionCtx, options: SteamSyncOptions): Promise<Steam
 				});
 			}
 
-			await ctx.runMutation(internal.steamSync.setFinished, {
-				cursor: nextCursor,
-				status
+			pagesFetched++;
+			cursor = nextCursor;
+			await ctx.runMutation(internal.steamSync.recordProgress, {
+				cursor,
+				status: haveMoreResults ? 'partial' : 'complete'
 			});
 
-			batchesFetched++;
-			cursor = nextCursor;
-
 			if (!haveMoreResults) break;
-			if (syncOptions.delayMs > 0) await sleep(syncOptions.delayMs);
+			// Delay only between fetches; the caller spaces out chunk boundaries.
+			if (syncOptions.delayMs > 0 && page + 1 < syncOptions.maxPages) {
+				await sleep(syncOptions.delayMs);
+			}
 		}
 
 		return {
-			batchesFetched,
+			pagesFetched,
 			appsImported,
 			finalCursor: cursor,
 			haveMoreResults
@@ -247,9 +274,10 @@ async function runSync(ctx: ActionCtx, options: SteamSyncOptions): Promise<Steam
 
 function normalizeSyncOptions(options: SteamSyncOptions): NormalizedSteamSyncOptions {
 	return {
-		maxPages: positiveIntegerOption('Steam sync maxPages', options.maxPages, {
-			maximum: MAX_SYNC_PAGES_PER_ACTION
-		}),
+		maxPages:
+			positiveIntegerOption('Steam sync maxPages', options.maxPages, {
+				maximum: MAX_SYNC_PAGES_PER_ACTION
+			}) ?? MAX_SYNC_PAGES_PER_ACTION,
 		delayMs:
 			nonNegativeIntegerOption('Steam sync delayMs', options.delayMs, {
 				maximum: MAX_SYNC_DELAY_MS
