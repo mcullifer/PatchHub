@@ -50,7 +50,7 @@
 			<div
 				tabindex="0"
 				role="button"
-				class="btn btn-block border border-base-content/10 justify-between"
+				class="btn btn-block border-base-content/10 justify-between border"
 			>
 				<span class="min-w-0 truncate">{selectedItem.dateLabel} — {selectedItem.title}</span>
 				<Icon icon="expand_more" size="sm" class="shrink-0 opacity-60" />
@@ -64,7 +64,7 @@
 		</nav>
 	{/if}
 
-	<div class="card card-sm bg-base-200 hidden lg:block shadow-lg">
+	<div class="card card-sm bg-base-200 hidden shadow-lg lg:block">
 		<div class="card-body">
 			<div class="flex items-center justify-between gap-2">
 				<h2 class="card-title">{title}</h2>

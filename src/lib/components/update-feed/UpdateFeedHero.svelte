@@ -91,7 +91,7 @@
 			{/if}
 
 			<div
-				class="from-base-200 from-10% pointer-events-none absolute -inset-px bg-linear-to-t to-transparent to-60% md:bg-linear-to-l md:from-0%"
+				class="from-base-200 pointer-events-none absolute -inset-px bg-linear-to-t from-10% to-transparent to-60% md:bg-linear-to-l md:from-0%"
 			></div>
 		</figure>
 

@@ -12,7 +12,7 @@ export const softwareSources = {
 		description: 'Windows 11 release notes, cumulative updates, and support articles.',
 		icon: 'desktop_windows',
 		imageUrl:
-			'https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/MSFT-Windows-11-Search-bar?scl=1',
+			'https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/MSFT-Windows-11-Search-bar?wid=1200&hei=630&fit=crop',
 		imageAlt: 'Windows 11 desktop interface',
 		adapter: 'atom-feed',
 		feedUrl: 'https://support.microsoft.com/en-us/feed/atom/4ec863cc-2ecd-e187-6cb3-b50c6545db92',

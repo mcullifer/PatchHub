@@ -65,7 +65,7 @@
 
 		<p class="text-base-content/70">{details.message}</p>
 
-		<div class="flex flex-col gap-2 justify-end sm:flex-row">
+		<div class="flex flex-col justify-end gap-2 sm:flex-row">
 			<a class="btn btn-primary" href={resolve('/auth/login')}>Try signing in again</a>
 			<a class="btn btn-ghost" href={resolve('/')}>Go home</a>
 		</div>

@@ -264,7 +264,7 @@
 						{@attach focusLinkInput}
 						bind:value={linkValue}
 						type="url"
-						class="input input-sm w-64 join-item"
+						class="input input-sm join-item w-64"
 						placeholder="Paste or type a link"
 						aria-label="Link URL"
 						onkeydown={handleLinkKeydown}

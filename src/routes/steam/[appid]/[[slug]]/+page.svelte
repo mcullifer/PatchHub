@@ -77,7 +77,8 @@
 			const carousel = button?.parentElement?.querySelector('.carousel');
 			if (!carousel) return;
 			const direction = button?.hasAttribute('data-carousel-prev') ? -1 : 1;
-			const itemWidth = carousel.querySelector('.carousel-item')?.clientWidth ?? carousel.clientWidth;
+			const itemWidth =
+				carousel.querySelector('.carousel-item')?.clientWidth ?? carousel.clientWidth;
 			carousel.scrollBy({ left: direction * itemWidth });
 		};
 		container.addEventListener('click', onclick);

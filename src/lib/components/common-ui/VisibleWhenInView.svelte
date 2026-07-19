@@ -57,4 +57,7 @@
 {:else}
 	{@render fallback?.()}
 {/each}
-<div class="sentinel" bind:this={inviewTarget}></div>
+<!-- Absolutely positioned so it never occupies a cell in grid/flex parents; the
+     nearest positioned ancestor must be the scrolled container for intersection
+     to fire near its bottom edge. -->
+<div class="sentinel absolute bottom-0" bind:this={inviewTarget}></div>

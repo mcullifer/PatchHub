@@ -19,7 +19,7 @@
 </script>
 
 <div class="flex min-h-full w-full flex-col">
-	<Navbar class="bg-base-200 gap-2 sm:gap-4">
+	<Navbar class="bg-base-300 sticky top-0 z-50 gap-2 sm:gap-4">
 		{#snippet start()}
 			<a class="flex gap-0 px-4 text-xl font-bold" href={resolve('/')}>
 				<span class={lightModeEnabled ? 'text-base-content' : 'text-white'}>patch</span>

@@ -338,7 +338,7 @@
 	</div>
 {/snippet}
 
-<div class="flex p-2 flex-wrap items-center gap-2">
+<div class="flex flex-wrap items-center gap-2 p-2">
 	<select
 		id={blockFormatId}
 		class="select select-sm w-fit"

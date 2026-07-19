@@ -48,7 +48,7 @@
 		<Card class="bg-base-200 card-sm">
 			<div class="flex flex-col gap-4 sm:flex-row sm:items-center">
 				<div class={['avatar', !profilePictureUrl && 'avatar-placeholder']}>
-					<div class="bg-secondary text-secondary-content ring-base-300 w-20 rounded-box ring-4">
+					<div class="bg-secondary text-secondary-content ring-base-300 rounded-box w-20 ring-4">
 						{#if profilePictureUrl}
 							<img
 								src={profilePictureUrl}
@@ -100,7 +100,7 @@
 						>
 							<div
 								aria-hidden="true"
-								class="bg-secondary/15 text-secondary flex size-10 shrink-0 items-center justify-center rounded-box"
+								class="bg-secondary/15 text-secondary rounded-box flex size-10 shrink-0 items-center justify-center"
 							>
 								<Icon icon="folder_open" size="sm" />
 							</div>

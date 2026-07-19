@@ -190,14 +190,14 @@
 
 	<div class={['flex flex-col gap-6', sideBySide && 'xl:flex-row']}>
 		<section class={['flex min-w-0 flex-col gap-2', sideBySide && 'xl:flex-1']}>
-			<h2 class="text-sm font-medium text-base-content/60">
+			<h2 class="text-base-content/60 text-sm font-medium">
 				Editor {editorEditable ? '' : '(read-only)'}
 			</h2>
 			<TipTap content={editorContent} editable={editorEditable} onsave={handleSave} />
 		</section>
 
 		<section class={['flex min-w-0 flex-col gap-2', sideBySide && 'xl:flex-1']}>
-			<h2 class="text-sm font-medium text-base-content/60">
+			<h2 class="text-base-content/60 text-sm font-medium">
 				Published view
 				{#if lastSavedAt}
 					<span class="text-base-content/40">

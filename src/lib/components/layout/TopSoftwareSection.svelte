@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { FavoriteHeart, Icon, InView } from '$lib/components/common-ui';
+	import { Tooltip } from '$lib/components/common-ui/floating';
 	import SectionHeader from '$lib/components/layout/SectionHeader.svelte';
 	import {
 		addExternalItemFavorite,
@@ -55,26 +56,13 @@
 		if (!value) return 'No updates yet';
 		return dateFormatter.format(new Date(value));
 	}
-
-	function getFreshnessLabel(value: string | null | undefined): string {
-		if (!value) return 'Not checked';
-
-		const date = new Date(value);
-		const now = new Date();
-		const isToday = date.toDateString() === now.toDateString();
-		if (isToday) return 'Updated today';
-
-		return `Updated ${formatDate(value)}`;
-	}
 </script>
 
 <section {id} class={['scroll-mt-4', classNames]}>
-	<SectionHeader icon="apps" title="Software" subtitle="Trackable update sources and release feeds">
-		{#snippet meta()}
-			<div class="badge badge-ghost badge-lg gap-2">
-				<Icon icon="rss_feed" size="xs" />
-				Sources
-			</div>
+	<SectionHeader title="Software">
+		{#snippet attribution()}
+			<Icon icon="rss_feed" size="xs" />
+			Vendor & release feeds
 		{/snippet}
 	</SectionHeader>
 
@@ -83,100 +71,71 @@
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each summaries as summary (summary.source.id)}
 				<article
-					class="group card card-border card-sm border-base-content/20 bg-base-200 shadow-md"
+					class="group bg-base-300 rounded-box ring-base-content/20 relative aspect-[1200/630] overflow-hidden shadow-md ring-1"
 				>
-					<figure class="bg-base-300 relative aspect-[1200/630] overflow-hidden">
-						<a data-sveltekit-preload-data="off" href={resolve(`/software/${summary.source.slug}`)}>
-							<img
-								class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:duration-[350ms] group-hover:scale-[1.04] motion-reduce:group-hover:scale-100"
-								src={summary.source.imageUrl}
-								alt={summary.source.imageAlt}
-								loading="lazy"
-							/>
-						</a>
-					</figure>
-					<div class="card-body flex flex-col gap-4">
-						<div class="flex items-start justify-between gap-2">
-							<div class="min-w-0">
-								<div class="mb-2 flex flex-wrap items-center gap-2">
-									<span class="badge badge-info badge-soft gap-1">
-										<Icon icon={summary.source.icon} size="xs" />
-										{summary.source.vendor}
-									</span>
-									<span class="badge badge-ghost">{summary.source.sourceType}</span>
-								</div>
-								<h3 class="text-lg leading-tight font-semibold">
-									<a
-										data-sveltekit-preload-data="off"
-										class="link-hover link"
-										href={resolve(`/software/${summary.source.slug}`)}
-									>
-										{summary.source.name}
-									</a>
-								</h3>
-							</div>
-							{#if page.data.user !== null && summary.externalItemId}
-								{@const externalItemId = summary.externalItemId}
+					<img
+						class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.04] group-hover:duration-[350ms] motion-reduce:group-hover:scale-100"
+						src={summary.source.imageUrl}
+						alt={summary.source.imageAlt}
+						loading="lazy"
+					/>
+
+					<div
+						class="from-neutral via-neutral/40 pointer-events-none absolute inset-0 bg-gradient-to-t to-transparent"
+					></div>
+
+					<a
+						data-sveltekit-preload-data="off"
+						href={resolve(`/software/${summary.source.slug}`)}
+						class="rounded-box focus-visible:ring-primary absolute inset-0 focus-visible:ring-2 focus-visible:outline-none"
+						aria-label={summary.source.name}
+					></a>
+
+					{#if page.data.user !== null && summary.externalItemId}
+						{@const externalItemId = summary.externalItemId}
+						<Tooltip>
+							{#snippet reference(floating)}
 								<FavoriteHeart
 									favorited={isFavorited(externalItemId)}
 									onToggle={() => toggleFavorite(externalItemId)}
-									data-tip="Favorite"
-									class="tooltip"
+									{...floating.reference({
+										class: [
+											'bg-neutral/50 text-neutral-content absolute top-2 right-2 rounded-full p-1'
+										]
+									})}
 								/>
-							{/if}
-						</div>
+							{/snippet}
+							<div class="bg-neutral text-neutral-content rounded-lg p-2 text-sm font-normal">
+								Favorite
+							</div>
+						</Tooltip>
+					{/if}
 
-						<div>
-							{#if summary.latestUpdate}
-								<div class="space-y-2">
-									<p class="line-clamp-2 text-sm font-medium text-pretty">
-										{summary.latestUpdate.title}
-									</p>
-									<div class="flex flex-wrap gap-2">
-										{#if summary.latestUpdate.metadata.driverVersion}
-											<span class="badge badge-outline badge-sm">
-												v{summary.latestUpdate.metadata.driverVersion}
-											</span>
-										{/if}
-										{#if summary.latestUpdate.metadata.kbId}
-											<span class="badge badge-outline badge-sm">
-												{summary.latestUpdate.metadata.kbId}
-											</span>
-										{/if}
-										{#if summary.latestUpdate.metadata.windowsVersion}
-											<span class="badge badge-outline badge-sm">
-												{summary.latestUpdate.metadata.windowsVersion}
-											</span>
-										{/if}
-										{#if summary.latestUpdate.metadata.build}
-											<span class="badge badge-outline badge-sm">
-												Build {summary.latestUpdate.metadata.build}
-											</span>
-										{/if}
-									</div>
-								</div>
-							{:else}
-								<div class="alert alert-info alert-soft text-sm">
-									<Icon icon="info" size="sm" />
-									<span>No updates returned yet.</span>
-								</div>
-							{/if}
-						</div>
+					<span
+						class="badge badge-primary badge-sm pointer-events-none absolute right-4 bottom-4 translate-y-1 gap-1 opacity-0 transition-[opacity,translate] duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:translate-y-0"
+					>
+						Updates
+						<Icon icon="arrow_forward" size="xs" />
+					</span>
 
-						<div class="text-base-content/60 flex flex-wrap items-center gap-2 text-xs">
+					<div
+						class="text-neutral-content pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-1 p-4"
+					>
+						<h3 class="text-base leading-tight font-semibold">{summary.source.name}</h3>
+						{#if summary.latestUpdate}
+							<p class="line-clamp-1 text-sm opacity-90">{summary.latestUpdate.title}</p>
+						{/if}
+						<div class="flex items-center gap-2 text-xs opacity-75">
 							<span class="inline-flex items-center gap-1">
 								<Icon icon="calendar_month" size="xs" />
 								{formatDate(summary.latestUpdate?.publishedAt)}
 							</span>
-							<span class="inline-flex items-center gap-1">
-								<Icon
-									icon={summary.health.status === 'unavailable' ? 'cloud_off' : 'sync'}
-									size="xs"
-								/>
-								{summary.health.status === 'unavailable'
-									? 'Source unavailable'
-									: getFreshnessLabel(summary.health.latestItemAt)}
-							</span>
+							{#if summary.health.status === 'unavailable'}
+								<span class="text-warning inline-flex items-center gap-1">
+									<Icon icon="cloud_off" size="xs" />
+									Source unavailable
+								</span>
+							{/if}
 						</div>
 					</div>
 				</article>

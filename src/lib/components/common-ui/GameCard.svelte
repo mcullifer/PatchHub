@@ -127,12 +127,6 @@
 			<Icon icon="trending_up" size="xs" />
 			Most played
 		</span>
-	{:else}
-		<span
-			class="badge badge-neutral badge-sm pointer-events-none absolute top-2 left-2 font-semibold"
-		>
-			#{game.rank}
-		</span>
 	{/if}
 
 	{#if page.data.user !== null && game.externalItemId}
