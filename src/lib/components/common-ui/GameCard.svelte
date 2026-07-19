@@ -23,6 +23,7 @@
 	);
 	let resolvedHeaderImage = $state<{ appid: number; url: string } | null>(null);
 	let loadedHeaderImage = $state<{ appid: number; url: string } | null>(null);
+	let failedHeaderImage = $state<{ appid: number; url: string } | null>(null);
 	let triedResolvedHeaderImageAppId = $state<number | null>(null);
 	let placeholderImageAppId = $state<number | null>(null);
 	let imageSrc = $derived(
@@ -31,12 +32,16 @@
 	let imageLoaded = $derived(
 		loadedHeaderImage?.appid === game.appid && loadedHeaderImage.url === imageSrc
 	);
+	let imageFailed = $derived(
+		failedHeaderImage?.appid === game.appid && failedHeaderImage.url === imageSrc
+	);
 	let showImagePlaceholder = $derived(placeholderImageAppId === game.appid);
 
 	let steamPath = $derived(getSteamGamePath(game));
 	async function resolveHeaderImage(): Promise<void> {
 		const appid = game.appid;
 		const failedImageSrc = imageSrc;
+		failedHeaderImage = { appid, url: failedImageSrc };
 
 		if (triedResolvedHeaderImageAppId === appid) {
 			placeholderImageAppId = appid;
@@ -101,7 +106,7 @@
 				class={[
 					'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:duration-[350ms] motion-reduce:group-hover:scale-100',
 					featured ? 'group-hover:scale-[1.025]' : 'group-hover:scale-[1.04]',
-					!imageLoaded && 'invisible'
+					imageFailed && 'invisible'
 				]}
 				src={imageSrc}
 				alt=""
