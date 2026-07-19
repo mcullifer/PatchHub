@@ -73,13 +73,15 @@ export const getSteamAppByAppId = query({
 	}
 });
 
-export const getItemIdByTypeAndSlug = query({
-	args: { type: v.string(), slug: v.string() },
+export const getItemIdByTypeAndExternalId = query({
+	args: { type: v.string(), externalId: v.string() },
 	handler: async (ctx, args) => {
 		const item = await ctx.db
 			.query('externalItems')
-			.withIndex('by_type_and_slug', (q) => q.eq('type', args.type).eq('slug', args.slug))
-			.first();
+			.withIndex('by_type_and_externalId', (q) =>
+				q.eq('type', args.type).eq('externalId', args.externalId)
+			)
+			.unique();
 
 		return item?._id ?? null;
 	}

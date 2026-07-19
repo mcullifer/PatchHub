@@ -72,7 +72,7 @@ export class SoftwareUpdateService {
 			sources.map(async (source) => {
 				const [detail, externalItemId] = await Promise.all([
 					this.getSourceDetail(source.slug, 10, fetchFn),
-					SoftwareCatalogService.getExternalItemId(source.slug)
+					SoftwareCatalogService.getExternalItemId(source.id)
 				]);
 
 				return {

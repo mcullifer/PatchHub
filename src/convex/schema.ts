@@ -52,7 +52,6 @@ export default defineSchema({
 		updatedAt: v.number()
 	})
 		.index('by_type_and_externalId', ['type', 'externalId'])
-		.index('by_type_and_slug', ['type', 'slug'])
 		.searchIndex('search_searchName', {
 			searchField: 'searchName',
 			filterFields: ['type']

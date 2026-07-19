@@ -4,10 +4,10 @@ import { normalizeSearchName } from '$convex/lib/strings';
 import { api } from '$convex/_generated/api';
 
 export class SoftwareCatalogService {
-	static async getExternalItemId(slug: string): Promise<string | null> {
-		return await createConvexClient().query(api.catalog.getItemIdByTypeAndSlug, {
+	static async getExternalItemId(externalId: string): Promise<string | null> {
+		return await createConvexClient().query(api.catalog.getItemIdByTypeAndExternalId, {
 			type: 'software',
-			slug
+			externalId
 		});
 	}
 
