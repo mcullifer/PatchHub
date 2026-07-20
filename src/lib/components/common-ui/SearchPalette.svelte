@@ -8,6 +8,7 @@
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 	import { useDebounce } from 'runed';
 	import { onDestroy } from 'svelte';
+	import { on } from 'svelte/events';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -121,6 +122,18 @@
 		};
 	}
 
+	function fitVisualViewport(node: HTMLDialogElement) {
+		const viewport = window.visualViewport;
+		if (!viewport) return;
+
+		const updateHeight = () => {
+			node.style.setProperty('--search-palette-height', `${viewport.height * 0.7}px`);
+		};
+
+		updateHeight();
+		return on(viewport, 'resize', updateHeight);
+	}
+
 	let closing = false;
 
 	// Drive the native dialog from `open`, and focus the input the moment it
@@ -215,8 +228,9 @@
 </script>
 
 <dialog
-	class="modal items-start pt-[12vh] sm:pt-[18vh]"
+	class="modal items-start pt-[12vh]"
 	{@attach syncOpen}
+	{@attach fitVisualViewport}
 	onclose={onDialogClose}
 	oncancel={(event) => {
 		event.preventDefault();
@@ -224,7 +238,9 @@
 	}}
 	onclick={onBackdropClick}
 >
-	<div class="modal-box flex h-[min(26rem,70dvh)] max-w-xl flex-col overflow-hidden p-0">
+	<div
+		class="modal-box flex h-[min(26rem,var(--search-palette-height,70dvh))] max-w-xl flex-col overflow-hidden p-0"
+	>
 		<div class="border-base-content/10 flex items-center gap-3 border-b px-4">
 			<Icon icon="search" size="sm" class="text-base-content/50 select-none" />
 			<!-- svelte-ignore a11y_autofocus -->
@@ -248,7 +264,11 @@
 			{/if}
 		</div>
 
-		<ul class="menu w-full grow flex-nowrap overflow-y-auto" id={listboxId} role="listbox">
+		<ul
+			class="menu menu-xl sm:menu-md w-full grow flex-nowrap overflow-y-auto"
+			id={listboxId}
+			role="listbox"
+		>
 			{#if !isAboveThreshold}
 				<li role="presentation">
 					<span class="text-base-content/50">Search for a game</span>
