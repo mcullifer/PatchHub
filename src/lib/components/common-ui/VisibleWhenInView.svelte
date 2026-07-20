@@ -5,6 +5,7 @@
 	interface IVisibleWhenInViewProps<T> {
 		items: T[];
 		template: Snippet<[T, number]>;
+		enabled: boolean;
 		fallback?: Snippet;
 		opts?: UseIntersectionObserverOptions;
 		visibleOnStart?: number;
@@ -15,6 +16,7 @@
 	let {
 		items,
 		template,
+		enabled,
 		opts,
 		visibleOnStart = 5,
 		increment = 5,
@@ -45,9 +47,13 @@
 		observerOptions
 	);
 
-	export function resume() {
-		observer.resume();
-	}
+	$effect(() => {
+		if (enabled) {
+			observer.resume();
+		} else {
+			observer.pause();
+		}
+	});
 </script>
 
 {#each items as item, i (i)}

@@ -12,7 +12,6 @@
 		class?: ClassValue;
 	};
 	let { games, item, id, class: classNames = '' }: TopGameSectionProps = $props();
-	let inview = $state<ReturnType<typeof VisibleWhenInView>>();
 	let showMore = $state(false);
 
 	const visibleOnStart = 5;
@@ -45,8 +44,8 @@
 			</div>
 			<div class="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				<VisibleWhenInView
-					bind:this={inview}
 					items={gridGames}
+					enabled={showMore}
 					{visibleOnStart}
 					increment={12}
 					opts={{ immediate: false }}
@@ -61,7 +60,6 @@
 						class="card card-border border-base-content/20 bg-base-200/50 hover:bg-base-200 hover:border-base-content/40 grid min-h-40 cursor-pointer place-items-center border-dashed transition-colors"
 						onclick={() => {
 							showMore = true;
-							inview?.resume();
 						}}
 					>
 						<span class="text-center">
