@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { DropdownProps } from '$lib/components/common-ui/floating';
 	import { arrow, flip, offset } from '@floating-ui/dom';
+	import { onDestroy } from 'svelte';
 	import { pop } from '$lib/util/transitions';
+	import { TOOLTIP_DELAY_MS } from './FloatingProps';
 	import Portal from '../Portal.svelte';
 	import FloatingArrow from './FloatingArrow.svelte';
 	import {
 		createFloating,
 		useClick,
 		useDismiss,
+		useFloatingGroup,
 		useHover,
 		useInteractions,
 		useRole,
@@ -24,29 +27,57 @@
 		portal = true
 	}: DropdownProps = $props();
 
+	const group = useFloatingGroup('tooltip');
+	const id = $props.id();
 	let elemArrow = $state<SVGSVGElement | null>(null);
 	let tipOpen = $state(false);
-	const showTip = $derived(tipOpen && !dropdownOpen && tip !== undefined);
+	// Captured before activate() marks the group warm, so only follow-up tooltips enter instantly.
+	let openedWarm = $state(false);
+	const showTip = $derived(tipOpen && !dropdownOpen && tip !== undefined && group.activeId === id);
+
+	// Keep the last surface's middleware while its outro remains in the DOM.
+	let lastVisibleSurface = $state<'dropdown' | 'tip'>('dropdown');
+
+	function getPositioningSurface() {
+		if (dropdownOpen) lastVisibleSurface = 'dropdown';
+		else if (showTip) lastVisibleSurface = 'tip';
+		return lastVisibleSurface;
+	}
 
 	const base = createFloating({
 		open: () => dropdownOpen || showTip,
-		opts: () => ({
-			placement: 'bottom',
-			...opts,
-			middleware: [
-				offset(showTip ? 6 : 2),
-				...(opts?.middleware ?? [flip()]),
-				...(showTip && elemArrow ? [arrow({ element: elemArrow })] : [])
-			]
-		}),
+		opts: () => {
+			const isTip = getPositioningSurface() === 'tip';
+
+			return {
+				placement: 'bottom',
+				...opts,
+				middleware: [
+					offset(isTip ? 6 : 2),
+					...(opts?.middleware ?? [flip()]),
+					...(isTip && elemArrow ? [arrow({ element: elemArrow })] : [])
+				]
+			};
+		},
 		defaultPlacement: 'bottom',
 		onOpenChange: (value, event, reason) => {
 			if (reason === 'hover') {
-				tipOpen = dropdownOpen ? false : value;
+				if (dropdownOpen) {
+					tipOpen = false;
+					return;
+				}
+				if (value) {
+					openedWarm = group.warm;
+					group.activate(id);
+				} else {
+					group.clear(id);
+				}
+				tipOpen = value;
 				return;
 			}
 
 			tipOpen = false;
+			group.clear(id);
 
 			if (reason === 'click') {
 				const nextOpen = !dropdownOpen;
@@ -67,12 +98,16 @@
 	const dropdown = withInteractions(
 		base,
 		useInteractions([
-			useHover(base.floatingContext),
+			useHover(base.floatingContext, {
+				openDelay: () => (group.warm ? 0 : TOOLTIP_DELAY_MS)
+			}),
 			useClick(base.floatingContext, { enabled: true, options: () => clickOpts }),
 			useDismiss(base.floatingContext),
 			useRole(base.floatingContext, { role: 'dialog' })
 		])
 	);
+
+	onDestroy(() => group.clear(id));
 </script>
 
 {@render activator(dropdown)}
@@ -82,7 +117,13 @@
 			{...dropdown.floating({
 				class: ['floating drop-shadow-lg', dropdownOpen && 'z-[100]', showTip && 'z-[100]']
 			})}
-			transition:pop
+			in:pop={{ duration: showTip && openedWarm ? 0 : undefined }}
+			out:pop={{
+				duration:
+					lastVisibleSurface === 'tip' && group.activeId !== undefined && group.activeId !== id
+						? 0
+						: undefined
+			}}
 		>
 			{#if dropdownOpen}
 				{@render children()}

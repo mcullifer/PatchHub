@@ -8,6 +8,9 @@ import type {
 } from './floating.svelte';
 export type { FloatingOptions } from './floating.svelte';
 
+/** Initial hover delay for tooltip surfaces; skipped while the tooltip group is warm. */
+export const TOOLTIP_DELAY_MS = 300;
+
 export type FloatingPropsBase = {
 	reference: Snippet<[FloatingInstance]>;
 	children: Snippet;
