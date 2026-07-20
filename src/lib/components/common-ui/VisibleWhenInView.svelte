@@ -1,6 +1,7 @@
 <script lang="ts" generics="T">
 	import { useIntersectionObserver, type UseIntersectionObserverOptions } from 'runed';
 	import { untrack, type Snippet } from 'svelte';
+	import type { Attachment } from 'svelte/attachments';
 
 	interface IVisibleWhenInViewProps<T> {
 		items: T[];
@@ -32,28 +33,23 @@
 	const observerOptions = untrack(() => opts ?? defaultObserverOptions);
 
 	let max = $state(initialVisibleCount);
-	let inviewTarget = $state<HTMLElement | null>(null);
-	const observer = useIntersectionObserver(
-		() => inviewTarget,
-		(entries) => {
-			if (entries[0].isIntersecting) {
-				max += increment;
-			}
-			onInviewChange?.(entries);
-			if (max >= items.length) {
-				observer.stop();
-			}
-		},
-		observerOptions
-	);
+	const observeSentinel: Attachment<HTMLElement> = (node) => {
+		const observer = useIntersectionObserver(
+			node,
+			(entries) => {
+				if (entries[0].isIntersecting) {
+					max = Math.min(max + increment, items.length);
+				}
+				onInviewChange?.(entries);
+				if (max >= items.length) {
+					observer.stop();
+				}
+			},
+			observerOptions
+		);
 
-	$effect(() => {
-		if (enabled) {
-			observer.resume();
-		} else {
-			observer.pause();
-		}
-	});
+		return observer.stop;
+	};
 </script>
 
 {#each items as item, i (i)}
@@ -66,7 +62,9 @@
 <!-- Absolutely positioned so it never occupies a cell in grid/flex parents; the
      nearest positioned ancestor must be the scrolled container for intersection
      to fire near its bottom edge. -->
-<div
-	class="sentinel pointer-events-none absolute bottom-0 left-0 h-px w-full"
-	bind:this={inviewTarget}
-></div>
+{#if enabled}
+	<div
+		class="sentinel pointer-events-none absolute bottom-0 left-0 h-px w-full"
+		{@attach observeSentinel}
+	></div>
+{/if}

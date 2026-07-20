@@ -43,13 +43,7 @@
 				{@render item(games[0], true)}
 			</div>
 			<div class="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<VisibleWhenInView
-					items={gridGames}
-					enabled={showMore}
-					{visibleOnStart}
-					increment={12}
-					opts={{ immediate: false }}
-				>
+				<VisibleWhenInView items={gridGames} enabled={showMore} {visibleOnStart} increment={12}>
 					{#snippet template(game)}
 						{@render item(game, false)}
 					{/snippet}
