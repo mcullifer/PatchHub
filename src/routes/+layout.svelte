@@ -73,6 +73,7 @@
 	</main>
 	<footer class="footer footer-center bg-base-200 text-base-content/60 gap-2 px-4 py-6 text-sm">
 		<nav class="flex gap-4">
+			<a class="link link-hover" href={resolve('/about')}>About</a>
 			<a class="link link-hover" href={resolve('/privacy')}>Privacy</a>
 			<a class="link link-hover" href={resolve('/terms')}>Terms</a>
 			{#if showAnalyticsSettings}

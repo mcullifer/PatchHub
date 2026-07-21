@@ -7,6 +7,7 @@ export const OWNER_ROUTE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 export const USERNAME_RULE_MESSAGE = 'Username can only contain lowercase letters and numbers';
 export const RESERVED_USERNAME_MESSAGE = 'This username is reserved';
 export const RESERVED_OWNER_SLUGS = [
+	'about',
 	'auth',
 	'demo',
 	'privacy',

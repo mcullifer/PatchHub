@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 
-const STATIC_ROUTES = ['/', '/privacy', '/terms'];
+const STATIC_ROUTES = ['/', '/about', '/privacy', '/terms'];
 
 export const GET: RequestHandler = ({ url }) => {
 	const urls = STATIC_ROUTES.map(

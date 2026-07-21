@@ -18,9 +18,21 @@
 </script>
 
 <Seo
-	title="PatchHub"
-	description="Follow the games and software you love and never miss a patch note, update, or announcement."
+	title="PatchHub — One place for updates"
+	description="Follow patch notes for games and software, or publish updates for your own projects—all in one place."
 />
+
+<svelte:head>
+	<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "WebSite",
+			"name": "PatchHub",
+			"url": "https://patchhub.io/",
+			"description": "One place to follow patch notes or publish updates for your own projects."
+		}
+	</script>
+</svelte:head>
 
 {#snippet cardFailed()}
 	<Card class="bg-base-200 text-center">
