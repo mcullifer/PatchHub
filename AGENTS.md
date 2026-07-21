@@ -24,7 +24,6 @@ the main user generated projects/patch notes.
 Before non-trivial work, read the relevant project docs:
 
 - `.docs/README.md`
-- Any active plan in `.plans/`
 
 ## Core Priorities
 
@@ -35,7 +34,7 @@ Before non-trivial work, read the relevant project docs:
 5. Prefer maintainable shared logic over duplicated local fixes.
 
 If a tradeoff is required, choose type-safe, predictable behavior over short-term convenience.
-Use `.agents/` skills when relevant to the task.
+Use relevant installed skills when available.
 
 ## Engineering Posture
 
@@ -67,20 +66,20 @@ Use targeted commands from `.docs/scripts.md` when diagnosing failures, validati
 
 See `.docs/workspace-layout.md` for package and folder roles. Follow those boundaries when choosing where code belongs.
 
-Use `.docs/` for durable project documentation and `.plans/` for active or historical implementation plans. Keep active plans updated with decisions, validation status, and handoff notes when work is unfinished.
+Use `.docs/` only for durable, PatchHub-specific architecture that is not obvious from the code.
+Do not add task plans, handoff files, or generic framework guidance to the repository.
 
 ## Svelte Work
 
 For `.svelte`, `.svelte.ts`, and `.svelte.js` files:
 
-- Follow `.docs/svelte-guidelines.md` and `.docs/style-guidelines.md`.
 - Prefer modern Svelte 5 runes and patterns unless existing compatibility requires otherwise.
 - Run the Svelte autofixer on edited Svelte components/modules before finalizing.
 - Fix actionable autofixer findings and rerun it until clean.
 
 ## TypeScript Standards
 
-Follow `.docs/development-guidelines.md`. Keep strict TypeScript behavior intact, use generated SvelteKit route types from `./$types`, and treat missing properties, bad imports, implicit `any`, and possibly undefined values as real errors.
+Keep strict TypeScript behavior intact, use generated SvelteKit route types from `./$types`, and treat missing properties, bad imports, implicit `any`, and possibly undefined values as real errors.
 
 ## PatchHub Patterns
 
@@ -88,24 +87,6 @@ Follow `.docs/development-guidelines.md`. Keep strict TypeScript behavior intact
 - Follow `.docs/auth-and-organizations.md` for WorkOS, user, organization, and authorization boundaries.
 - Keep source-specific fetching and parsing behind server modules or services, then return normalized DTOs to routes and UI.
 - Reuse existing components in `src/lib/components/common-ui` before introducing new UI primitives.
-
-## Large Refactors
-
-For large refactors, do not rely on chat history as the source of truth. Create or update an execution plan under `.plans/` before or during implementation.
-
-The plan document must include:
-
-- durable goal
-- non-goals
-- affected files/modules
-- invariants that must remain true
-- completed work
-- remaining work
-- validation status and known failures
-
-When continuing from a plan document, read it first, restate the remaining scope, then work until the documented goal is complete or a concrete blocker is found. Do not implement only the first mechanical step of a broader plan and call the refactor complete.
-
-See `.docs/agentic-workflow.md` for the expected multi-session workflow.
 
 ## Existing Worktree
 
