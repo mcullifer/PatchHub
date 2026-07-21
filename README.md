@@ -48,10 +48,10 @@ works, the external feeds can eventually go away because the updates will alread
 ## Preview
 
 <p align="center">
-  <a href="https://patchhub.io">
+  <a href="./.github/assets/patchhub-home.png">
     <img src="./.github/assets/patchhub-home.png" width="48%" alt="PatchHub homepage showing popular games and software update feeds" />
   </a>
-  <a href="https://patchhub.io/steam/739630/phasmophobia">
+  <a href="./.github/assets/patchhub-game-feed.png">
     <img src="./.github/assets/patchhub-game-feed.png" width="48%" alt="PatchHub game page showing a Phasmophobia update feed" />
   </a>
 </p>
@@ -60,7 +60,6 @@ works, the external feeds can eventually go away because the updates will alread
 
 - Browse updates from popular Steam games and software release feeds.
 - Follow the games, software, and projects you care about.
-- Read updates with their original source and publication time intact.
 - Create a project and publish patch notes directly on PatchHub.
 
 ## Run it locally
