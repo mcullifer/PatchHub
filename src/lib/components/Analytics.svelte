@@ -47,7 +47,8 @@
 
 		posthog.init(token, {
 			api_host: host,
-			defaults: '2026-06-25',
+			ui_host: 'https://us.posthog.com',
+			defaults: '2026-05-30',
 			autocapture: true,
 			capture_pageview: 'history_change',
 			capture_performance: { web_vitals: true },
