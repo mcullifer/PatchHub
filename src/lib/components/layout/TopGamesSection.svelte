@@ -51,14 +51,16 @@
 				{#if !showMore && hiddenCount > 0}
 					<button
 						type="button"
-						class="card card-border border-base-content/20 bg-base-200/50 hover:bg-base-200 hover:border-base-content/40 grid min-h-40 cursor-pointer place-items-center border-dashed transition-colors"
+						class="card card-border border-base-content/20 bg-base-200/50 hover:bg-base-200 hover:border-primary grid min-h-40 cursor-pointer place-items-center transition-colors"
 						onclick={() => {
 							showMore = true;
 						}}
 					>
 						<span class="text-center">
-							<span class="text-base-content/70 block text-3xl font-bold">+{hiddenCount}</span>
-							<span class="text-base-content/60 text-sm">more games</span>
+							<span class="text-base-content/70 block text-3xl font-bold">
+								+{hiddenCount} games
+							</span>
+							<span class="text-base-content/60 text-sm">View all</span>
 						</span>
 					</button>
 				{/if}

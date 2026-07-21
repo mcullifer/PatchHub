@@ -5,6 +5,11 @@ declare global {
 		interface Locals {
 			auth: import('@workos/authkit-sveltekit').AuthKitAuth;
 		}
+
+		interface Platform {
+			ctx: import('@cloudflare/workers-types').ExecutionContext;
+			cf?: import('@cloudflare/workers-types').IncomingRequestCfProperties;
+		}
 	}
 }
 

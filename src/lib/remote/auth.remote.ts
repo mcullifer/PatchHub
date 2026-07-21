@@ -1,4 +1,5 @@
 import { form, getRequestEvent } from '$app/server';
+import { captureServerEvent } from '$lib/server/analytics';
 import { getAuthContext } from '$lib/server/auth/AuthContext';
 import { ACCOUNT_DISABLED_ERROR_CODE } from '$lib/server/auth/provisioning';
 import { getOrCreateUserForWorkOSUser, isUsernameTaken } from '$lib/server/auth/users';
@@ -65,6 +66,10 @@ export const setupAccount = form(
 				updateError
 			});
 		}
+
+		await captureServerEvent(event, workosUser.id, {
+			name: 'account setup completed'
+		});
 
 		redirect(302, '/');
 	}

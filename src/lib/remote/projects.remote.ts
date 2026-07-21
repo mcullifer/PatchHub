@@ -2,6 +2,7 @@ import { command, form, getRequestEvent, query, requested } from '$app/server';
 import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
 import { getProjectBannerValidationError } from '$lib/projects/projectBanner';
+import { captureServerEvent } from '$lib/server/analytics';
 import { requireInternalUser } from '$lib/server/auth/AuthContext';
 import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { getOwnerProfileForEvent } from '$lib/server/projects/ownerProfile';
@@ -51,7 +52,8 @@ const updateProjectSchema = v.object({
 export const createProject = form(
 	createProjectSchema,
 	async ({ name, description, bannerRequested }, issue) => {
-		const dbUser = await requireInternalUser(getRequestEvent());
+		const event = getRequestEvent();
+		const dbUser = await requireInternalUser(event);
 		if (!dbUser.username) {
 			error(401, 'Account setup is required');
 		}
@@ -63,6 +65,10 @@ export const createProject = form(
 				name,
 				description: description || undefined,
 				bannerUploadAttemptId: bannerRequested ? crypto.randomUUID() : undefined
+			});
+			await captureServerEvent(event, dbUser.authProviderId, {
+				name: 'project created',
+				properties: { banner_requested: bannerRequested === 'yes' }
 			});
 
 			await requested(getOwnerProfile, 1).refreshAll();
@@ -92,7 +98,8 @@ export const createProject = form(
 export const updateProject = command(
 	updateProjectSchema,
 	async ({ projectId, name, description }) => {
-		const dbUser = await requireInternalUser(getRequestEvent());
+		const event = getRequestEvent();
+		const dbUser = await requireInternalUser(event);
 		const project = await createConvexClient().mutation(api.projects.update, {
 			secret: getConvexServerSecret(),
 			authProviderId: dbUser.authProviderId,
@@ -100,6 +107,7 @@ export const updateProject = command(
 			name,
 			description: description || undefined
 		});
+		await captureServerEvent(event, dbUser.authProviderId, { name: 'project updated' });
 
 		await requested(getOwnerProfile, 1).refreshAll();
 		await requested(getProjectPosts, 1).refreshAll();
@@ -137,7 +145,8 @@ export const completeProjectBannerUpload = command(
 		contentType: v.string()
 	}),
 	async ({ projectId, attemptId, storageId, contentType }) => {
-		const dbUser = await requireInternalUser(getRequestEvent());
+		const event = getRequestEvent();
+		const dbUser = await requireInternalUser(event);
 		const convex = createConvexClient();
 		const typedProjectId = projectId as Id<'projects'>;
 		const typedStorageId = storageId as Id<'_storage'>;
@@ -182,6 +191,11 @@ export const completeProjectBannerUpload = command(
 			storageId: typedStorageId,
 			outcome
 		});
+		if (outcome === 'ready') {
+			await captureServerEvent(event, dbUser.authProviderId, {
+				name: 'project banner uploaded'
+			});
+		}
 		await requested(getProjectPosts, 1).refreshAll();
 		return result;
 	}

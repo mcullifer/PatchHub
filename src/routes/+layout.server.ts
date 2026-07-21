@@ -1,3 +1,9 @@
+import { dev } from '$app/environment';
+import {
+	ANALYTICS_CONSENT_COOKIE,
+	parseAnalyticsConsent,
+	requiresAnalyticsConsent
+} from '$lib/analytics/consent';
 import { getAuthContext } from '$lib/server/auth/AuthContext';
 import type { LayoutServerLoad } from './$types';
 
@@ -11,9 +17,16 @@ type LayoutUser = {
 };
 
 export const load: LayoutServerLoad = async (event) => {
+	const analyticsConsent = parseAnalyticsConsent(event.cookies.get(ANALYTICS_CONSENT_COOKIE));
+	const analyticsConsentRequired = dev
+		? event.url.searchParams.has('analytics-consent-preview')
+		: requiresAnalyticsConsent(
+				event.platform?.cf?.country,
+				event.platform?.cf?.isEUCountry === '1'
+			);
 	const { workosUser, dbUser } = await getAuthContext(event);
 	if (!workosUser) {
-		return { user: null };
+		return { analyticsConsent, analyticsConsentRequired, user: null };
 	}
 
 	const user: LayoutUser = {
@@ -25,5 +38,5 @@ export const load: LayoutServerLoad = async (event) => {
 		username: dbUser?.username ?? null
 	};
 
-	return { user };
+	return { analyticsConsent, analyticsConsentRequired, user };
 };

@@ -1,6 +1,7 @@
 import { command, getRequestEvent, query, requested } from '$app/server';
 import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
+import { captureServerEvent } from '$lib/server/analytics';
 import { getAuthContext, requireInternalUser } from '$lib/server/auth/AuthContext';
 import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { error } from '@sveltejs/kit';
@@ -113,6 +114,10 @@ export const createProjectPost = command(createProjectPostSchema, async (input) 
 		}
 		throw mutationError;
 	}
+	await captureServerEvent(event, dbUser.authProviderId, {
+		name: 'project post created',
+		properties: { kind: input.kind, status: input.status }
+	});
 
 	await requested(getProjectPosts, 1).refreshAll();
 
@@ -130,6 +135,10 @@ export const updateProjectPost = command(updateProjectPostSchema, async (input) 
 		kind: input.kind,
 		title: input.title,
 		content: input.content
+	});
+	await captureServerEvent(event, dbUser.authProviderId, {
+		name: 'project post updated',
+		properties: { kind: input.kind }
 	});
 
 	await requested(getProjectPosts, 1).refreshAll();
@@ -153,6 +162,10 @@ export const setProjectPostStatus = command(
 			postId: postId as Id<'projectPosts'>,
 			status
 		});
+		await captureServerEvent(event, dbUser.authProviderId, {
+			name: 'project post status changed',
+			properties: { status }
+		});
 
 		await requested(getProjectPosts, 1).refreshAll();
 		await requested(getProjectPost, 1).refreshAll();
@@ -169,6 +182,9 @@ export const deleteProjectPost = command(v.object({ postId: v.string() }), async
 		secret: getConvexServerSecret(),
 		authProviderId: dbUser.authProviderId,
 		postId: postId as Id<'projectPosts'>
+	});
+	await captureServerEvent(event, dbUser.authProviderId, {
+		name: 'project post deleted'
 	});
 
 	await requested(getProjectPosts, 1).refreshAll();

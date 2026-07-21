@@ -2,6 +2,8 @@
 	import '../app.css';
 	// sort-ignore
 	import { resolve } from '$app/paths';
+	import type { AnalyticsConsent } from '$lib/analytics/consent';
+	import Analytics from '$lib/components/Analytics.svelte';
 	import { Icon, ScrollToTop, SearchTrigger } from '$lib/components/common-ui';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
@@ -12,17 +14,29 @@
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
 	let lightModeEnabled = $state(false);
+	let analyticsConsentOverride = $state<AnalyticsConsent | null>(null);
+	let analyticsSettingsOpen = $state(false);
 	let theme = $derived(lightModeEnabled ? 'light' : 'dark');
+	let analyticsConsent = $derived(analyticsConsentOverride ?? data.analyticsConsent);
+	let showAnalyticsSettings = $derived(data.analyticsConsentRequired || analyticsConsent !== null);
 
 	$effect(() => {
 		document.documentElement.dataset.theme = theme;
 	});
 </script>
 
+<Analytics
+	user={data.user}
+	consentRequired={data.analyticsConsentRequired}
+	consent={analyticsConsent}
+	onConsentChange={(consent) => (analyticsConsentOverride = consent)}
+	bind:settingsOpen={analyticsSettingsOpen}
+/>
+
 <div class="flex min-h-full w-full flex-col">
 	<Navbar class="bg-base-300 sticky top-0 z-50 gap-2 sm:gap-4">
 		{#snippet start()}
-			<a class="flex gap-0 px-4 text-xl font-bold" href={resolve('/')}>
+			<a class="flex gap-0 px-4 text-2xl font-bold" href={resolve('/')}>
 				<span class={lightModeEnabled ? 'text-base-content' : 'text-white'}>patch</span>
 				<span class="text-primary">hub</span>
 			</a>
@@ -61,6 +75,15 @@
 		<nav class="flex gap-4">
 			<a class="link link-hover" href={resolve('/privacy')}>Privacy</a>
 			<a class="link link-hover" href={resolve('/terms')}>Terms</a>
+			{#if showAnalyticsSettings}
+				<button
+					class="link link-hover"
+					type="button"
+					onclick={() => (analyticsSettingsOpen = true)}
+				>
+					Analytics settings
+				</button>
+			{/if}
 		</nav>
 		<p>PatchHub · beta · v{appVersion}</p>
 	</footer>
