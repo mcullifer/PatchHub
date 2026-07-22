@@ -5,21 +5,20 @@
 	import { getSearchPalette } from '$lib/contexts/searchPalette';
 	import { hasKeyboard, modifierKey } from '$lib/util/keyboard';
 	import type { INamedSteamGame } from '$lib/models/Steam';
+	import { getMostPopularGames } from '$lib/remote/games.remote';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 
 	type TopGameSectionProps = {
-		games: INamedSteamGame[];
 		item: Snippet<[INamedSteamGame, boolean]>;
 		class?: ClassValue;
 	};
-	let { games, item, class: classNames = '' }: TopGameSectionProps = $props();
+	let { item, class: classNames = '' }: TopGameSectionProps = $props();
+
 	let showMore = $state(false);
 	const searchPalette = getSearchPalette();
 
 	const visibleOnStart = 5;
-	const gridGames = $derived(games.slice(1));
-	const hiddenCount = $derived(gridGames.length - visibleOnStart);
 </script>
 
 <section class={classNames}>
@@ -62,40 +61,58 @@
 		{/snippet}
 	</SectionHeader>
 
-	{#if games.length > 0}
-		<div class="space-y-4">
-			<div class="aura aura-gold block motion-reduce:animate-none">
-				{@render item(games[0], true)}
-			</div>
-			<div class="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<VisibleWhenInView items={gridGames} enabled={showMore} {visibleOnStart} increment={12}>
-					{#snippet template(game)}
-						{@render item(game, false)}
-					{/snippet}
-				</VisibleWhenInView>
-				{#if !showMore && hiddenCount > 0}
-					<button
-						type="button"
-						class="card card-border border-base-content/20 bg-base-200/50 hover:bg-base-200 hover:border-primary grid min-h-40 cursor-pointer place-items-center transition-colors"
-						onclick={() => {
-							showMore = true;
-						}}
-					>
-						<span class="text-center">
-							<span class="text-base-content/70 block text-3xl font-bold">
-								+{hiddenCount} games
+	<svelte:boundary>
+		{@const loadedGames = await getMostPopularGames()}
+		{@const gridGames = loadedGames.slice(1)}
+		{@const hiddenCount = gridGames.length - visibleOnStart}
+
+		{#if loadedGames.length > 0}
+			<div class="space-y-4">
+				<div class="aura aura-gold block motion-reduce:animate-none">
+					{@render item(loadedGames[0], true)}
+				</div>
+				<div class="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<VisibleWhenInView items={gridGames} enabled={showMore} {visibleOnStart} increment={12}>
+						{#snippet template(game)}
+							{@render item(game, false)}
+						{/snippet}
+					</VisibleWhenInView>
+					{#if !showMore && hiddenCount > 0}
+						<button
+							type="button"
+							class="card card-border border-base-content/20 bg-base-200/50 hover:bg-base-200 hover:border-primary grid min-h-40 cursor-pointer place-items-center transition-colors"
+							onclick={() => {
+								showMore = true;
+							}}
+						>
+							<span class="text-center">
+								<span class="text-base-content/70 block text-3xl font-bold">
+									+{hiddenCount} games
+								</span>
+								<span class="text-base-content/60 text-sm">View all</span>
+								<span class="text-base-content/40 mt-1 block text-xs">or search all 176,000+</span>
 							</span>
-							<span class="text-base-content/60 text-sm">View all</span>
-							<span class="text-base-content/40 mt-1 block text-xs">or search all 176,000+</span>
-						</span>
-					</button>
-				{/if}
+						</button>
+					{/if}
+				</div>
 			</div>
-		</div>
-	{:else}
-		<div class="alert alert-info alert-soft">
-			<Icon icon="info" />
-			<span>No games to show right now.</span>
-		</div>
-	{/if}
+		{:else}
+			<div class="alert alert-info alert-soft">
+				<Icon icon="info" />
+				<span>No games to show right now.</span>
+			</div>
+		{/if}
+
+		{#snippet pending()}
+			<div class="space-y-4" role="status" aria-busy="true">
+				<span class="sr-only">Loading games</span>
+				<div class="skeleton h-56 sm:h-72 lg:h-80"></div>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{#each [1, 2, 3] as placeholder (placeholder)}
+						<div class="skeleton aspect-[460/215]"></div>
+					{/each}
+				</div>
+			</div>
+		{/snippet}
+	</svelte:boundary>
 </section>

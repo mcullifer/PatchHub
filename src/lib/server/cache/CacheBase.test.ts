@@ -5,17 +5,33 @@ import type { CacheReadResult } from './ICache';
 
 class FakeCache extends CacheBase {
 	claimCalls = 0;
+	deferredRefreshes: Promise<unknown>[] = [];
 	setCalls = 0;
 	claimWindowMs: number | null = null;
 	setTtlMs: number | null = null;
 
 	private result: CacheReadResult<unknown>;
 	private readonly claimWon: boolean;
+	private readonly deferRefreshes: boolean;
 
-	constructor(result: CacheReadResult<unknown>, claimWon = false) {
+	constructor(result: CacheReadResult<unknown>, claimWon = false, deferRefreshes = false) {
 		super();
 		this.result = result;
 		this.claimWon = claimWon;
+		this.deferRefreshes = deferRefreshes;
+	}
+
+	protected async claimRefetch(_key: string, claimWindowMs: number): Promise<boolean> {
+		this.claimCalls++;
+		this.claimWindowMs = claimWindowMs;
+		return this.claimWon;
+	}
+
+	protected deferRefresh(_key: string, refresh: Promise<unknown>): boolean {
+		if (!this.deferRefreshes) return false;
+
+		this.deferredRefreshes.push(refresh);
+		return true;
 	}
 
 	async get<T>(): Promise<CacheReadResult<T>> {
@@ -26,12 +42,6 @@ class FakeCache extends CacheBase {
 		this.setCalls++;
 		this.setTtlMs = opts.ttlMs;
 		this.result = { status: 'fresh', value };
-	}
-
-	protected async claimRefetch(_key: string, claimWindowMs: number): Promise<boolean> {
-		this.claimCalls++;
-		this.claimWindowMs = claimWindowMs;
-		return this.claimWon;
 	}
 }
 
@@ -60,6 +70,29 @@ describe('CacheBase.getOrCreate', () => {
 		expect(cache.claimWindowMs).toBe(Time.SECOND * 30);
 		expect(cache.setCalls).toBe(1);
 		expect(cache.setTtlMs).toBe(Time.MINUTE);
+	});
+
+	it('serves stale data while the claim winner refreshes in the background', async () => {
+		const cache = new FakeCache({ status: 'stale', value: 'cached' }, true, true);
+		let finishRefresh: (value: string) => void = () => {};
+		const create = vi.fn(
+			async () =>
+				await new Promise<string>((resolve) => {
+					finishRefresh = resolve;
+				})
+		);
+
+		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toEqual({
+			value: 'cached',
+			servedStale: true
+		});
+		expect(cache.setCalls).toBe(0);
+		expect(cache.deferredRefreshes).toHaveLength(1);
+
+		finishRefresh('upstream');
+		await cache.deferredRefreshes[0];
+		expect(cache.setCalls).toBe(1);
+		expect(await cache.get<string>()).toEqual({ status: 'fresh', value: 'upstream' });
 	});
 
 	it('serves stale data when the claim winner create fails', async () => {

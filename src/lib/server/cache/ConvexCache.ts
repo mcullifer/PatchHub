@@ -1,9 +1,34 @@
+import { getRequestEvent } from '$app/server';
 import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { api } from '$convex/_generated/api';
 import { CacheBase } from './CacheBase';
 import type { CacheReadResult } from './ICache';
 
 export class ConvexCache extends CacheBase {
+	protected async claimRefetch(key: string, claimWindowMs: number): Promise<boolean> {
+		return createConvexClient().mutation(api.cache.claimRefetch, {
+			secret: getConvexServerSecret(),
+			key,
+			claimWindowMs
+		});
+	}
+
+	protected deferRefresh(key: string, refresh: Promise<unknown>): boolean {
+		try {
+			const executionContext = getRequestEvent().platform?.ctx;
+			if (!executionContext) return false;
+
+			executionContext.waitUntil(
+				refresh.catch((error) => {
+					console.error(`Failed to refresh cache entry "${key}"`, error);
+				})
+			);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
 	async get<T>(key: string): Promise<CacheReadResult<T>> {
 		const entry = await createConvexClient().query(api.cache.get, {
 			secret: getConvexServerSecret(),
@@ -28,14 +53,6 @@ export class ConvexCache extends CacheBase {
 			key,
 			value: serializedValue,
 			ttlMs: opts.ttlMs
-		});
-	}
-
-	protected async claimRefetch(key: string, claimWindowMs: number): Promise<boolean> {
-		return await createConvexClient().mutation(api.cache.claimRefetch, {
-			secret: getConvexServerSecret(),
-			key,
-			claimWindowMs
 		});
 	}
 }

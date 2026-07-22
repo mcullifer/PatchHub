@@ -121,5 +121,18 @@
 				<span>Software sources could not be loaded.</span>
 			</div>
 		{/snippet}
+
+		{#snippet pending()}
+			<div
+				class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+				role="status"
+				aria-busy="true"
+			>
+				<span class="sr-only">Loading software</span>
+				{#each [1, 2, 3] as placeholder (placeholder)}
+					<div class="skeleton aspect-[1200/630]"></div>
+				{/each}
+			</div>
+		{/snippet}
 	</svelte:boundary>
 </section>

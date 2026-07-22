@@ -3,17 +3,27 @@ import type { CacheReadResult, ICache } from './ICache';
 
 const refetchClaimWindowMs = Time.SECOND * 30;
 
-export abstract class CacheBase implements ICache {
-	abstract get<T>(key: string): Promise<CacheReadResult<T>>;
-	abstract set<T>(key: string, value: T, opts: { ttlMs: number }): Promise<void>;
+type CacheOptions = {
+	ttlMs: number;
+};
 
-	/** Atomically claim the right to refetch. Protected — exists only to serve getOrCreate. */
+export abstract class CacheBase implements ICache {
 	protected abstract claimRefetch(key: string, claimWindowMs: number): Promise<boolean>;
+	protected abstract deferRefresh(key: string, refresh: Promise<unknown>): boolean;
+
+	private async refresh<T>(key: string, create: () => Promise<T>, opts: CacheOptions): Promise<T> {
+		const value = await create();
+		await this.set(key, value, { ttlMs: opts.ttlMs });
+		return value;
+	}
+
+	abstract get<T>(key: string): Promise<CacheReadResult<T>>;
+	abstract set<T>(key: string, value: T, opts: CacheOptions): Promise<void>;
 
 	async getOrCreate<T>(
 		key: string,
 		create: () => Promise<T>,
-		opts: { ttlMs: number }
+		opts: CacheOptions
 	): Promise<{ value: T; servedStale: boolean } | null> {
 		const cached = await this.get<T>(key);
 		if (cached.status === 'fresh') {
@@ -25,17 +35,19 @@ export abstract class CacheBase implements ICache {
 			return cached.status === 'stale' ? { value: cached.value, servedStale: true } : null;
 		}
 
-		let value: T;
+		const refresh = this.refresh(key, create, opts);
+		if (cached.status === 'stale' && this.deferRefresh(key, refresh)) {
+			return { value: cached.value, servedStale: true };
+		}
+
 		try {
-			value = await create();
+			const value = await refresh;
+			return { value, servedStale: false };
 		} catch (error) {
 			if (cached.status === 'stale') {
 				return { value: cached.value, servedStale: true };
 			}
 			throw error;
 		}
-
-		await this.set(key, value, opts);
-		return { value, servedStale: false };
 	}
 }

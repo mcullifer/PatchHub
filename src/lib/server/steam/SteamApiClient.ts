@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { UPSTREAM_FETCH_OPTIONS, boundedFetch } from '$lib/server/http/boundedFetch';
 import type {
 	ISteamAppListResponse,
 	ISteamAppNewsResponse,
@@ -36,7 +37,10 @@ export async function getPopularSteamGames({
 	fetchFn = fetch
 }: SteamFetchOptions = {}): Promise<ITopSteamGames> {
 	const url = buildSteamApiUrl(apiBaseUrl, '/ISteamChartsService/GetGamesByConcurrentPlayers/v1/');
-	const data = await fetchSteamJson(url, fetchFn, 'popular games');
+	const data = await fetchSteamJson(
+		() => boundedFetch(fetchFn, url, UPSTREAM_FETCH_OPTIONS),
+		'popular games'
+	);
 
 	if (!isPopularSteamGamesResponse(data)) {
 		throw new SteamApiError('Steam popular games response had an unexpected shape', {
@@ -62,7 +66,10 @@ export async function getAppNews({
 		feeds: 'steam_community_announcements'
 	});
 	const url = buildSteamApiUrl(apiBaseUrl, '/ISteamNews/GetNewsForApp/v2/', params);
-	const data = await fetchSteamJson(url, fetchFn, `news for Steam app ${appid}`);
+	const data = await fetchSteamJson(
+		() => boundedFetch(fetchFn, url, UPSTREAM_FETCH_OPTIONS),
+		`news for Steam app ${appid}`
+	);
 
 	if (!isSteamAppNewsResponse(data)) {
 		throw new SteamApiError(`Steam news response for app ${appid} had an unexpected shape`, {
@@ -104,7 +111,7 @@ export async function getAppListPage({
 	}
 
 	const url = buildSteamApiUrl(apiBaseUrl, '/IStoreService/GetAppList/v1/', params);
-	const data = await fetchSteamJson(url, fetchFn, 'app list page');
+	const data = await fetchSteamJson(() => fetchFn(url), 'app list page');
 
 	if (!isSteamAppListResponse(data)) {
 		throw new SteamApiError('Steam app list response had an unexpected shape', {
@@ -137,14 +144,10 @@ function getSteamApiBaseUrl(apiBaseUrl: string | undefined): string {
 	return configuredUrl.replace(/\/+$/, '');
 }
 
-async function fetchSteamJson(
-	url: string,
-	fetchFn: typeof fetch,
-	context: string
-): Promise<unknown> {
+async function fetchSteamJson(request: () => Promise<Response>, context: string): Promise<unknown> {
 	let response: Response;
 	try {
-		response = await fetchFn(url);
+		response = await request();
 	} catch (error) {
 		throw new SteamApiError(`Steam ${context} request failed`, {
 			code: 'network_error',

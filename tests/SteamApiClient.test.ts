@@ -1,7 +1,16 @@
-import { getAppListPage, SteamApiError } from '$lib/server/steam/SteamApiClient';
-import { describe, expect, it } from 'vitest';
+import { UPSTREAM_FETCH_OPTIONS } from '$lib/server/http/boundedFetch';
+import {
+	getAppListPage,
+	getPopularSteamGames,
+	type SteamApiError
+} from '$lib/server/steam/SteamApiClient';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-describe('SteamApiClient.getAppListPage', () => {
+describe('SteamApiClient', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it('normalizes final app-list pages when Steam omits pagination fields', async () => {
 		const fetchFn: typeof fetch = async () =>
 			new Response(
@@ -109,5 +118,27 @@ describe('SteamApiClient.getAppListPage', () => {
 			code: 'network_error',
 			cause: networkError
 		} satisfies Partial<SteamApiError>);
+	});
+
+	it('bounds Steam API request duration', async () => {
+		vi.useFakeTimers();
+		const fetchFn: typeof fetch = async (_input, init) => {
+			return await new Promise<Response>((_resolve, reject) => {
+				const signal = init?.signal;
+				if (!signal) throw new Error('Expected an abort signal');
+				signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+			});
+		};
+
+		const request = getPopularSteamGames({ apiBaseUrl: 'https://steam.test', fetchFn });
+		const rejection = expect(request).rejects.toMatchObject({
+			code: 'network_error',
+			cause: expect.objectContaining({
+				message: `Request timed out after ${UPSTREAM_FETCH_OPTIONS.timeoutMs}ms`
+			})
+		});
+
+		await vi.advanceTimersByTimeAsync(UPSTREAM_FETCH_OPTIONS.timeoutMs);
+		await rejection;
 	});
 });

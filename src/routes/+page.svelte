@@ -6,10 +6,8 @@
 	import TopGamesSection from '$lib/components/layout/TopGamesSection.svelte';
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
-	import { getMostPopularGames } from '$lib/remote/games.remote';
 
 	const currentUser = getCurrentUser();
-	const games = await getMostPopularGames();
 </script>
 
 <Seo
@@ -64,7 +62,7 @@
 		<FavoritesSection />
 	{/if}
 
-	<TopGamesSection {games}>
+	<TopGamesSection>
 		{#snippet item(game, featured)}
 			<svelte:boundary>
 				<GameCard {game} {featured} />
