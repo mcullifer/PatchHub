@@ -5,25 +5,14 @@ import { ConvexHttpClient } from 'convex/browser';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // Clients are created per operation because Worker module globals outlive requests.
-export function createConvexClient(): ConvexHttpClient {
-	return new ConvexHttpClient(PUBLIC_CONVEX_URL, { fetch: getRequestFetch() });
-}
-
-export function createViewerConvexClient(event: RequestEvent): ConvexHttpClient {
-	const client = new ConvexHttpClient(PUBLIC_CONVEX_URL, { fetch: event.fetch });
-	const accessToken = event.locals.auth.accessToken;
-	if (accessToken) client.setAuth(accessToken);
-	return client;
-}
-
-export function createAuthenticatedConvexClient(event: RequestEvent): ConvexHttpClient {
-	const accessToken = event.locals.auth.accessToken;
-	if (!accessToken) {
-		throw new Error('Authenticated WorkOS session is missing an access token');
+export function createConvexClient(event?: RequestEvent): ConvexHttpClient {
+	const client = new ConvexHttpClient(PUBLIC_CONVEX_URL, {
+		fetch: event?.fetch ?? getRequestFetch()
+	});
+	const accessToken = event?.locals.auth.accessToken;
+	if (accessToken) {
+		client.setAuth(accessToken);
 	}
-
-	const client = new ConvexHttpClient(PUBLIC_CONVEX_URL, { fetch: event.fetch });
-	client.setAuth(accessToken);
 	return client;
 }
 

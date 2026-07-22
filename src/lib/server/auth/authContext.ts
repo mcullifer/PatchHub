@@ -1,6 +1,6 @@
 import { api } from '$convex/_generated/api';
 import type { Doc } from '$convex/_generated/dataModel';
-import { createAuthenticatedConvexClient } from '$lib/server/convex';
+import { createConvexClient } from '$lib/server/convex';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import type { AuthKitAuth } from '@workos/authkit-sveltekit';
 
@@ -28,7 +28,7 @@ async function loadAuthContext(event: RequestEvent): Promise<AuthContext> {
 		};
 	}
 
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 	const userRecord = await convex.query(api.users.getCurrent, {});
 
 	return {

@@ -3,7 +3,7 @@ import { api } from '$convex/_generated/api';
 import { captureServerEvent } from '$lib/server/analytics';
 import { getAuthContext } from '$lib/server/auth/authContext';
 import { ACCOUNT_DISABLED_ERROR_CODE } from '$lib/server/auth/provisioning';
-import { createAuthenticatedConvexClient, createConvexClient } from '$lib/server/convex';
+import { createConvexClient } from '$lib/server/convex';
 import {
 	USERNAME_MAX_LENGTH,
 	USERNAME_MIN_LENGTH,
@@ -23,7 +23,7 @@ const setupAccountSchema = v.objectAsync({
 		v.maxLength(USERNAME_MAX_LENGTH, `Username must be at most ${USERNAME_MAX_LENGTH} characters`),
 		v.regex(USERNAME_PATTERN, USERNAME_RULE_MESSAGE),
 		v.checkAsync(async (username) => {
-			const convex = createConvexClient();
+			const convex = createConvexClient(getRequestEvent());
 			return !(await convex.query(api.users.isUsernameTaken, { username }));
 		}, 'Username is already taken')
 	)
@@ -44,7 +44,7 @@ export const setupAccount = form(setupAccountSchema, async ({ username }) => {
 		redirect(302, '/');
 	}
 
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 	const user = await convex.mutation(api.users.getOrCreate, {
 		email: workosUser.email ?? undefined,
 		username,

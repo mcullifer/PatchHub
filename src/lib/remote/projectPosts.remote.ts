@@ -7,7 +7,7 @@ import {
 } from '$convex/lib/contentLimits';
 import { captureServerEvent } from '$lib/server/analytics';
 import { requireAuth } from '$lib/server/auth/authContext';
-import { createAuthenticatedConvexClient, createViewerConvexClient } from '$lib/server/convex';
+import { createConvexClient } from '$lib/server/convex';
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
 
@@ -62,7 +62,7 @@ const setProjectPostStatusSchema = v.object({
 const deleteProjectPostSchema = v.object({ postId: v.string() });
 
 export const getProjectPosts = query(ownerProjectSchema, async ({ createdBy, projectSlug }) => {
-	const convex = createViewerConvexClient(getRequestEvent());
+	const convex = createConvexClient(getRequestEvent());
 	const result = await convex.query(api.projectPosts.listForProject, {
 		createdBy,
 		projectSlug
@@ -74,7 +74,7 @@ export const getProjectPosts = query(ownerProjectSchema, async ({ createdBy, pro
 export const getProjectPost = query(
 	projectPostSchema,
 	async ({ createdBy, projectSlug, postSlug }) => {
-		const convex = createViewerConvexClient(getRequestEvent());
+		const convex = createConvexClient(getRequestEvent());
 		const result = await convex.query(api.projectPosts.getForProject, {
 			createdBy,
 			projectSlug,
@@ -88,7 +88,7 @@ export const getProjectPost = query(
 export const getOwnedProject = query(ownerProjectSchema, async ({ createdBy, projectSlug }) => {
 	const event = getRequestEvent();
 	requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 	const project = await convex.query(api.projects.getOwnedBySlug, {
 		createdBy,
 		projectSlug
@@ -100,7 +100,7 @@ export const getOwnedProject = query(ownerProjectSchema, async ({ createdBy, pro
 export const createProjectPost = command(createProjectPostSchema, async (input) => {
 	const event = getRequestEvent();
 	const user = requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 
 	let projectPost: { slug: string };
 	try {
@@ -130,7 +130,7 @@ export const createProjectPost = command(createProjectPostSchema, async (input) 
 export const updateProjectPost = command(updateProjectPostSchema, async (input) => {
 	const event = getRequestEvent();
 	const user = requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 
 	const projectPost = await convex.mutation(api.projectPosts.update, {
 		postId: input.postId as Id<'projectPosts'>,
@@ -154,7 +154,7 @@ export const setProjectPostStatus = command(
 	async ({ postId, status }) => {
 		const event = getRequestEvent();
 		const user = requireAuth(event);
-		const convex = createAuthenticatedConvexClient(event);
+		const convex = createConvexClient(event);
 
 		const result = await convex.mutation(api.projectPosts.setStatus, {
 			postId: postId as Id<'projectPosts'>,
@@ -175,7 +175,7 @@ export const setProjectPostStatus = command(
 export const deleteProjectPost = command(deleteProjectPostSchema, async ({ postId }) => {
 	const event = getRequestEvent();
 	const user = requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 
 	await convex.mutation(api.projectPosts.remove, {
 		postId: postId as Id<'projectPosts'>

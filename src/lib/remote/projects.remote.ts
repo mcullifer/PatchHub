@@ -5,7 +5,7 @@ import { PROJECT_DESCRIPTION_MAX_LENGTH, PROJECT_NAME_MAX_LENGTH } from '$convex
 import { getProjectBannerValidationError } from '$lib/projects/projectBanner';
 import { captureServerEvent } from '$lib/server/analytics';
 import { requireAuth } from '$lib/server/auth/authContext';
-import { createAuthenticatedConvexClient } from '$lib/server/convex';
+import { createConvexClient } from '$lib/server/convex';
 import { loadOwnerProfile } from '$lib/server/projects/ownerProfile';
 import { invalid } from '@sveltejs/kit';
 import * as v from 'valibot';
@@ -69,7 +69,7 @@ export const createProject = form(
 	async ({ name, description, bannerRequested }, issue) => {
 		const event = getRequestEvent();
 		const user = requireAuth(event);
-		const convex = createAuthenticatedConvexClient(event);
+		const convex = createConvexClient(event);
 
 		try {
 			const project = await convex.mutation(api.projects.create, {
@@ -104,7 +104,7 @@ export const updateProject = command(
 	async ({ projectId, name, description }) => {
 		const event = getRequestEvent();
 		const user = requireAuth(event);
-		const convex = createAuthenticatedConvexClient(event);
+		const convex = createConvexClient(event);
 		const project = await convex.mutation(api.projects.update, {
 			projectId: projectId as Id<'projects'>,
 			name,
@@ -122,7 +122,7 @@ export const updateProject = command(
 export const beginProjectBannerUpload = command(projectBannerSchema, async ({ projectId }) => {
 	const event = getRequestEvent();
 	requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 	const result = await convex.mutation(api.projects.beginBannerUpload, {
 		projectId: projectId as Id<'projects'>,
 		attemptId: crypto.randomUUID()
@@ -136,7 +136,7 @@ export const completeProjectBannerUpload = command(
 	async ({ projectId, attemptId, storageId, contentType }) => {
 		const event = getRequestEvent();
 		const user = requireAuth(event);
-		const convex = createAuthenticatedConvexClient(event);
+		const convex = createConvexClient(event);
 		const typedProjectId = projectId as Id<'projects'>;
 		const typedStorageId = storageId as Id<'_storage'>;
 		const upload = {
@@ -193,7 +193,7 @@ export const failProjectBannerUpload = command(
 	async ({ projectId, attemptId }) => {
 		const event = getRequestEvent();
 		requireAuth(event);
-		const convex = createAuthenticatedConvexClient(event);
+		const convex = createConvexClient(event);
 		const result = await convex.mutation(api.projects.failBannerUpload, {
 			projectId: projectId as Id<'projects'>,
 			attemptId

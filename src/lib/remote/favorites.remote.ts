@@ -3,7 +3,7 @@ import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
 import { captureServerEvent } from '$lib/server/analytics';
 import { requireAuth } from '$lib/server/auth/authContext';
-import { createAuthenticatedConvexClient } from '$lib/server/convex';
+import { createConvexClient } from '$lib/server/convex';
 import * as v from 'valibot';
 
 const favoriteIdSchema = v.string();
@@ -14,14 +14,14 @@ export const getFavorites = query(async () => {
 		return { externalItems: [], projectIds: [] };
 	}
 
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 	return await convex.query(api.favorites.list, {});
 });
 
 export const addExternalItemFavorite = command(favoriteIdSchema, async (externalItemId) => {
 	const event = getRequestEvent();
 	const user = requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 
 	await convex.mutation(api.favorites.addExternalItem, {
 		externalItemId: externalItemId as Id<'externalItems'>
@@ -34,7 +34,7 @@ export const addExternalItemFavorite = command(favoriteIdSchema, async (external
 export const removeExternalItemFavorite = command(favoriteIdSchema, async (externalItemId) => {
 	const event = getRequestEvent();
 	const user = requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 
 	await convex.mutation(api.favorites.removeExternalItem, {
 		externalItemId: externalItemId as Id<'externalItems'>
@@ -47,7 +47,7 @@ export const removeExternalItemFavorite = command(favoriteIdSchema, async (exter
 export const addProjectFavorite = command(favoriteIdSchema, async (projectId) => {
 	const event = getRequestEvent();
 	const user = requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 
 	await convex.mutation(api.favorites.addProject, {
 		projectId: projectId as Id<'projects'>
@@ -60,7 +60,7 @@ export const addProjectFavorite = command(favoriteIdSchema, async (projectId) =>
 export const removeProjectFavorite = command(favoriteIdSchema, async (projectId) => {
 	const event = getRequestEvent();
 	const user = requireAuth(event);
-	const convex = createAuthenticatedConvexClient(event);
+	const convex = createConvexClient(event);
 
 	await convex.mutation(api.favorites.removeProject, {
 		projectId: projectId as Id<'projects'>

@@ -1,15 +1,15 @@
 import { getAuthContext, requireAuth } from '$lib/server/auth/authContext';
-import { createAuthenticatedConvexClient } from '$lib/server/convex';
+import { createConvexClient } from '$lib/server/convex';
 import type { RequestEvent } from '@sveltejs/kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
 
 vi.mock('$lib/server/convex', () => ({
-	createAuthenticatedConvexClient: vi.fn(() => ({ query }))
+	createConvexClient: vi.fn(() => ({ query }))
 }));
 
-const mockedCreateAuthenticatedConvexClient = vi.mocked(createAuthenticatedConvexClient);
+const mockedCreateConvexClient = vi.mocked(createConvexClient);
 
 describe('authContext', () => {
 	beforeEach(() => {
@@ -20,7 +20,7 @@ describe('authContext', () => {
 		const event = createEvent({ id: 'workos_1' });
 
 		expect(requireAuth(event)).toMatchObject({ id: 'workos_1' });
-		expect(mockedCreateAuthenticatedConvexClient).not.toHaveBeenCalled();
+		expect(mockedCreateConvexClient).not.toHaveBeenCalled();
 	});
 
 	it('caches the PatchHub user lookup for the request', async () => {
@@ -41,6 +41,7 @@ describe('authContext', () => {
 			user,
 			status: 'active'
 		});
+		expect(mockedCreateConvexClient).toHaveBeenCalledWith(event);
 		expect(query).toHaveBeenCalledOnce();
 	});
 });

@@ -24,7 +24,7 @@ type WorkOSProfileUser = {
 type WorkOSProfileLookup = (userId: string) => Promise<WorkOSProfileUser | null>;
 
 export async function loadOwnerProfile(event: RequestEvent, createdBy: string) {
-	const convex = createConvexClient();
+	const convex = createConvexClient(event);
 	const profile = await convex.query(api.projects.getOwnerProfile, {
 		secret: getConvexServerSecret(),
 		createdBy
