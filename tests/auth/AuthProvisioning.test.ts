@@ -1,28 +1,28 @@
 import {
 	ACCOUNT_DISABLED_ERROR_CODE,
-	getInternalUserProvisioningRedirect,
-	shouldBypassInternalUserProvisioning
+	getAccountProvisioningRedirect,
+	shouldBypassAccountProvisioning
 } from '$lib/server/auth/provisioning';
 import { describe, expect, it } from 'vitest';
 
-describe('shouldBypassInternalUserProvisioning', () => {
+describe('shouldBypassAccountProvisioning', () => {
 	it('allows auth routes required to finish or recover sign-in', () => {
-		expect(shouldBypassInternalUserProvisioning('/auth/callback')).toBe(true);
-		expect(shouldBypassInternalUserProvisioning('/auth/error')).toBe(true);
-		expect(shouldBypassInternalUserProvisioning('/auth/setup')).toBe(true);
+		expect(shouldBypassAccountProvisioning('/auth/callback')).toBe(true);
+		expect(shouldBypassAccountProvisioning('/auth/error')).toBe(true);
+		expect(shouldBypassAccountProvisioning('/auth/setup')).toBe(true);
 	});
 });
 
-describe('getInternalUserProvisioningRedirect', () => {
-	it('redirects authenticated users without internal users to setup', () => {
-		const response = getInternalUserProvisioningRedirect('missing', 'https://patchhub.test');
+describe('getAccountProvisioningRedirect', () => {
+	it('redirects authenticated users without accounts to setup', () => {
+		const response = getAccountProvisioningRedirect('missing', 'https://patchhub.test');
 
 		expect(response?.status).toBe(302);
 		expect(response?.headers.get('location')).toBe('https://patchhub.test/auth/setup');
 	});
 
-	it('redirects soft-deleted internal users to the auth error page', () => {
-		const response = getInternalUserProvisioningRedirect('deleted', 'https://patchhub.test');
+	it('redirects disabled accounts to the auth error page', () => {
+		const response = getAccountProvisioningRedirect('deleted', 'https://patchhub.test');
 
 		expect(response?.status).toBe(302);
 		expect(response?.headers.get('location')).toBe(
@@ -31,9 +31,7 @@ describe('getInternalUserProvisioningRedirect', () => {
 	});
 
 	it('does not redirect active or unauthenticated states', () => {
-		expect(getInternalUserProvisioningRedirect('active', 'https://patchhub.test')).toBeNull();
-		expect(
-			getInternalUserProvisioningRedirect('unauthenticated', 'https://patchhub.test')
-		).toBeNull();
+		expect(getAccountProvisioningRedirect('active', 'https://patchhub.test')).toBeNull();
+		expect(getAccountProvisioningRedirect('unauthenticated', 'https://patchhub.test')).toBeNull();
 	});
 });

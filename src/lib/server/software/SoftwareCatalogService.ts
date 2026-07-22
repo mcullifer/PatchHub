@@ -1,5 +1,5 @@
 import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
-import { getSoftwareSource, getSoftwareSources } from '$lib/server/software/SoftwareSourceRegistry';
+import { getSoftwareSource } from '$lib/server/software/SoftwareSourceRegistry';
 import { normalizeSearchName } from '$convex/lib/strings';
 import { api } from '$convex/_generated/api';
 
@@ -9,13 +9,6 @@ export class SoftwareCatalogService {
 			type: 'software',
 			externalId
 		});
-	}
-
-	static async upsertRegisteredSources(): Promise<void> {
-		const convex = createConvexClient();
-		for (const source of getSoftwareSources()) {
-			await this.upsertSource(source.slug, convex);
-		}
 	}
 
 	static async upsertSource(slug: string, convex = createConvexClient()): Promise<void> {

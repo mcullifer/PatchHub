@@ -17,7 +17,7 @@
 	let { params }: PageProps = $props();
 
 	const project = $derived(
-		(await getOwnedProject({ createdBy: params.createdBy, projectSlug: params.project })).project
+		await getOwnedProject({ createdBy: params.createdBy, projectSlug: params.project })
 	);
 
 	async function save(status: ProjectPostStatus, payload: ProjectPostFormPayload): Promise<void> {

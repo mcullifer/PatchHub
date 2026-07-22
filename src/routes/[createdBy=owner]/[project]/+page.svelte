@@ -3,23 +3,26 @@
 	import ProjectFormModal from '$lib/components/projects/ProjectFormModal.svelte';
 	import ProjectHero from '$lib/components/projects/ProjectHero.svelte';
 	import ProjectPostFeed from '$lib/components/projects/ProjectPostFeed.svelte';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { getFavorites } from '$lib/remote/favorites.remote';
 	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 	import type { PageProps } from './$types';
 
 	let { params }: PageProps = $props();
 
+	const currentUser = getCurrentUser();
 	const projectPostsQuery = $derived(
 		getProjectPosts({ createdBy: params.createdBy, projectSlug: params.project })
 	);
-	const favoritesQuery = $derived(getFavorites());
+	const favoritesQuery = $derived(currentUser() ? getFavorites() : null);
 	const queries = $derived(await Promise.all([projectPostsQuery, favoritesQuery]));
 	const result = $derived(queries[0]);
 	const project = $derived(result.project);
 	const posts = $derived(result.posts);
+	const isOwner = $derived(currentUser()?.id === project.owner.id);
 
 	const favorites = $derived(queries[1]);
-	const isFavorited = $derived(favorites.projects.some((p) => p.id === project.id));
+	const isFavorited = $derived(favorites?.projectIds.includes(project.id) ?? false);
 
 	let editModal = $state<{ open: () => void } | null>(null);
 </script>
@@ -43,7 +46,7 @@
 		<ProjectPostFeed {project} {posts} createdBy={params.createdBy} />
 	</div>
 
-	{#if project.isOwner}
+	{#if isOwner}
 		<ProjectFormModal
 			bind:this={editModal}
 			mode={{

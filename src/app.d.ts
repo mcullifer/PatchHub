@@ -4,6 +4,7 @@ declare global {
 	namespace App {
 		interface Locals {
 			auth: import('@workos/authkit-sveltekit').AuthKitAuth;
+			authContext?: Promise<import('$lib/server/auth/authContext').AuthContext>;
 		}
 
 		interface Platform {

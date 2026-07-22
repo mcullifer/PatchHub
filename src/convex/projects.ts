@@ -8,15 +8,14 @@ import {
 	type MutationCtx,
 	type QueryCtx
 } from './_generated/server';
+import { PROJECT_DESCRIPTION_MAX_LENGTH, PROJECT_NAME_MAX_LENGTH } from './lib/contentLimits';
 import { rateLimiter } from './lib/rateLimits';
 import { requireServerSecret } from './lib/serverSecret';
 import { createSlug, normalizeName } from './lib/strings';
 import { normalizeUsername } from './lib/usernames';
-import { findUserByAuthProviderId } from './users';
+import { requireActiveUser } from './users';
 
 const OWNER_PROJECT_LIMIT = 100;
-const PROJECT_NAME_MAX_LENGTH = 100;
-const PROJECT_DESCRIPTION_MAX_LENGTH = 500;
 const PROJECT_BANNER_MAX_BYTES = 5 * 1024 * 1024;
 const PROJECT_BANNER_UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_SLUG_ATTEMPTS = 1000;
@@ -29,13 +28,8 @@ const PROJECT_BANNER_MIME_TYPES = new Set([
 ]);
 
 type ProjectLookupCtx = Pick<QueryCtx, 'db'>;
+type AuthenticatedProjectLookupCtx = Pick<QueryCtx, 'auth' | 'db'>;
 type BannerUploadFailureCode = 'upload_failed' | 'invalid_file' | 'expired';
-type PublicOwnerProfile =
-	| { kind: 'user'; name: string; createdAt: number }
-	| { kind: 'org'; name: string; createdAt: number };
-type ServerOwnerProfile =
-	| { kind: 'user'; name: string; authProviderId: string; createdAt: number }
-	| { kind: 'org'; name: string; createdAt: number };
 
 export type ProjectOwner =
 	| {
@@ -52,38 +46,32 @@ export type ProjectOwner =
 			createdAt: number;
 	  };
 
-export const getByOwnerAndSlug = query({
+export const getOwnedBySlug = query({
 	args: { createdBy: v.string(), projectSlug: v.string() },
 	handler: async (ctx, args) => {
-		const owner = await findOwner(ctx, args.createdBy);
-		if (!owner) return null;
+		const user = await requireActiveUser(ctx);
+		if (user.username !== normalizeUsername(args.createdBy)) return null;
 
-		const project = await findProjectByOwnerAndSlug(ctx, owner, args.projectSlug);
+		const project = await ctx.db
+			.query('projects')
+			.withIndex('by_userId_and_slug_and_deletedAt', (q) =>
+				q
+					.eq('userId', user._id)
+					.eq('slug', args.projectSlug.toLowerCase())
+					.eq('deletedAt', undefined)
+			)
+			.unique();
 		if (!project) return null;
 
 		return {
 			id: project._id,
 			name: project.name,
-			normalizedName: project.normalizedName,
 			slug: project.slug
 		};
 	}
 });
 
 export const getOwnerProfile = query({
-	args: { createdBy: v.string() },
-	handler: async (ctx, args) => {
-		const profile = await getOwnerProfileData(ctx, args.createdBy);
-		if (!profile) return null;
-
-		return {
-			owner: toPublicOwnerProfile(profile.owner),
-			projects: profile.projects
-		};
-	}
-});
-
-export const getOwnerProfileForServer = query({
 	args: { secret: v.string(), createdBy: v.string() },
 	handler: async (ctx, args) => {
 		requireServerSecret(args.secret);
@@ -92,7 +80,7 @@ export const getOwnerProfileForServer = query({
 		if (!profile) return null;
 
 		return {
-			owner: toServerOwnerProfile(profile.owner),
+			owner: profile.owner,
 			projects: profile.projects
 		};
 	}
@@ -100,16 +88,12 @@ export const getOwnerProfileForServer = query({
 
 export const getClaimedBannerUpload = query({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		projectId: v.id('projects'),
 		attemptId: v.string(),
 		storageId: v.id('_storage')
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const user = await requireProjectUser(ctx, args.authProviderId);
-		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		const { project } = await requireOwnedProject(ctx, args.projectId);
 		if (
 			!isCurrentPendingAttempt(project, args.attemptId) ||
 			project.bannerUpload.storageId !== args.storageId ||
@@ -130,16 +114,16 @@ export const getClaimedBannerUpload = query({
 
 export const create = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		name: v.string(),
 		description: v.optional(v.string()),
 		bannerUploadAttemptId: v.optional(v.string())
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
+		const user = await requireActiveUser(ctx);
+		if (!user.username) {
+			throw new Error('Account setup is required');
+		}
 
-		const user = await requireProjectUser(ctx, args.authProviderId);
 		const rateLimit = await rateLimiter.limit(ctx, 'createProject', { key: user._id });
 		if (!rateLimit.ok) {
 			throw new Error('Too many new projects — please try again later.');
@@ -203,7 +187,7 @@ export const create = mutation({
 
 		return {
 			id,
-			name,
+			createdBy: user.username,
 			slug,
 			bannerUpload: attemptId && uploadUrl ? { attemptId, uploadUrl } : null
 		};
@@ -212,16 +196,12 @@ export const create = mutation({
 
 export const update = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		projectId: v.id('projects'),
 		name: v.string(),
 		description: v.optional(v.string())
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const user = await requireProjectUser(ctx, args.authProviderId);
-		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		const { project } = await requireOwnedProject(ctx, args.projectId);
 		const name = normalizeProjectName(args.name);
 		const description = normalizeProjectDescription(args.description);
 		await ctx.db.patch(project._id, {
@@ -237,15 +217,11 @@ export const update = mutation({
 
 export const beginBannerUpload = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		projectId: v.id('projects'),
 		attemptId: v.string()
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const user = await requireProjectUser(ctx, args.authProviderId);
-		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		const { project } = await requireOwnedProject(ctx, args.projectId);
 		const attemptId = normalizeBannerUploadAttemptId(args.attemptId);
 
 		if (project.bannerUpload?.status === 'pending' && project.bannerUpload.storageId) {
@@ -265,17 +241,13 @@ export const beginBannerUpload = mutation({
 
 export const claimBannerUpload = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		projectId: v.id('projects'),
 		attemptId: v.string(),
 		storageId: v.id('_storage'),
 		contentType: v.string()
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const user = await requireProjectUser(ctx, args.authProviderId);
-		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		const { project } = await requireOwnedProject(ctx, args.projectId);
 		if (!isCurrentPendingAttempt(project, args.attemptId)) {
 			return { status: 'stale' as const };
 		}
@@ -310,17 +282,13 @@ export const claimBannerUpload = mutation({
 
 export const finishBannerUpload = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		projectId: v.id('projects'),
 		attemptId: v.string(),
 		storageId: v.id('_storage'),
 		outcome: v.union(v.literal('ready'), v.literal('invalid_file'), v.literal('upload_failed'))
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const user = await requireProjectUser(ctx, args.authProviderId);
-		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		const { project } = await requireOwnedProject(ctx, args.projectId);
 		if (
 			!isCurrentPendingAttempt(project, args.attemptId) ||
 			project.bannerUpload.storageId !== args.storageId
@@ -356,15 +324,11 @@ export const finishBannerUpload = mutation({
 
 export const failBannerUpload = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		projectId: v.id('projects'),
 		attemptId: v.string()
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const user = await requireProjectUser(ctx, args.authProviderId);
-		const project = await requireOwnedProject(ctx, user._id, args.projectId);
+		const { project } = await requireOwnedProject(ctx, args.projectId);
 		if (!isCurrentPendingAttempt(project, args.attemptId)) {
 			return { status: 'stale' as const };
 		}
@@ -396,29 +360,17 @@ export const expireBannerUpload = internalMutation({
 	}
 });
 
-async function requireProjectUser(
-	ctx: Pick<QueryCtx, 'auth' | 'db'>,
-	authProviderId: string
-): Promise<Doc<'users'>> {
-	const user = await findUserByAuthProviderId(ctx, authProviderId);
-	if (!user || user.deletedAt) {
-		throw new Error('User not found');
-	}
-
-	return user;
-}
-
-async function requireOwnedProject(
-	ctx: ProjectLookupCtx,
-	userId: Id<'users'>,
+export async function requireOwnedProject(
+	ctx: AuthenticatedProjectLookupCtx,
 	projectId: Id<'projects'>
-): Promise<Doc<'projects'>> {
+): Promise<{ user: Doc<'users'>; project: Doc<'projects'> }> {
+	const user = await requireActiveUser(ctx);
 	const project = await ctx.db.get(projectId);
-	if (!project || project.deletedAt || project.userId !== userId) {
+	if (!project || project.deletedAt || project.userId !== user._id) {
 		throw new Error('Not authorized');
 	}
 
-	return project;
+	return { user, project };
 }
 
 function normalizeBannerUploadAttemptId(attemptId: string): string {
@@ -527,42 +479,8 @@ async function getOwnerProfileData(ctx: ProjectLookupCtx, createdBy: string) {
 			name: project.name,
 			slug: project.slug,
 			description: project.description ?? null,
-			createdAt: project.createdAt,
 			updatedAt: project.updatedAt
 		}))
-	};
-}
-
-function toPublicOwnerProfile(owner: ProjectOwner): PublicOwnerProfile {
-	if (owner.kind === 'user') {
-		return {
-			kind: owner.kind,
-			name: owner.name,
-			createdAt: owner.createdAt
-		};
-	}
-
-	return {
-		kind: owner.kind,
-		name: owner.name,
-		createdAt: owner.createdAt
-	};
-}
-
-function toServerOwnerProfile(owner: ProjectOwner): ServerOwnerProfile {
-	if (owner.kind === 'user') {
-		return {
-			kind: owner.kind,
-			name: owner.name,
-			authProviderId: owner.authProviderId,
-			createdAt: owner.createdAt
-		};
-	}
-
-	return {
-		kind: owner.kind,
-		name: owner.name,
-		createdAt: owner.createdAt
 	};
 }
 

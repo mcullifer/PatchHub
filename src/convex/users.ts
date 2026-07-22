@@ -1,12 +1,11 @@
 import { v } from 'convex/values';
 import type { Doc } from './_generated/dataModel';
 import { mutation, query, type QueryCtx } from './_generated/server';
-import { requireServerSecret } from './lib/serverSecret';
 import { normalizeUsername, validateUsername } from './lib/usernames';
 
 type UserLookupCtx = Pick<QueryCtx, 'auth' | 'db'>;
 
-export async function findUserByAuthProviderId(
+async function findUserByAuthProviderId(
 	ctx: UserLookupCtx,
 	authProviderId: string
 ): Promise<Doc<'users'> | null> {
@@ -16,7 +15,7 @@ export async function findUserByAuthProviderId(
 		.unique();
 }
 
-export async function findUserByUsername(
+async function findUserByUsername(
 	ctx: UserLookupCtx,
 	username: string
 ): Promise<Doc<'users'> | null> {
@@ -27,14 +26,7 @@ export async function findUserByUsername(
 		.unique();
 }
 
-export async function findCurrentUser(ctx: UserLookupCtx): Promise<Doc<'users'> | null> {
-	const identity = await ctx.auth.getUserIdentity();
-	if (!identity) return null;
-
-	return await findUserByAuthProviderId(ctx, identity.subject);
-}
-
-export async function requireCurrentUser(ctx: UserLookupCtx): Promise<Doc<'users'>> {
+export async function requireActiveUser(ctx: UserLookupCtx): Promise<Doc<'users'>> {
 	const identity = await ctx.auth.getUserIdentity();
 	if (!identity) {
 		throw new Error('Not authenticated');
@@ -48,11 +40,13 @@ export async function requireCurrentUser(ctx: UserLookupCtx): Promise<Doc<'users
 	return user;
 }
 
-export const getByAuthProviderId = query({
-	args: { secret: v.string(), authProviderId: v.string() },
-	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		return await findUserByAuthProviderId(ctx, args.authProviderId);
+export const getCurrent = query({
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) return null;
+
+		return await findUserByAuthProviderId(ctx, identity.subject);
 	}
 });
 
@@ -65,17 +59,18 @@ export const isUsernameTaken = query({
 
 export const getOrCreate = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		email: v.optional(v.string()),
 		username: v.string(),
 		createdAt: v.number(),
 		updatedAt: v.number()
 	},
 	handler: async (ctx, args): Promise<Doc<'users'>> => {
-		requireServerSecret(args.secret);
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new Error('Not authenticated');
+		}
 
-		const existingUser = await findUserByAuthProviderId(ctx, args.authProviderId);
+		const existingUser = await findUserByAuthProviderId(ctx, identity.subject);
 		if (existingUser) {
 			if (existingUser.deletedAt) {
 				throw new Error('Account is disabled');
@@ -102,7 +97,7 @@ export const getOrCreate = mutation({
 			createdAt: number;
 			updatedAt: number;
 		} = {
-			authProviderId: args.authProviderId,
+			authProviderId: identity.subject,
 			username: usernameValidation.username,
 			platformRole: 'member',
 			createdAt: args.createdAt,

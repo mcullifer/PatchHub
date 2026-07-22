@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import { FavoriteHeart, Icon } from '$lib/components/common-ui';
 	import { Tooltip } from '$lib/components/common-ui/floating';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import type { INamedSteamGame } from '$lib/models/Steam';
 	import {
 		addExternalItemFavorite,
@@ -18,6 +18,7 @@
 		featured = false
 	}: { game: INamedSteamGame; isFavorited: boolean; featured?: boolean } = $props();
 
+	const currentUser = getCurrentUser();
 	let defaultHeaderImageUrl = $derived(
 		featured ? getSteamLibraryHeroUrl(game.appid) : getDefaultSteamHeaderImageUrl(game.appid)
 	);
@@ -134,14 +135,14 @@
 		</span>
 	{/if}
 
-	{#if page.data.user !== null && game.externalItemId}
+	{#if currentUser() !== null && game.externalItemId}
 		<Tooltip>
 			{#snippet reference(floating)}
 				<FavoriteHeart
 					{favorited}
 					onToggle={toggleFavorite}
 					{...floating.reference({
-						class: ['bg-neutral/50 text-neutral-content absolute top-2 right-2 rounded-full p-1']
+						class: ['btn-sm absolute top-2 right-2']
 					})}
 				/>
 			{/snippet}

@@ -6,6 +6,7 @@ PatchHub uses SvelteKit remote functions for app-internal client/server communic
 ## Defaults
 
 - Put remote functions in `src/lib/remote/*.remote.ts`.
+- Order each module as imports, validation schemas, exported remote functions, then private helpers.
 - Use `query` for reads, `form` for progressively enhanced forms, and `command` for imperative
   mutations.
 - Use `query.batch` when repeated reads would create an N+1 pattern. Use `query.live` only when the
@@ -14,8 +15,13 @@ PatchHub uses SvelteKit remote functions for app-internal client/server communic
   from the remote function.
 - Validate every argument with Valibot or another Standard Schema. Treat remote functions as
   public HTTP endpoints.
-- Derive identity from `getAuthContext(getRequestEvent())`; never trust ownership ids supplied by
-  the client.
+- Use `requireAuth(getRequestEvent())` for a cheap WorkOS session precheck before authenticated
+  Convex calls. Use `getAuthContext` only when the SvelteKit request needs PatchHub user data or
+  provisioning status.
+- Authenticate user-scoped Convex clients with the WorkOS access-token JWT. Convex must still
+  derive the user and enforce ownership; never trust ownership ids supplied by the client.
+- Return owner ids instead of viewer-specific `isOwner` flags. Components derive UI visibility
+  from the current user in root layout data; backend authorization remains independent.
 
 ## Route Loads and 404 Responses
 

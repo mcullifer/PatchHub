@@ -1,23 +1,20 @@
 import { v } from 'convex/values';
 import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
-import { findOwner, findProjectByOwnerAndSlug, type ProjectOwner } from './projects';
+import { PROJECT_POST_CONTENT_MAX_BYTES, PROJECT_POST_TITLE_MAX_LENGTH } from './lib/contentLimits';
 import { rateLimiter } from './lib/rateLimits';
-import { requireServerSecret } from './lib/serverSecret';
 import { createSlug } from './lib/strings';
+import {
+	findOwner,
+	findProjectByOwnerAndSlug,
+	requireOwnedProject,
+	type ProjectOwner
+} from './projects';
 import { projectPostKind } from './schema';
-import { findUserByAuthProviderId } from './users';
 
 const PROJECT_POST_LIST_LIMIT = 50;
-const PROJECT_POST_TITLE_MAX_LENGTH = 150;
-const PROJECT_POST_CONTENT_MAX_BYTES = 400_000;
 const MAX_SLUG_ATTEMPTS = 1000;
 const RESERVED_POST_SLUGS = new Set(['new']);
-
-type ProjectPostAuthArgs = {
-	secret?: string;
-	authProviderId?: string;
-};
 
 type ProjectBannerDto =
 	| { status: 'none'; url: null }
@@ -31,9 +28,10 @@ type ProjectPostProjectDto = {
 	slug: string;
 	description: string | null;
 	banner: ProjectBannerDto;
-	ownerName: string;
-	ownerKind: 'user' | 'org';
-	isOwner: boolean;
+	owner: {
+		id: ProjectOwner['id'];
+		name: string;
+	};
 };
 
 type ProjectPostListItemDto = {
@@ -44,7 +42,6 @@ type ProjectPostListItemDto = {
 	status: Doc<'projectPosts'>['status'];
 	publishedAt: number | null;
 	createdAt: number;
-	updatedAt: number;
 };
 
 type ProjectPostDto = ProjectPostListItemDto & {
@@ -54,56 +51,49 @@ type ProjectPostDto = ProjectPostListItemDto & {
 type ResolvedProject = {
 	owner: ProjectOwner;
 	project: Doc<'projects'>;
-	isOwner: boolean;
 };
 
-export const listByOwnerAndProject = query({
+export const listForProject = query({
 	args: {
 		createdBy: v.string(),
-		projectSlug: v.string(),
-		secret: v.optional(v.string()),
-		authProviderId: v.optional(v.string())
+		projectSlug: v.string()
 	},
 	handler: async (ctx, args) => {
-		const resolvedProject = await resolveProjectForViewer(ctx, args);
+		const resolvedProject = await resolveProject(ctx, args);
 		if (!resolvedProject) return null;
+		const canViewDrafts = await isAuthenticatedOwner(ctx, resolvedProject.owner);
 
-		const posts = await listVisibleProjectPosts(
-			ctx,
-			resolvedProject.project._id,
-			resolvedProject.isOwner
-		);
+		const posts = await listVisibleProjectPosts(ctx, resolvedProject.project._id, canViewDrafts);
 
 		return {
-			project: await toProjectDto(ctx, resolvedProject),
+			project: await toProjectDto(ctx, resolvedProject, canViewDrafts),
 			posts: posts.map(toProjectPostListItemDto)
 		};
 	}
 });
 
-export const getByOwnerProjectAndSlug = query({
+export const getForProject = query({
 	args: {
 		createdBy: v.string(),
 		projectSlug: v.string(),
-		postSlug: v.string(),
-		secret: v.optional(v.string()),
-		authProviderId: v.optional(v.string())
+		postSlug: v.string()
 	},
 	handler: async (ctx, args) => {
-		const resolvedProject = await resolveProjectForViewer(ctx, args);
+		const resolvedProject = await resolveProject(ctx, args);
 		if (!resolvedProject) return null;
+		const canViewDraft = await isAuthenticatedOwner(ctx, resolvedProject.owner);
 
 		const post = await findProjectPostByProjectAndSlug(
 			ctx,
 			resolvedProject.project._id,
 			args.postSlug.toLowerCase()
 		);
-		if (!post || !canViewPost(post, resolvedProject.isOwner)) {
+		if (!post || !canViewPost(post, canViewDraft)) {
 			return null;
 		}
 
 		return {
-			project: await toProjectDto(ctx, resolvedProject),
+			project: await toProjectDto(ctx, resolvedProject, canViewDraft),
 			post: toProjectPostDto(post)
 		};
 	}
@@ -111,8 +101,6 @@ export const getByOwnerProjectAndSlug = query({
 
 export const create = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		projectId: v.id('projects'),
 		kind: projectPostKind,
 		title: v.string(),
@@ -120,17 +108,7 @@ export const create = mutation({
 		status: v.union(v.literal('draft'), v.literal('published'))
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-
-		const user = await findUserByAuthProviderId(ctx, args.authProviderId);
-		if (!user || user.deletedAt) {
-			throw new Error('User not found');
-		}
-
-		const project = await ctx.db.get(args.projectId);
-		if (!project || project.deletedAt || project.userId !== user._id) {
-			throw new Error('Not authorized');
-		}
+		const { user, project } = await requireOwnedProject(ctx, args.projectId);
 
 		const rateLimit = await rateLimiter.limit(ctx, 'createProjectPost', { key: user._id });
 		if (!rateLimit.ok) {
@@ -177,16 +155,13 @@ export const create = mutation({
 
 export const update = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		postId: v.id('projectPosts'),
 		kind: projectPostKind,
 		title: v.string(),
 		content: v.string()
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const { post, project } = await requireOwnedActivePost(ctx, args.authProviderId, args.postId);
+		const { post, project } = await requireOwnedActivePost(ctx, args.postId);
 		const title = normalizeProjectPostTitle(args.title);
 		validateProjectPostContent(args.content);
 		const now = Date.now();
@@ -204,14 +179,11 @@ export const update = mutation({
 
 export const setStatus = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		postId: v.id('projectPosts'),
 		status: v.union(v.literal('draft'), v.literal('published'))
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const { post, project } = await requireOwnedActivePost(ctx, args.authProviderId, args.postId);
+		const { post, project } = await requireOwnedActivePost(ctx, args.postId);
 		if (post.status === args.status) {
 			return {
 				slug: post.slug,
@@ -235,13 +207,10 @@ export const setStatus = mutation({
 
 export const remove = mutation({
 	args: {
-		secret: v.string(),
-		authProviderId: v.string(),
 		postId: v.id('projectPosts')
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
-		const { post, project } = await requireOwnedActivePost(ctx, args.authProviderId, args.postId);
+		const { post, project } = await requireOwnedActivePost(ctx, args.postId);
 		const now = Date.now();
 		await ctx.db.patch(post._id, { deletedAt: now, updatedAt: now });
 		await ctx.db.patch(project._id, { updatedAt: now });
@@ -251,30 +220,21 @@ export const remove = mutation({
 
 async function requireOwnedActivePost(
 	ctx: Pick<MutationCtx, 'auth' | 'db'>,
-	authProviderId: string,
 	postId: Id<'projectPosts'>
 ): Promise<{ post: Doc<'projectPosts'>; project: Doc<'projects'> }> {
-	const user = await findUserByAuthProviderId(ctx, authProviderId);
-	if (!user || user.deletedAt) {
-		throw new Error('User not found');
-	}
-
 	const post = await ctx.db.get(postId);
 	if (!post || post.deletedAt) {
 		throw new Error('Not authorized');
 	}
 
-	const project = await ctx.db.get(post.projectId);
-	if (!project || project.deletedAt || project.userId !== user._id) {
-		throw new Error('Not authorized');
-	}
+	const { project } = await requireOwnedProject(ctx, post.projectId);
 
 	return { post, project };
 }
 
-async function resolveProjectForViewer(
+async function resolveProject(
 	ctx: QueryCtx,
-	args: { createdBy: string; projectSlug: string } & ProjectPostAuthArgs
+	args: { createdBy: string; projectSlug: string }
 ): Promise<ResolvedProject | null> {
 	const owner = await findOwner(ctx, args.createdBy);
 	if (!owner) return null;
@@ -282,30 +242,15 @@ async function resolveProjectForViewer(
 	const project = await findProjectByOwnerAndSlug(ctx, owner, args.projectSlug);
 	if (!project) return null;
 
-	const viewer = await findProjectPostViewer(ctx, args);
-	const isOwner = project.userId !== undefined && viewer?._id === project.userId;
-
-	return { owner, project, isOwner };
+	return { owner, project };
 }
 
-async function findProjectPostViewer(
-	ctx: QueryCtx,
-	args: ProjectPostAuthArgs
-): Promise<Doc<'users'> | null> {
-	if (args.secret === undefined && args.authProviderId === undefined) {
-		return null;
-	}
+async function isAuthenticatedOwner(ctx: Pick<QueryCtx, 'auth'>, owner: ProjectOwner) {
+	if (owner.kind !== 'user') return false;
 
-	if (!args.secret || !args.authProviderId) {
-		throw new Error('Unauthorized');
-	}
-
-	requireServerSecret(args.secret);
-
-	const user = await findUserByAuthProviderId(ctx, args.authProviderId);
-	return user && !user.deletedAt ? user : null;
+	const identity = await ctx.auth.getUserIdentity();
+	return identity?.subject === owner.authProviderId;
 }
-
 async function findProjectPostByProjectAndSlug(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
@@ -321,7 +266,8 @@ async function findProjectPostByProjectAndSlug(
 
 async function toProjectDto(
 	ctx: QueryCtx,
-	resolvedProject: ResolvedProject
+	resolvedProject: ResolvedProject,
+	showBannerFailure: boolean
 ): Promise<ProjectPostProjectDto> {
 	const bannerUrl = resolvedProject.project.bannerStorageId
 		? await ctx.storage.getUrl(resolvedProject.project.bannerStorageId)
@@ -332,23 +278,24 @@ async function toProjectDto(
 		name: resolvedProject.project.name,
 		slug: resolvedProject.project.slug,
 		description: resolvedProject.project.description ?? null,
-		banner: toProjectBannerDto(resolvedProject.project, bannerUrl, resolvedProject.isOwner),
-		ownerName: resolvedProject.owner.name,
-		ownerKind: resolvedProject.owner.kind,
-		isOwner: resolvedProject.isOwner
+		banner: toProjectBannerDto(resolvedProject.project, bannerUrl, showBannerFailure),
+		owner: {
+			id: resolvedProject.owner.id,
+			name: resolvedProject.owner.name
+		}
 	};
 }
 
 function toProjectBannerDto(
 	project: Doc<'projects'>,
 	url: string | null,
-	isOwner: boolean
+	showFailure: boolean
 ): ProjectBannerDto {
 	if (project.bannerUpload?.status === 'pending') {
 		return { status: 'pending', url };
 	}
 
-	if (project.bannerUpload?.status === 'failed' && isOwner) {
+	if (project.bannerUpload?.status === 'failed' && showFailure) {
 		return {
 			status: 'failed',
 			url,
@@ -385,15 +332,14 @@ function toProjectPostListItemDto(post: Doc<'projectPosts'>): ProjectPostListIte
 		slug: post.slug,
 		status: post.status,
 		publishedAt: post.publishedAt ?? null,
-		createdAt: post.createdAt,
-		updatedAt: post.updatedAt
+		createdAt: post.createdAt
 	};
 }
 
-function canViewPost(post: Doc<'projectPosts'>, isOwner: boolean): boolean {
+function canViewPost(post: Doc<'projectPosts'>, canViewDraft: boolean): boolean {
 	if (post.deletedAt) return false;
 	if (post.status === 'published') return true;
-	return isOwner && post.status === 'draft';
+	return canViewDraft && post.status === 'draft';
 }
 
 function compareProjectPostsNewestFirst(
@@ -503,10 +449,10 @@ function appendSlugSuffix(baseSlug: string, attempt: number): string {
 async function listVisibleProjectPosts(
 	ctx: QueryCtx,
 	projectId: Id<'projects'>,
-	isOwner: boolean
+	includeDrafts: boolean
 ): Promise<Doc<'projectPosts'>[]> {
 	const publishedPosts = await listPublishedProjectPosts(ctx, projectId, PROJECT_POST_LIST_LIMIT);
-	if (!isOwner) return publishedPosts;
+	if (!includeDrafts) return publishedPosts;
 
 	const draftPosts = await listDraftProjectPosts(ctx, projectId, PROJECT_POST_LIST_LIMIT);
 	return [...publishedPosts, ...draftPosts]

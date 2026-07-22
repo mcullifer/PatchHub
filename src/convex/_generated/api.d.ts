@@ -12,6 +12,7 @@ import type * as cache from "../cache.js";
 import type * as catalog from "../catalog.js";
 import type * as crons from "../crons.js";
 import type * as favorites from "../favorites.js";
+import type * as lib_contentLimits from "../lib/contentLimits.js";
 import type * as lib_externalItems from "../lib/externalItems.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_serverSecret from "../lib/serverSecret.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   catalog: typeof catalog;
   crons: typeof crons;
   favorites: typeof favorites;
+  "lib/contentLimits": typeof lib_contentLimits;
   "lib/externalItems": typeof lib_externalItems;
   "lib/rateLimits": typeof lib_rateLimits;
   "lib/serverSecret": typeof lib_serverSecret;

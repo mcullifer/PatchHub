@@ -1,4 +1,4 @@
-import type { InternalUserStatus } from './AuthContext';
+import type { AccountStatus } from './authContext';
 
 export const ACCOUNT_DISABLED_ERROR_CODE = 'account_disabled';
 
@@ -10,12 +10,12 @@ const provisioningBypassPathPrefixes = [
 	'/auth/setup'
 ];
 
-export function shouldBypassInternalUserProvisioning(pathname: string): boolean {
+export function shouldBypassAccountProvisioning(pathname: string): boolean {
 	return provisioningBypassPathPrefixes.some((path) => pathname.startsWith(path));
 }
 
-export function getInternalUserProvisioningRedirect(
-	status: InternalUserStatus,
+export function getAccountProvisioningRedirect(
+	status: AccountStatus,
 	origin: string
 ): Response | null {
 	if (status === 'missing') {

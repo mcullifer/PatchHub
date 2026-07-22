@@ -3,6 +3,7 @@
 	import Seo from '$lib/components/Seo.svelte';
 	import { Card, EmptyState, Icon } from '$lib/components/common-ui';
 	import ProjectFormModal from '$lib/components/projects/ProjectFormModal.svelte';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { getOwnerProfile } from '$lib/remote/projects.remote';
 	import type { PageProps } from './$types';
 
@@ -13,6 +14,8 @@
 	const profile = $derived(await getOwnerProfile(params.createdBy));
 	const ownerName = $derived(profile.owner.name);
 	const profilePictureUrl = $derived(profile.owner.profilePictureUrl);
+	const currentUser = getCurrentUser();
+	const isOwner = $derived(currentUser()?.id === profile.owner.id);
 	const projectCount = $derived(profile.projects.length);
 	const avatarLetter = $derived(ownerName.charAt(0).toUpperCase());
 	const ownerKindLabel = $derived(
@@ -46,7 +49,7 @@
 <svelte:boundary>
 	<section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
 		<Card class="bg-base-200 card-sm">
-			<div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+			<div class="flex items-center gap-4">
 				<div class={['avatar', !profilePictureUrl && 'avatar-placeholder']}>
 					<div class="bg-secondary text-secondary-content ring-base-300 rounded-box w-20 ring-4">
 						{#if profilePictureUrl}
@@ -60,14 +63,14 @@
 						{/if}
 					</div>
 				</div>
-				<div class="min-w-0">
-					<div class="flex flex-wrap items-center gap-2">
-						<h1 class="truncate text-2xl font-bold">{ownerName}</h1>
-						<span class="badge badge-ghost badge-sm">{ownerKindLabel}</span>
-					</div>
-					<p class="text-base-content/60 mt-1 text-sm">
+				<div class="flex min-w-0 flex-col items-start gap-1">
+					<h1 class="max-w-full truncate text-2xl font-bold">{ownerName}</h1>
+					<p class="text-base-content/60 text-sm">{ownerKindLabel}</p>
+					<p class="text-base-content/60 text-sm">
 						<span class="inline-flex items-center gap-1.5">
-							<span aria-hidden="true"><Icon icon="calendar_month" size="xs" /></span>
+							<span aria-hidden="true" class="inline-flex"
+								><Icon icon="calendar_month" size="xs" /></span
+							>
 							Joined {formatMonthYear(profile.owner.createdAt)}
 						</span>
 					</p>
@@ -82,7 +85,7 @@
 					{projectCount}
 				</span>
 			</div>
-			{#if profile.isOwner}
+			{#if isOwner}
 				{@render newProjectButton()}
 			{/if}
 		</div>
@@ -137,7 +140,7 @@
 					</li>
 				{/each}
 			</ul>
-		{:else if profile.isOwner}
+		{:else if isOwner}
 			<EmptyState
 				icon="rocket_launch"
 				title="Create your first project"
@@ -168,4 +171,9 @@
 	{/snippet}
 </svelte:boundary>
 
-<ProjectFormModal bind:this={createModal} mode={{ kind: 'create', createdBy: params.createdBy }} />
+{#if isOwner}
+	<ProjectFormModal
+		bind:this={createModal}
+		mode={{ kind: 'create', createdBy: params.createdBy }}
+	/>
+{/if}

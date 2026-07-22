@@ -21,6 +21,10 @@ function createTest() {
 	return t;
 }
 
+function asUser(t: ReturnType<typeof createTest>, authProviderId: string) {
+	return t.withIdentity({ subject: authProviderId });
+}
+
 beforeEach(() => {
 	vi.stubEnv('SERVER_SECRET', SECRET);
 });
@@ -184,10 +188,9 @@ describe('cache', () => {
 describe('users.getOrCreate', () => {
 	it('creates a user with a normalized username and returns it on repeat calls', async () => {
 		const t = createTest();
+		const owner = asUser(t, 'workos_1');
 
-		const created = await t.mutation(api.users.getOrCreate, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		const created = await owner.mutation(api.users.getOrCreate, {
 			email: 'owner@example.com',
 			username: '  Owner123  ',
 			createdAt: 1000,
@@ -197,10 +200,13 @@ describe('users.getOrCreate', () => {
 		expect(created.username).toBe('owner123');
 		expect(created.authProviderId).toBe('workos_1');
 		expect(created.platformRole).toBe('member');
+		await expect(owner.query(api.users.getCurrent, {})).resolves.toMatchObject({
+			_id: created._id,
+			authProviderId: 'workos_1'
+		});
+		await expect(t.query(api.users.getCurrent, {})).resolves.toBeNull();
 
-		const again = await t.mutation(api.users.getOrCreate, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		const again = await owner.mutation(api.users.getOrCreate, {
 			username: 'different',
 			createdAt: 3000,
 			updatedAt: 4000
@@ -211,18 +217,14 @@ describe('users.getOrCreate', () => {
 	it('rejects a username that is already taken', async () => {
 		const t = createTest();
 
-		await t.mutation(api.users.getOrCreate, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		await asUser(t, 'workos_1').mutation(api.users.getOrCreate, {
 			username: 'owner123',
 			createdAt: 1000,
 			updatedAt: 1000
 		});
 
 		await expect(
-			t.mutation(api.users.getOrCreate, {
-				secret: SECRET,
-				authProviderId: 'workos_2',
+			asUser(t, 'workos_2').mutation(api.users.getOrCreate, {
 				username: 'OWNER123',
 				createdAt: 1000,
 				updatedAt: 1000
@@ -245,9 +247,7 @@ describe('users.getOrCreate', () => {
 		});
 
 		await expect(
-			t.mutation(api.users.getOrCreate, {
-				secret: SECRET,
-				authProviderId: 'workos_1',
+			asUser(t, 'workos_1').mutation(api.users.getOrCreate, {
 				username: 'owner123',
 				createdAt: 1000,
 				updatedAt: 1000
@@ -255,24 +255,23 @@ describe('users.getOrCreate', () => {
 		).rejects.toThrow('Account is disabled');
 	});
 
-	it('rejects calls without the server secret', async () => {
+	it('rejects unauthenticated calls', async () => {
 		const t = createTest();
 
 		await expect(
 			t.mutation(api.users.getOrCreate, {
-				secret: 'wrong',
-				authProviderId: 'workos_1',
 				username: 'owner123',
 				createdAt: 1000,
 				updatedAt: 1000
 			})
-		).rejects.toThrow('Unauthorized');
+		).rejects.toThrow('Not authenticated');
 	});
 });
 
 describe('favorites', () => {
 	it('adds, lists, and removes external item favorites idempotently', async () => {
 		const t = createTest();
+		const owner = asUser(t, 'workos_1');
 
 		const { itemId } = await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
@@ -296,42 +295,29 @@ describe('favorites', () => {
 			return { itemId };
 		});
 
-		await t.mutation(api.favorites.addExternalItem, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		await owner.mutation(api.favorites.addExternalItem, {
 			externalItemId: itemId
 		});
 		// Second add is a no-op, not an error
-		await t.mutation(api.favorites.addExternalItem, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		await owner.mutation(api.favorites.addExternalItem, {
 			externalItemId: itemId
 		});
 
-		const favorites = await t.query(api.favorites.getForUser, {
-			secret: SECRET,
-			authProviderId: 'workos_1'
-		});
+		const favorites = await owner.query(api.favorites.list, {});
 		expect(favorites.externalItems).toHaveLength(1);
 		expect(favorites.externalItems[0]).toMatchObject({
 			id: itemId,
-			name: 'Counter-Strike',
 			externalId: '10'
 		});
 
-		await t.mutation(api.favorites.removeExternalItem, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		await owner.mutation(api.favorites.removeExternalItem, {
 			externalItemId: itemId
 		});
-		const afterRemove = await t.query(api.favorites.getForUser, {
-			secret: SECRET,
-			authProviderId: 'workos_1'
-		});
+		const afterRemove = await owner.query(api.favorites.list, {});
 		expect(afterRemove.externalItems).toHaveLength(0);
 	});
 
-	it('uses the Convex auth identity for client-side favorite mutations', async () => {
+	it('uses the authenticated Convex identity for favorite mutations', async () => {
 		const t = createTest();
 
 		const { itemId } = await t.run(async (ctx) => {
@@ -366,20 +352,20 @@ describe('favorites', () => {
 		const currentUser = t.withIdentity({ subject: 'workos_1' });
 		await currentUser.mutation(api.favorites.addExternalItem, { externalItemId: itemId });
 
-		const favorites = await currentUser.query(api.favorites.getForUser, {});
+		const favorites = await currentUser.query(api.favorites.list, {});
 		expect(favorites.externalItems).toHaveLength(1);
 		expect(favorites.externalItems[0]).toMatchObject({ id: itemId });
 
 		const otherUser = t.withIdentity({ subject: 'workos_2' });
-		const otherFavorites = await otherUser.query(api.favorites.getForUser, {});
+		const otherFavorites = await otherUser.query(api.favorites.list, {});
 		expect(otherFavorites.externalItems).toHaveLength(0);
 
 		await currentUser.mutation(api.favorites.removeExternalItem, { externalItemId: itemId });
-		const afterRemove = await currentUser.query(api.favorites.getForUser, {});
+		const afterRemove = await currentUser.query(api.favorites.list, {});
 		expect(afterRemove.externalItems).toHaveLength(0);
 	});
 
-	it('rejects client-side favorite mutations without authenticated identity', async () => {
+	it('rejects favorite mutations without an authenticated identity', async () => {
 		const t = createTest();
 
 		const { itemId } = await t.run(async (ctx) => {
@@ -401,23 +387,14 @@ describe('favorites', () => {
 		await expect(
 			t.mutation(api.favorites.addExternalItem, { externalItemId: itemId })
 		).rejects.toThrow('Not authenticated');
-
-		await expect(
-			t.mutation(api.favorites.addExternalItem, {
-				authProviderId: 'workos_1',
-				externalItemId: itemId
-			})
-		).rejects.toThrow('Unauthorized');
 	});
 
-	it('returns empty favorites for unknown users', async () => {
+	it('rejects favorites queries for unknown users', async () => {
 		const t = createTest();
 
-		const favorites = await t.query(api.favorites.getForUser, {
-			secret: SECRET,
-			authProviderId: 'nobody'
-		});
-		expect(favorites).toEqual({ externalItems: [], projects: [] });
+		await expect(asUser(t, 'nobody').query(api.favorites.list, {})).rejects.toThrow(
+			'User not found'
+		);
 	});
 });
 
@@ -739,7 +716,7 @@ describe('catalog', () => {
 	});
 });
 
-describe('projects.getByOwnerAndSlug', () => {
+describe('projects.getOwnedBySlug', () => {
 	it('finds the matching owner when many projects share the same slug', async () => {
 		const t = createTest();
 
@@ -779,7 +756,7 @@ describe('projects.getByOwnerAndSlug', () => {
 			});
 		});
 
-		const project = await t.query(api.projects.getByOwnerAndSlug, {
+		const project = await asUser(t, 'workos_target').query(api.projects.getOwnedBySlug, {
 			createdBy: 'owner123',
 			projectSlug: 'patchhub'
 		});
@@ -788,6 +765,42 @@ describe('projects.getByOwnerAndSlug', () => {
 			name: 'PatchHub',
 			slug: 'patchhub'
 		});
+	});
+
+	it('does not return projects owned by another user', async () => {
+		const t = createTest();
+
+		await t.run(async (ctx) => {
+			const ownerId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owner123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_other',
+				username: 'other123',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId: ownerId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+		});
+
+		await expect(
+			asUser(t, 'workos_other').query(api.projects.getOwnedBySlug, {
+				createdBy: 'owner123',
+				projectSlug: 'patchhub'
+			})
+		).resolves.toBeNull();
 	});
 });
 
@@ -829,14 +842,16 @@ describe('projects.getOwnerProfile', () => {
 		});
 
 		const profile = await t.query(api.projects.getOwnerProfile, {
+			secret: SECRET,
 			createdBy: 'owner123'
 		});
 
 		expect(profile?.owner).toMatchObject({
 			kind: 'user',
+			id: expect.any(String),
 			name: 'owner123'
 		});
-		expect(profile?.owner).not.toHaveProperty('authProviderId');
+		expect(profile?.owner).toHaveProperty('authProviderId', 'workos_1');
 		expect(profile?.projects).toHaveLength(100);
 		expect(profile?.projects[0]).toMatchObject({
 			name: 'Project 129',
@@ -853,7 +868,7 @@ describe('projects.getOwnerProfile', () => {
 		);
 	});
 
-	it('returns auth provider details only from the server owner profile query', async () => {
+	it('returns the auth provider identity needed by the SvelteKit server', async () => {
 		const t = createTest();
 
 		await t.run(async (ctx) => {
@@ -874,17 +889,14 @@ describe('projects.getOwnerProfile', () => {
 			});
 		});
 
-		const publicProfile = await t.query(api.projects.getOwnerProfile, {
-			createdBy: 'owner123'
-		});
-		const serverProfile = await t.query(api.projects.getOwnerProfileForServer, {
+		const serverProfile = await t.query(api.projects.getOwnerProfile, {
 			secret: SECRET,
 			createdBy: 'owner123'
 		});
 
-		expect(publicProfile?.owner).not.toHaveProperty('authProviderId');
 		expect(serverProfile?.owner).toMatchObject({
 			kind: 'user',
+			id: expect.any(String),
 			name: 'owner123',
 			authProviderId: 'workos_1'
 		});
@@ -894,6 +906,7 @@ describe('projects.getOwnerProfile', () => {
 describe('projects.create', () => {
 	it('creates unique slugs for repeated project names owned by the same user', async () => {
 		const t = createTest();
+		const owner = asUser(t, 'workos_1');
 
 		await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
@@ -905,22 +918,15 @@ describe('projects.create', () => {
 			});
 		});
 
-		const firstProject = await t.mutation(api.projects.create, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		const firstProject = await owner.mutation(api.projects.create, {
 			name: '  PatchHub  ',
 			description: '  Release notes in one place  '
 		});
-		const secondProject = await t.mutation(api.projects.create, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		const secondProject = await owner.mutation(api.projects.create, {
 			name: 'PatchHub'
 		});
 
-		expect(firstProject).toMatchObject({
-			name: 'PatchHub',
-			slug: 'patchhub'
-		});
+		expect(firstProject.slug).toBe('patchhub');
 		expect(secondProject.slug).toBe('patchhub-2');
 
 		const storedProject = await t.run(async (ctx) => {
@@ -935,6 +941,7 @@ describe('projects.create', () => {
 
 	it('rejects invalid project names and descriptions', async () => {
 		const t = createTest();
+		const owner = asUser(t, 'workos_1');
 
 		await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
@@ -947,17 +954,13 @@ describe('projects.create', () => {
 		});
 
 		await expect(
-			t.mutation(api.projects.create, {
-				secret: SECRET,
-				authProviderId: 'workos_1',
+			owner.mutation(api.projects.create, {
 				name: '   '
 			})
 		).rejects.toThrow('Project name is required');
 
 		await expect(
-			t.mutation(api.projects.create, {
-				secret: SECRET,
-				authProviderId: 'workos_1',
+			owner.mutation(api.projects.create, {
 				name: 'PatchHub',
 				description: 'x'.repeat(501)
 			})
@@ -966,6 +969,7 @@ describe('projects.create', () => {
 
 	it('rate limits project creation per user', async () => {
 		const t = createTest();
+		const owner = asUser(t, 'workos_1');
 
 		await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
@@ -978,17 +982,13 @@ describe('projects.create', () => {
 		});
 
 		for (let index = 1; index <= 3; index++) {
-			await t.mutation(api.projects.create, {
-				secret: SECRET,
-				authProviderId: 'workos_1',
+			await owner.mutation(api.projects.create, {
 				name: `Project ${index}`
 			});
 		}
 
 		await expect(
-			t.mutation(api.projects.create, {
-				secret: SECRET,
-				authProviderId: 'workos_1',
+			owner.mutation(api.projects.create, {
 				name: 'Project 4'
 			})
 		).rejects.toThrow('Too many new projects — please try again later.');
@@ -1026,18 +1026,14 @@ describe('projects.update', () => {
 		});
 
 		await expect(
-			t.mutation(api.projects.update, {
-				secret: SECRET,
-				authProviderId: 'workos_other',
+			asUser(t, 'workos_other').mutation(api.projects.update, {
 				projectId,
 				name: 'Renamed'
 			})
 		).rejects.toThrow('Not authorized');
 
 		await expect(
-			t.mutation(api.projects.update, {
-				secret: SECRET,
-				authProviderId: 'workos_owner',
+			asUser(t, 'workos_owner').mutation(api.projects.update, {
 				projectId,
 				name: '  Renamed  ',
 				description: '   '
@@ -1081,7 +1077,7 @@ describe('projects project banners', () => {
 			});
 		});
 
-		const result = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const result = await t.query(api.projectPosts.listForProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub'
 		});
@@ -1105,14 +1101,12 @@ describe('projects project banners', () => {
 			});
 		});
 
-		const created = await t.mutation(api.projects.create, {
-			secret: SECRET,
-			authProviderId: 'workos_owner',
+		const created = await asUser(t, 'workos_owner').mutation(api.projects.create, {
 			name: 'PatchHub',
 			bannerUploadAttemptId: 'attempt-1'
 		});
 		const project = await t.run(async (ctx) => await ctx.db.get(created.id));
-		const result = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const result = await t.query(api.projectPosts.listForProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub'
 		});
@@ -1155,18 +1149,14 @@ describe('projects project banners', () => {
 		});
 
 		await expect(
-			t.mutation(api.projects.beginBannerUpload, {
-				secret: SECRET,
-				authProviderId: 'workos_other',
+			asUser(t, 'workos_other').mutation(api.projects.beginBannerUpload, {
 				projectId,
 				attemptId: 'attempt-1'
 			})
 		).rejects.toThrow('Not authorized');
 
 		await expect(
-			t.mutation(api.projects.beginBannerUpload, {
-				secret: SECRET,
-				authProviderId: 'workos_owner',
+			asUser(t, 'workos_owner').mutation(api.projects.beginBannerUpload, {
 				projectId,
 				attemptId: 'attempt-1'
 			})
@@ -1198,27 +1188,26 @@ describe('projects project banners', () => {
 			);
 			return { projectId, storageId };
 		});
-		const auth = {
-			secret: SECRET,
-			authProviderId: 'workos_owner',
+		const upload = {
 			projectId,
 			attemptId: 'attempt-1'
 		};
+		const owner = asUser(t, 'workos_owner');
 
-		const claim = await t.mutation(api.projects.claimBannerUpload, {
-			...auth,
+		const claim = await owner.mutation(api.projects.claimBannerUpload, {
+			...upload,
 			storageId,
 			contentType: 'image/jpeg'
 		});
 		expect(claim).toMatchObject({ status: 'claimed', contentType: 'image/jpeg' });
 		await expect(
-			t.mutation(api.projects.finishBannerUpload, {
-				...auth,
+			owner.mutation(api.projects.finishBannerUpload, {
+				...upload,
 				storageId,
 				outcome: 'ready'
 			})
 		).resolves.toEqual({ status: 'ready' });
-		await expect(t.mutation(api.projects.failBannerUpload, auth)).resolves.toEqual({
+		await expect(owner.mutation(api.projects.failBannerUpload, upload)).resolves.toEqual({
 			status: 'stale'
 		});
 
@@ -1252,9 +1241,7 @@ describe('projects project banners', () => {
 		});
 
 		await expect(
-			t.mutation(api.projects.claimBannerUpload, {
-				secret: SECRET,
-				authProviderId: 'workos_owner',
+			asUser(t, 'workos_owner').mutation(api.projects.claimBannerUpload, {
 				projectId,
 				attemptId: 'attempt-1',
 				storageId,
@@ -1262,15 +1249,13 @@ describe('projects project banners', () => {
 			})
 		).resolves.toEqual({ status: 'failed' });
 
-		const visitorResult = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const visitorResult = await t.query(api.projectPosts.listForProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub'
 		});
-		const ownerResult = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const ownerResult = await asUser(t, 'workos_owner').query(api.projectPosts.listForProject, {
 			createdBy: 'owneruser',
-			projectSlug: 'patchhub',
-			secret: SECRET,
-			authProviderId: 'workos_owner'
+			projectSlug: 'patchhub'
 		});
 		const stored = await t.run(async (ctx) => await ctx.db.system.get('_storage', storageId));
 
@@ -1299,16 +1284,13 @@ describe('projects project banners', () => {
 				updatedAt: 1000
 			});
 		});
-		const base = {
-			secret: SECRET,
-			authProviderId: 'workos_owner',
-			projectId
-		};
+		const base = { projectId };
+		const owner = asUser(t, 'workos_owner');
 
-		await t.mutation(api.projects.beginBannerUpload, { ...base, attemptId: 'attempt-1' });
-		await t.mutation(api.projects.beginBannerUpload, { ...base, attemptId: 'attempt-2' });
+		await owner.mutation(api.projects.beginBannerUpload, { ...base, attemptId: 'attempt-1' });
+		await owner.mutation(api.projects.beginBannerUpload, { ...base, attemptId: 'attempt-2' });
 		await expect(
-			t.mutation(api.projects.failBannerUpload, { ...base, attemptId: 'attempt-1' })
+			owner.mutation(api.projects.failBannerUpload, { ...base, attemptId: 'attempt-1' })
 		).resolves.toEqual({ status: 'stale' });
 
 		const project = await t.run(async (ctx) => await ctx.db.get(projectId));
@@ -1349,20 +1331,19 @@ describe('projects project banners', () => {
 			});
 			return { projectId, previousStorageId, storageId };
 		});
-		const auth = {
-			secret: SECRET,
-			authProviderId: 'workos_owner',
+		const upload = {
 			projectId,
 			attemptId: 'attempt-1'
 		};
+		const owner = asUser(t, 'workos_owner');
 
-		await t.mutation(api.projects.claimBannerUpload, {
-			...auth,
+		await owner.mutation(api.projects.claimBannerUpload, {
+			...upload,
 			storageId,
 			contentType: 'image/png'
 		});
-		await t.mutation(api.projects.finishBannerUpload, {
-			...auth,
+		await owner.mutation(api.projects.finishBannerUpload, {
+			...upload,
 			storageId,
 			outcome: 'ready'
 		});
@@ -1461,9 +1442,7 @@ describe('projectPosts.create', () => {
 		});
 
 		await expect(
-			t.mutation(api.projectPosts.create, {
-				secret: SECRET,
-				authProviderId: 'workos_other',
+			asUser(t, 'workos_other').mutation(api.projectPosts.create, {
 				projectId,
 				kind: 'patch_notes',
 				title: 'Project post',
@@ -1495,9 +1474,7 @@ describe('projectPosts.create', () => {
 			return { projectId };
 		});
 
-		await t.mutation(api.projectPosts.create, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		await asUser(t, 'workos_1').mutation(api.projectPosts.create, {
 			projectId,
 			kind: 'patch_notes',
 			title: 'Project post',
@@ -1532,9 +1509,7 @@ describe('projectPosts.create', () => {
 		});
 
 		const createWithContent = (content: unknown, title: string) =>
-			t.mutation(api.projectPosts.create, {
-				secret: SECRET,
-				authProviderId: 'workos_1',
+			asUser(t, 'workos_1').mutation(api.projectPosts.create, {
 				projectId,
 				kind: 'patch_notes',
 				title,
@@ -1593,18 +1568,15 @@ describe('projectPosts.create', () => {
 			return { projectId };
 		});
 
-		await t.mutation(api.projectPosts.create, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		const owner = asUser(t, 'workos_1');
+		await owner.mutation(api.projectPosts.create, {
 			projectId,
 			kind: 'patch_notes',
 			title: 'Draft post',
 			content: TIPTAP_DOC,
 			status: 'draft'
 		});
-		await t.mutation(api.projectPosts.create, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		await owner.mutation(api.projectPosts.create, {
 			projectId,
 			kind: 'announcement',
 			title: 'Published post',
@@ -1612,14 +1584,15 @@ describe('projectPosts.create', () => {
 			status: 'published'
 		});
 
-		const publicList = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const publicList = await t.query(api.projectPosts.listForProject, {
 			createdBy: 'owner123',
 			projectSlug: 'patchhub'
 		});
 		expect(publicList?.project).toMatchObject({
-			ownerName: 'owner123',
-			ownerKind: 'user',
-			isOwner: false
+			owner: {
+				id: expect.any(String),
+				name: 'owner123'
+			}
 		});
 		expect(publicList?.posts).toHaveLength(1);
 		expect(publicList?.posts[0]).toMatchObject({
@@ -1628,20 +1601,18 @@ describe('projectPosts.create', () => {
 			status: 'published'
 		});
 
-		const ownerList = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const ownerList = await owner.query(api.projectPosts.listForProject, {
 			createdBy: 'owner123',
-			projectSlug: 'patchhub',
-			secret: SECRET,
-			authProviderId: 'workos_1'
+			projectSlug: 'patchhub'
 		});
-		expect(ownerList?.project.isOwner).toBe(true);
+		expect(ownerList?.project.owner).toEqual(publicList?.project.owner);
 		expect(ownerList?.posts.map((post) => post.status).sort()).toEqual(['draft', 'published']);
 		expect(ownerList?.posts.map((post) => post.kind).sort()).toEqual([
 			'announcement',
 			'patch_notes'
 		]);
 
-		const detail = await t.query(api.projectPosts.getByOwnerProjectAndSlug, {
+		const detail = await t.query(api.projectPosts.getForProject, {
 			createdBy: 'owner123',
 			projectSlug: 'patchhub',
 			postSlug: 'published-post'
@@ -1701,7 +1672,7 @@ describe('projectPosts.create', () => {
 			}
 		});
 
-		const publicList = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const publicList = await t.query(api.projectPosts.listForProject, {
 			createdBy: 'owner123',
 			projectSlug: 'patchhub'
 		});
@@ -1736,9 +1707,7 @@ describe('projectPosts.create', () => {
 			return { projectId };
 		});
 
-		const post = await t.mutation(api.projectPosts.create, {
-			secret: SECRET,
-			authProviderId: 'workos_1',
+		const post = await asUser(t, 'workos_1').mutation(api.projectPosts.create, {
 			projectId,
 			kind: 'patch_notes',
 			title: 'New',
@@ -1770,9 +1739,7 @@ describe('projectPosts.create', () => {
 			});
 		});
 		const createPost = (title: string) =>
-			t.mutation(api.projectPosts.create, {
-				secret: SECRET,
-				authProviderId: 'workos_1',
+			asUser(t, 'workos_1').mutation(api.projectPosts.create, {
 				projectId,
 				kind: 'patch_notes',
 				title,
@@ -1829,14 +1796,11 @@ describe('projectPosts lifecycle mutations', () => {
 				updatedAt: 1000
 			});
 		});
-		const auth = {
-			secret: SECRET,
-			authProviderId: 'workos_other',
-			postId
-		};
+		const auth = { postId };
+		const otherUser = asUser(t, 'workos_other');
 
 		await expect(
-			t.mutation(api.projectPosts.update, {
+			otherUser.mutation(api.projectPosts.update, {
 				...auth,
 				kind: 'announcement',
 				title: 'Changed',
@@ -1844,9 +1808,11 @@ describe('projectPosts lifecycle mutations', () => {
 			})
 		).rejects.toThrow('Not authorized');
 		await expect(
-			t.mutation(api.projectPosts.setStatus, { ...auth, status: 'published' })
+			otherUser.mutation(api.projectPosts.setStatus, { ...auth, status: 'published' })
 		).rejects.toThrow('Not authorized');
-		await expect(t.mutation(api.projectPosts.remove, auth)).rejects.toThrow('Not authorized');
+		await expect(otherUser.mutation(api.projectPosts.remove, auth)).rejects.toThrow(
+			'Not authorized'
+		);
 	});
 
 	it('updates post content while preserving the slug', async () => {
@@ -1887,9 +1853,7 @@ describe('projectPosts lifecycle mutations', () => {
 		});
 
 		await expect(
-			t.mutation(api.projectPosts.update, {
-				secret: SECRET,
-				authProviderId: 'workos_owner',
+			asUser(t, 'workos_owner').mutation(api.projectPosts.update, {
 				postId,
 				kind: 'announcement',
 				title: '  Renamed release  ',
@@ -1937,13 +1901,10 @@ describe('projectPosts lifecycle mutations', () => {
 				updatedAt: 1000
 			});
 		});
-		const auth = {
-			secret: SECRET,
-			authProviderId: 'workos_owner',
-			postId
-		};
+		const auth = { postId };
+		const owner = asUser(t, 'workos_owner');
 
-		const published = await t.mutation(api.projectPosts.setStatus, {
+		const published = await owner.mutation(api.projectPosts.setStatus, {
 			...auth,
 			status: 'published'
 		});
@@ -1956,11 +1917,11 @@ describe('projectPosts lifecycle mutations', () => {
 			published.publishedAt
 		);
 		await expect(
-			t.mutation(api.projectPosts.setStatus, { ...auth, status: 'published' })
+			owner.mutation(api.projectPosts.setStatus, { ...auth, status: 'published' })
 		).resolves.toEqual(published);
 
 		await expect(
-			t.mutation(api.projectPosts.setStatus, { ...auth, status: 'draft' })
+			owner.mutation(api.projectPosts.setStatus, { ...auth, status: 'draft' })
 		).resolves.toEqual({ slug: 'release-1', status: 'draft', publishedAt: null });
 		const unpublished = await t.run(async (ctx) => await ctx.db.get(postId));
 		expect(unpublished?.status).toBe('draft');
@@ -1988,29 +1949,26 @@ describe('projectPosts lifecycle mutations', () => {
 			});
 		});
 		const createArgs = {
-			secret: SECRET,
-			authProviderId: 'workos_owner',
 			projectId,
 			kind: 'patch_notes' as const,
 			title: 'Release 1',
 			content: TIPTAP_DOC,
 			status: 'published' as const
 		};
-		const post = await t.mutation(api.projectPosts.create, createArgs);
+		const owner = asUser(t, 'workos_owner');
+		const post = await owner.mutation(api.projectPosts.create, createArgs);
 
 		await expect(
-			t.mutation(api.projectPosts.remove, {
-				secret: SECRET,
-				authProviderId: 'workos_owner',
+			owner.mutation(api.projectPosts.remove, {
 				postId: post.id
 			})
 		).resolves.toBeNull();
 
-		const publicList = await t.query(api.projectPosts.listByOwnerAndProject, {
+		const publicList = await t.query(api.projectPosts.listForProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub'
 		});
-		const publicDetail = await t.query(api.projectPosts.getByOwnerProjectAndSlug, {
+		const publicDetail = await t.query(api.projectPosts.getForProject, {
 			createdBy: 'owneruser',
 			projectSlug: 'patchhub',
 			postSlug: post.slug
@@ -2018,11 +1976,11 @@ describe('projectPosts lifecycle mutations', () => {
 		expect(publicList?.posts).toHaveLength(0);
 		expect(publicDetail).toBeNull();
 
-		await expect(t.mutation(api.projectPosts.create, createArgs)).resolves.toMatchObject({
+		await expect(owner.mutation(api.projectPosts.create, createArgs)).resolves.toMatchObject({
 			slug: `${post.slug}-2`
 		});
 		await expect(
-			t.query(api.projectPosts.getByOwnerProjectAndSlug, {
+			t.query(api.projectPosts.getForProject, {
 				createdBy: 'owneruser',
 				projectSlug: 'patchhub',
 				postSlug: post.slug

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import type { ClassValue, HTMLLabelAttributes } from 'svelte/elements';
+	import type { ClassValue, HTMLButtonAttributes } from 'svelte/elements';
 
 	let {
 		favorited,
@@ -13,11 +13,17 @@
 		onToggle: () => void;
 		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | string;
 		class?: ClassValue;
-	} & Omit<HTMLLabelAttributes, 'class'> = $props();
+	} & Omit<HTMLButtonAttributes, 'class'> = $props();
 </script>
 
-<label {...rest} class={['swap', className]}>
-	<input type="checkbox" checked={favorited} onchange={onToggle} />
+<button
+	type="button"
+	aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
+	aria-pressed={favorited}
+	{...rest}
+	class={['btn btn-circle swap', favorited && 'swap-active', className]}
+	onclick={onToggle}
+>
 	<Icon icon="favorite" style="outlined" class="swap-off" {size} />
 	<Icon icon="favorite" class="swap-on text-pink-500" {size} />
-</label>
+</button>

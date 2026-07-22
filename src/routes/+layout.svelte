@@ -7,11 +7,14 @@
 	import { Icon, ScrollToTop, SearchTrigger } from '$lib/components/common-ui';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
+	import { setCurrentUser } from '$lib/contexts/currentUser';
 	import type { Snippet } from 'svelte';
 	import { version as appVersion } from '../../package.json';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
+
+	setCurrentUser(() => data.user);
 
 	let lightModeEnabled = $state(false);
 	let analyticsConsentOverride = $state<AnalyticsConsent | null>(null);

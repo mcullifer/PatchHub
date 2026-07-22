@@ -2,13 +2,29 @@ import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_CONVEX_URL } from '$env/static/public';
 import { ConvexHttpClient } from 'convex/browser';
+import type { RequestEvent } from '@sveltejs/kit';
 
-// Server-side Convex client factory. User-scoped Convex functions are gated
-// by a shared secret so they can only be called by this server, which owns
-// the WorkOS session and passes the verified authProviderId along. Clients
-// are created per operation because Worker module globals outlive requests.
+// Clients are created per operation because Worker module globals outlive requests.
 export function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(PUBLIC_CONVEX_URL, { fetch: getRequestFetch() });
+}
+
+export function createViewerConvexClient(event: RequestEvent): ConvexHttpClient {
+	const client = new ConvexHttpClient(PUBLIC_CONVEX_URL, { fetch: event.fetch });
+	const accessToken = event.locals.auth.accessToken;
+	if (accessToken) client.setAuth(accessToken);
+	return client;
+}
+
+export function createAuthenticatedConvexClient(event: RequestEvent): ConvexHttpClient {
+	const accessToken = event.locals.auth.accessToken;
+	if (!accessToken) {
+		throw new Error('Authenticated WorkOS session is missing an access token');
+	}
+
+	const client = new ConvexHttpClient(PUBLIC_CONVEX_URL, { fetch: event.fetch });
+	client.setAuth(accessToken);
+	return client;
 }
 
 // SvelteKit warns on global fetch during SSR; use the event's fetch when a

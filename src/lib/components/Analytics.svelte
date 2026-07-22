@@ -11,7 +11,7 @@
 	import posthog from 'posthog-js';
 
 	type AnalyticsUser = {
-		id: string;
+		analyticsId: string;
 		username: string | null;
 	};
 
@@ -104,11 +104,11 @@
 		}
 
 		const identityIsCurrent =
-			identifiedUser?.id === user.id && identifiedUser.username === user.username;
+			identifiedUser?.analyticsId === user.analyticsId && identifiedUser.username === user.username;
 		if (identityIsCurrent) return;
 
-		posthog.identify(user.id, user.username ? { username: user.username } : undefined);
-		identifiedUser = { id: user.id, username: user.username };
+		posthog.identify(user.analyticsId, user.username ? { username: user.username } : undefined);
+		identifiedUser = { analyticsId: user.analyticsId, username: user.username };
 	});
 </script>
 

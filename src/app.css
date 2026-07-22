@@ -24,6 +24,13 @@
 		border-color: var(--color-gray-200, currentColor);
 		box-sizing: border-box;
 	}
+
+	/* Tailwind v4 preflight makes buttons cursor: default; restore pointer
+	   for anything clickable that isn't disabled. */
+	button:not(:disabled),
+	[role='button']:not(:disabled) {
+		cursor: pointer;
+	}
 }
 
 html {

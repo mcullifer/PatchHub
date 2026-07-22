@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { EmptyState, Icon } from '$lib/components/common-ui';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import {
 		UpdateFeedArticle,
 		UpdateFeedPostList,
@@ -27,9 +28,11 @@
 
 	let selectedPostSlug = $state<string | null>(null);
 
+	const currentUser = getCurrentUser();
 	const selectedPostSummary = $derived(
 		posts.find((post) => post.slug === selectedPostSlug) ?? posts[0] ?? null
 	);
+	const isOwner = $derived(currentUser()?.id === project.owner.id);
 	const postNavItems = $derived(
 		posts.map((post): UpdateFeedPostListItem => ({
 			id: post.slug,
@@ -100,7 +103,7 @@
 	</a>
 {/snippet}
 
-{#if project.isOwner}
+{#if isOwner}
 	<div class="flex justify-end">
 		{@render newPostButton()}
 	</div>
@@ -138,7 +141,7 @@
 							<p class="text-base-content/60 text-sm italic">This post can't be displayed.</p>
 						{/if}
 						<div class="flex flex-wrap justify-end gap-2">
-							{#if project.isOwner && selectedPost.status === 'draft'}
+							{#if isOwner && selectedPost.status === 'draft'}
 								<a
 									class="btn btn-soft btn-sm"
 									href={resolve('/[createdBy=owner]/[project]/[post]/edit', {
@@ -176,7 +179,7 @@
 			</svelte:boundary>
 		</section>
 	</div>
-{:else if project.isOwner}
+{:else if isOwner}
 	<EmptyState
 		icon="history_edu"
 		title="Write your first post"

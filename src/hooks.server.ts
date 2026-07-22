@@ -1,8 +1,8 @@
 import { env } from '$env/dynamic/private';
-import { getAuthContext } from '$lib/server/auth/AuthContext';
+import { getAuthContext } from '$lib/server/auth/authContext';
 import {
-	getInternalUserProvisioningRedirect,
-	shouldBypassInternalUserProvisioning
+	getAccountProvisioningRedirect,
+	shouldBypassAccountProvisioning
 } from '$lib/server/auth/provisioning';
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
@@ -25,17 +25,14 @@ const authHandle = authKitHandle({
 	}
 });
 
-const provisionUserHandle: Handle = async ({ event, resolve }) => {
+const accountProvisioningHandle: Handle = async ({ event, resolve }) => {
 	if (!event.locals.auth.user) return resolve(event);
-	if (shouldBypassInternalUserProvisioning(event.url.pathname)) {
+	if (shouldBypassAccountProvisioning(event.url.pathname)) {
 		return resolve(event);
 	}
 
-	const { internalUserStatus } = await getAuthContext(event);
-	const provisioningRedirect = getInternalUserProvisioningRedirect(
-		internalUserStatus,
-		event.url.origin
-	);
+	const { status } = await getAuthContext(event);
+	const provisioningRedirect = getAccountProvisioningRedirect(status, event.url.origin);
 	if (provisioningRedirect) {
 		return provisioningRedirect;
 	}
@@ -43,4 +40,4 @@ const provisionUserHandle: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(authHandle, provisionUserHandle);
+export const handle = sequence(authHandle, accountProvisioningHandle);

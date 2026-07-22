@@ -1,6 +1,4 @@
 import { api } from '$convex/_generated/api';
-import { normalizeUsername } from '$convex/lib/usernames';
-import { getAuthContext } from '$lib/server/auth/AuthContext';
 import { getWorkOSPublicUserProfile } from '$lib/server/auth/workos';
 import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { error, type RequestEvent } from '@sveltejs/kit';
@@ -25,14 +23,15 @@ type WorkOSProfileUser = {
 
 type WorkOSProfileLookup = (userId: string) => Promise<WorkOSProfileUser | null>;
 
-export async function getOwnerProfileForEvent(event: RequestEvent, createdBy: string) {
-	const profile = await createConvexClient().query(api.projects.getOwnerProfileForServer, {
+export async function loadOwnerProfile(event: RequestEvent, createdBy: string) {
+	const convex = createConvexClient();
+	const profile = await convex.query(api.projects.getOwnerProfile, {
 		secret: getConvexServerSecret(),
 		createdBy
 	});
 	if (!profile) error(404, 'Not found');
 
-	const { dbUser, workosUser } = await getAuthContext(event);
+	const workosUser = event.locals.auth.user ?? null;
 	let profilePictureUrl: string | null = null;
 	try {
 		profilePictureUrl = await resolveOwnerProfilePictureUrl(profile.owner, workosUser);
@@ -43,16 +42,16 @@ export async function getOwnerProfileForEvent(event: RequestEvent, createdBy: st
 	return {
 		owner: {
 			kind: profile.owner.kind,
+			id: profile.owner.id,
 			name: profile.owner.name,
 			profilePictureUrl,
 			createdAt: profile.owner.createdAt
 		},
-		projects: profile.projects,
-		isOwner: dbUser?.username === normalizeUsername(createdBy)
+		projects: profile.projects
 	};
 }
 
-export async function resolveOwnerProfilePictureUrl(
+async function resolveOwnerProfilePictureUrl(
 	owner: OwnerProfileOwner,
 	workosUser: WorkOSProfileUser | null,
 	getPublicProfile: WorkOSProfileLookup = getWorkOSPublicUserProfile

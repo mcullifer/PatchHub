@@ -61,7 +61,7 @@
 	{@render projectFrame(createdBy, result.project.name, result.project.slug, result.post.title)}
 {:else if page.route.id === '/[createdBy=owner]/[project]/new'}
 	{@const result = await getOwnedProject({ createdBy, projectSlug })}
-	{@render projectFrame(createdBy, result.project.name, result.project.slug, 'New post')}
+	{@render projectFrame(createdBy, result.name, result.slug, 'New post')}
 {:else}
 	{@const result = await getProjectPosts({ createdBy, projectSlug })}
 	{@render projectFrame(createdBy, result.project.name, result.project.slug, null)}

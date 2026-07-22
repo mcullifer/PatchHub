@@ -1,65 +1,20 @@
 import { command, getRequestEvent, query, requested } from '$app/server';
 import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
+import {
+	PROJECT_POST_CONTENT_MAX_BYTES,
+	PROJECT_POST_TITLE_MAX_LENGTH
+} from '$convex/lib/contentLimits';
 import { captureServerEvent } from '$lib/server/analytics';
-import { getAuthContext, requireInternalUser } from '$lib/server/auth/AuthContext';
-import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
+import { requireAuth } from '$lib/server/auth/authContext';
+import { createAuthenticatedConvexClient, createViewerConvexClient } from '$lib/server/convex';
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
 
-async function viewerAuthArgs() {
-	const { workosUser } = await getAuthContext(getRequestEvent());
-	return workosUser ? { secret: getConvexServerSecret(), authProviderId: workosUser.id } : {};
-}
-
-const ownerProjectArgs = v.object({
+const ownerProjectSchema = v.object({
 	createdBy: v.string(),
 	projectSlug: v.string()
 });
-
-export const getProjectPosts = query(ownerProjectArgs, async ({ createdBy, projectSlug }) => {
-	const result = await createConvexClient().query(api.projectPosts.listByOwnerAndProject, {
-		createdBy,
-		projectSlug,
-		...(await viewerAuthArgs())
-	});
-	if (!result) error(404, 'Not found');
-	return result;
-});
-
-export const getProjectPost = query(
-	v.object({ createdBy: v.string(), projectSlug: v.string(), postSlug: v.string() }),
-	async ({ createdBy, projectSlug, postSlug }) => {
-		const result = await createConvexClient().query(api.projectPosts.getByOwnerProjectAndSlug, {
-			createdBy,
-			projectSlug,
-			postSlug,
-			...(await viewerAuthArgs())
-		});
-		if (!result) error(404, 'Not found');
-		return result;
-	}
-);
-
-export const getOwnedProject = query(ownerProjectArgs, async ({ createdBy, projectSlug }) => {
-	const result = await createConvexClient().query(api.projectPosts.listByOwnerAndProject, {
-		createdBy,
-		projectSlug,
-		...(await viewerAuthArgs())
-	});
-	if (!result || !result.project.isOwner) error(404, 'Not found');
-	return {
-		project: {
-			id: result.project.id,
-			name: result.project.name,
-			slug: result.project.slug
-		}
-	};
-});
-
-const PROJECT_POST_TITLE_MAX_LENGTH = 150;
-const PROJECT_POST_CONTENT_MAX_LENGTH = 400_000;
-
 const projectPostKindSchema = v.picklist(['patch_notes', 'announcement']);
 const projectPostTitleSchema = v.pipe(
 	v.string(),
@@ -72,9 +27,9 @@ const projectPostTitleSchema = v.pipe(
 );
 const projectPostContentSchema = v.pipe(
 	v.string(),
-	v.maxLength(
-		PROJECT_POST_CONTENT_MAX_LENGTH,
-		`Post content must be at most ${PROJECT_POST_CONTENT_MAX_LENGTH} characters`
+	v.check(
+		(content) => new TextEncoder().encode(content).byteLength <= PROJECT_POST_CONTENT_MAX_BYTES,
+		'Post content must be at most 400KB'
 	)
 );
 
@@ -93,15 +48,63 @@ const updateProjectPostSchema = v.object({
 	content: projectPostContentSchema
 });
 
+const projectPostSchema = v.object({
+	createdBy: v.string(),
+	projectSlug: v.string(),
+	postSlug: v.string()
+});
+
+const setProjectPostStatusSchema = v.object({
+	postId: v.string(),
+	status: v.picklist(['draft', 'published'])
+});
+
+const deleteProjectPostSchema = v.object({ postId: v.string() });
+
+export const getProjectPosts = query(ownerProjectSchema, async ({ createdBy, projectSlug }) => {
+	const convex = createViewerConvexClient(getRequestEvent());
+	const result = await convex.query(api.projectPosts.listForProject, {
+		createdBy,
+		projectSlug
+	});
+	if (!result) error(404, 'Not found');
+	return result;
+});
+
+export const getProjectPost = query(
+	projectPostSchema,
+	async ({ createdBy, projectSlug, postSlug }) => {
+		const convex = createViewerConvexClient(getRequestEvent());
+		const result = await convex.query(api.projectPosts.getForProject, {
+			createdBy,
+			projectSlug,
+			postSlug
+		});
+		if (!result) error(404, 'Not found');
+		return result;
+	}
+);
+
+export const getOwnedProject = query(ownerProjectSchema, async ({ createdBy, projectSlug }) => {
+	const event = getRequestEvent();
+	requireAuth(event);
+	const convex = createAuthenticatedConvexClient(event);
+	const project = await convex.query(api.projects.getOwnedBySlug, {
+		createdBy,
+		projectSlug
+	});
+	if (!project) error(404, 'Not found');
+	return project;
+});
+
 export const createProjectPost = command(createProjectPostSchema, async (input) => {
 	const event = getRequestEvent();
-	const dbUser = await requireInternalUser(event);
+	const user = requireAuth(event);
+	const convex = createAuthenticatedConvexClient(event);
 
 	let projectPost: { slug: string };
 	try {
-		projectPost = await createConvexClient().mutation(api.projectPosts.create, {
-			secret: getConvexServerSecret(),
-			authProviderId: dbUser.authProviderId,
+		projectPost = await convex.mutation(api.projectPosts.create, {
 			projectId: input.projectId as Id<'projects'>,
 			kind: input.kind,
 			title: input.title,
@@ -114,7 +117,7 @@ export const createProjectPost = command(createProjectPostSchema, async (input) 
 		}
 		throw mutationError;
 	}
-	await captureServerEvent(event, dbUser.authProviderId, {
+	await captureServerEvent(event, user.id, {
 		name: 'project post created',
 		properties: { kind: input.kind, status: input.status }
 	});
@@ -126,17 +129,16 @@ export const createProjectPost = command(createProjectPostSchema, async (input) 
 
 export const updateProjectPost = command(updateProjectPostSchema, async (input) => {
 	const event = getRequestEvent();
-	const dbUser = await requireInternalUser(event);
+	const user = requireAuth(event);
+	const convex = createAuthenticatedConvexClient(event);
 
-	const projectPost = await createConvexClient().mutation(api.projectPosts.update, {
-		secret: getConvexServerSecret(),
-		authProviderId: dbUser.authProviderId,
+	const projectPost = await convex.mutation(api.projectPosts.update, {
 		postId: input.postId as Id<'projectPosts'>,
 		kind: input.kind,
 		title: input.title,
 		content: input.content
 	});
-	await captureServerEvent(event, dbUser.authProviderId, {
+	await captureServerEvent(event, user.id, {
 		name: 'project post updated',
 		properties: { kind: input.kind }
 	});
@@ -148,21 +150,17 @@ export const updateProjectPost = command(updateProjectPostSchema, async (input) 
 });
 
 export const setProjectPostStatus = command(
-	v.object({
-		postId: v.string(),
-		status: v.picklist(['draft', 'published'])
-	}),
+	setProjectPostStatusSchema,
 	async ({ postId, status }) => {
 		const event = getRequestEvent();
-		const dbUser = await requireInternalUser(event);
+		const user = requireAuth(event);
+		const convex = createAuthenticatedConvexClient(event);
 
-		const result = await createConvexClient().mutation(api.projectPosts.setStatus, {
-			secret: getConvexServerSecret(),
-			authProviderId: dbUser.authProviderId,
+		const result = await convex.mutation(api.projectPosts.setStatus, {
 			postId: postId as Id<'projectPosts'>,
 			status
 		});
-		await captureServerEvent(event, dbUser.authProviderId, {
+		await captureServerEvent(event, user.id, {
 			name: 'project post status changed',
 			properties: { status }
 		});
@@ -174,16 +172,15 @@ export const setProjectPostStatus = command(
 	}
 );
 
-export const deleteProjectPost = command(v.object({ postId: v.string() }), async ({ postId }) => {
+export const deleteProjectPost = command(deleteProjectPostSchema, async ({ postId }) => {
 	const event = getRequestEvent();
-	const dbUser = await requireInternalUser(event);
+	const user = requireAuth(event);
+	const convex = createAuthenticatedConvexClient(event);
 
-	await createConvexClient().mutation(api.projectPosts.remove, {
-		secret: getConvexServerSecret(),
-		authProviderId: dbUser.authProviderId,
+	await convex.mutation(api.projectPosts.remove, {
 		postId: postId as Id<'projectPosts'>
 	});
-	await captureServerEvent(event, dbUser.authProviderId, {
+	await captureServerEvent(event, user.id, {
 		name: 'project post deleted'
 	});
 

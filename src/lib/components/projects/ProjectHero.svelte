@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { FavoriteHeart, Icon } from '$lib/components/common-ui';
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import { UpdateFeedHero } from '$lib/components/update-feed';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { addProjectFavorite, removeProjectFavorite } from '$lib/remote/favorites.remote';
 	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 	import { Time } from '$lib/util/time';
@@ -46,7 +46,9 @@
 	const projectQuery = $derived(getProjectPosts({ createdBy, projectSlug }));
 	const bannerUrl = $derived(project.banner.url);
 	const isBannerPending = $derived(project.banner.status === 'pending');
-	const description = $derived(project.description ?? `Posts from ${project.ownerName}.`);
+	const currentUser = getCurrentUser();
+	const isOwner = $derived(currentUser()?.id === project.owner.id);
+	const description = $derived(project.description ?? `Posts from ${project.owner.name}.`);
 
 	// Keep the pending banner display fresh for every viewer until it resolves.
 	$effect(() => {
@@ -73,14 +75,14 @@
 	</UpdateFeedHero>
 
 	<div class="absolute top-3 right-3 z-10 flex items-center gap-2">
-		{#if project.isOwner && onEditProject}
+		{#if isOwner && onEditProject}
 			<Tooltip>
 				{#snippet reference(floating)}
 					<button
 						type="button"
 						aria-label="Edit project"
 						{...floating.reference({
-							class: ['bg-neutral/50 text-neutral-content grid place-items-center rounded-full p-1']
+							class: ['btn btn-circle btn-sm']
 						})}
 						onclick={onEditProject}
 					>
@@ -93,14 +95,14 @@
 			</Tooltip>
 		{/if}
 
-		{#if page.data.user !== null}
+		{#if currentUser() !== null}
 			<Tooltip>
 				{#snippet reference(floating)}
 					<FavoriteHeart
 						{favorited}
 						onToggle={toggleFavorite}
 						{...floating.reference({
-							class: ['bg-neutral/50 text-neutral-content rounded-full p-1']
+							class: ['btn-sm']
 						})}
 					/>
 				{/snippet}

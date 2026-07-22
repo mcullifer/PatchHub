@@ -62,14 +62,14 @@
 			if (!succeeded || !result) return;
 
 			const destination = {
-				createdBy: result.project.createdBy,
-				projectSlug: result.project.slug
+				createdBy: result.createdBy,
+				projectSlug: result.slug
 			};
 			let uploadTask: ReturnType<typeof runProjectBannerUpload> | null = null;
 			if (banner && result.bannerUpload) {
 				uploadTask = runProjectBannerUpload({
 					projectQuery: getProjectPosts(destination),
-					projectId: result.project.id,
+					projectId: result.id,
 					file: banner,
 					attemptId: result.bannerUpload.attemptId,
 					uploadUrl: result.bannerUpload.uploadUrl

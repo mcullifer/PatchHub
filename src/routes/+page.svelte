@@ -3,16 +3,18 @@
 	import { Card, GameCard, Icon } from '$lib/components/common-ui';
 	import TopGamesSection from '$lib/components/layout/TopGamesSection.svelte';
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { getFavorites } from '$lib/remote/favorites.remote';
 	import { getMostPopularGames } from '$lib/remote/games.remote';
 
-	const favorites = await getFavorites();
+	const currentUser = getCurrentUser();
+	const favorites = currentUser() ? await getFavorites() : { externalItems: [], projectIds: [] };
 	const games = await getMostPopularGames();
 
 	const isFavorited = (favorites: Awaited<ReturnType<typeof getFavorites>>, gameId: number) => {
 		return (
 			favorites.externalItems.some((f) => gameId.toString() === f.externalId) ||
-			favorites.projects.some((f) => gameId.toString() === f.id.toString())
+			favorites.projectIds.some((id) => gameId.toString() === id.toString())
 		);
 	};
 </script>

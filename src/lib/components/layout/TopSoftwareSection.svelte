@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import { FavoriteHeart, Icon, InView } from '$lib/components/common-ui';
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import SectionHeader from '$lib/components/layout/SectionHeader.svelte';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import {
 		addExternalItemFavorite,
 		removeExternalItemFavorite
@@ -18,6 +18,7 @@
 		favoritedExternalItemIds = []
 	}: { id?: string; class?: ClassValue; favoritedExternalItemIds?: string[] } = $props();
 
+	const currentUser = getCurrentUser();
 	// Optimistic overrides layered on top of the ids favorited at load.
 	const favoriteOverrides = new SvelteMap<string, boolean>();
 	const togglingIds = new SvelteSet<string>();
@@ -91,7 +92,7 @@
 						aria-label={summary.source.name}
 					></a>
 
-					{#if page.data.user !== null && summary.externalItemId}
+					{#if currentUser() !== null && summary.externalItemId}
 						{@const externalItemId = summary.externalItemId}
 						<Tooltip>
 							{#snippet reference(floating)}
@@ -99,9 +100,7 @@
 									favorited={isFavorited(externalItemId)}
 									onToggle={() => toggleFavorite(externalItemId)}
 									{...floating.reference({
-										class: [
-											'bg-neutral/50 text-neutral-content absolute top-2 right-2 rounded-full p-1'
-										]
+										class: ['btn-sm absolute top-2 right-2']
 									})}
 								/>
 							{/snippet}

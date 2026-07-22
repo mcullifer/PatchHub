@@ -7,6 +7,7 @@
 		type ProjectPostFormContent,
 		type ProjectPostFormPayload
 	} from '$lib/components/ProjectPostForm.svelte';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import {
 		getProjectPost,
 		getProjectPosts,
@@ -18,6 +19,7 @@
 
 	let { params }: PageProps = $props();
 
+	const currentUser = getCurrentUser();
 	const postQuery = $derived(
 		getProjectPost({
 			createdBy: params.createdBy,
@@ -35,7 +37,7 @@
 	const actions = $derived(buildActions(post.status));
 
 	function getOwnedPost() {
-		if (!result.project.isOwner) error(404, 'Not found');
+		if (currentUser()?.id !== result.project.owner.id) error(404, 'Not found');
 		return result.post;
 	}
 

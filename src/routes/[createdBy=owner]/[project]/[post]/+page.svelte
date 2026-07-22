@@ -4,6 +4,7 @@
 	import Seo from '$lib/components/Seo.svelte';
 	import { Card, Icon } from '$lib/components/common-ui';
 	import TipTap, { type TipTapContent } from '$lib/components/wysiwyg/TipTap.svelte';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import {
 		deleteProjectPost,
 		getProjectPost,
@@ -30,6 +31,8 @@
 	const post = $derived(result.post);
 	const parsedContent = $derived(parseTipTapContent(post.content));
 	const isPublished = $derived(post.status === 'published');
+	const currentUser = getCurrentUser();
+	const isOwner = $derived(currentUser()?.id === project.owner.id);
 
 	let deleteDialog = $state<HTMLDialogElement | null>(null);
 	let statusPending = $state(false);
@@ -112,7 +115,7 @@
 				</div>
 			</header>
 
-			{#if project.isOwner}
+			{#if isOwner}
 				<div class="mt-3 flex flex-wrap items-center gap-2">
 					<a
 						class="btn btn-soft btn-sm"
