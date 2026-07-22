@@ -54,7 +54,7 @@ const remoteCacheHandle: Handle = async ({ event, resolve }) => {
 };
 
 const accountProvisioningHandle: Handle = async ({ event, resolve }) => {
-	if (!event.locals.auth.user) return resolve(event);
+	if (event.isRemoteRequest || !event.locals.auth.user) return resolve(event);
 	if (shouldBypassAccountProvisioning(event.url.pathname)) {
 		return resolve(event);
 	}
