@@ -137,7 +137,8 @@ export default defineSchema({
 		projectId: v.id('projects')
 	})
 		.index('by_userId', ['userId'])
-		.index('by_userId_and_projectId', ['userId', 'projectId']),
+		.index('by_userId_and_projectId', ['userId', 'projectId'])
+		.index('by_projectId', ['projectId']),
 
 	externalItemFavorites: defineTable({
 		userId: v.id('users'),

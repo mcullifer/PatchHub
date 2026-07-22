@@ -1,4 +1,5 @@
 import type { Id } from '$convex/_generated/dataModel';
+import { getFavorites } from '$lib/remote/favorites.remote';
 import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 import { completeProjectBannerUpload, failProjectBannerUpload } from '$lib/remote/projects.remote';
 
@@ -46,7 +47,7 @@ export async function runProjectBannerUpload({
 			attemptId,
 			storageId,
 			contentType: file.type
-		}).updates(projectQuery);
+		}).updates(projectQuery, getFavorites());
 		if (result.status === 'ready') {
 			forgetProjectBannerFile(projectId);
 		}

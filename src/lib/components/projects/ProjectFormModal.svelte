@@ -21,6 +21,7 @@
 		getRememberedProjectBannerFile,
 		runProjectBannerUpload
 	} from '$lib/projects/projectBannerUpload';
+	import { getFavorites } from '$lib/remote/favorites.remote';
 	import {
 		beginProjectBannerUpload,
 		createProject,
@@ -117,7 +118,8 @@
 				description: projectDescription.trim() || undefined
 			}).updates(
 				getProjectPosts({ createdBy: mode.createdBy, projectSlug: mode.projectSlug }),
-				getOwnerProfile(mode.createdBy)
+				getOwnerProfile(mode.createdBy),
+				getFavorites()
 			);
 			dialog?.close();
 		} catch (error) {

@@ -4,48 +4,14 @@
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import SectionHeader from '$lib/components/layout/SectionHeader.svelte';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
-	import {
-		addExternalItemFavorite,
-		removeExternalItemFavorite
-	} from '$lib/remote/favorites.remote';
+	import { useFavorites } from '$lib/contexts/favorites.svelte';
 	import { getSoftwareSourceSummaries } from '$lib/remote/software.remote';
-	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import type { ClassValue } from 'svelte/elements';
 
-	let {
-		id,
-		class: classNames,
-		favoritedExternalItemIds = []
-	}: { id?: string; class?: ClassValue; favoritedExternalItemIds?: string[] } = $props();
+	let { class: className }: { class?: ClassValue } = $props();
 
 	const currentUser = getCurrentUser();
-	// Optimistic overrides layered on top of the ids favorited at load.
-	const favoriteOverrides = new SvelteMap<string, boolean>();
-	const togglingIds = new SvelteSet<string>();
-
-	function isFavorited(externalItemId: string): boolean {
-		return (
-			favoriteOverrides.get(externalItemId) ?? favoritedExternalItemIds.includes(externalItemId)
-		);
-	}
-
-	async function toggleFavorite(externalItemId: string): Promise<void> {
-		if (togglingIds.has(externalItemId)) return;
-		togglingIds.add(externalItemId);
-
-		const wasFavorited = isFavorited(externalItemId);
-		favoriteOverrides.set(externalItemId, !wasFavorited);
-
-		try {
-			await (wasFavorited
-				? removeExternalItemFavorite(externalItemId)
-				: addExternalItemFavorite(externalItemId));
-		} catch {
-			favoriteOverrides.set(externalItemId, wasFavorited);
-		} finally {
-			togglingIds.delete(externalItemId);
-		}
-	}
+	const favorites = useFavorites();
 
 	const dateFormatter = new Intl.DateTimeFormat(undefined, {
 		month: 'short',
@@ -59,7 +25,7 @@
 	}
 </script>
 
-<section {id} class={['scroll-mt-4', classNames]}>
+<section class={className}>
 	<SectionHeader title="Software">
 		{#snippet attribution()}
 			<Icon icon="rss_feed" size="xs" />
@@ -97,8 +63,8 @@
 						<Tooltip>
 							{#snippet reference(floating)}
 								<FavoriteHeart
-									favorited={isFavorited(externalItemId)}
-									onToggle={() => toggleFavorite(externalItemId)}
+									favorited={favorites.isExternalItemFavorited(externalItemId)}
+									onToggle={() => favorites.toggleExternalItem(externalItemId)}
 									{...floating.reference({
 										class: ['btn-sm absolute top-2 right-2']
 									})}

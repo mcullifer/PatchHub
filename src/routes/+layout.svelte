@@ -9,13 +9,18 @@
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import { setCurrentUser } from '$lib/contexts/currentUser';
+	import { Favorites, setFavorites } from '$lib/contexts/favorites.svelte';
 	import { setSearchPalette } from '$lib/contexts/searchPalette';
+	import { getFavorites } from '$lib/remote/favorites.remote';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
 	setCurrentUser(() => data.user);
+	const favoritesUserId = $derived(data.user?.id ?? null);
+	const favoritesQuery = $derived(favoritesUserId ? getFavorites() : null);
+	setFavorites(new Favorites(() => favoritesQuery));
 
 	let searchOpen = $state(false);
 	setSearchPalette({ open: () => (searchOpen = true) });

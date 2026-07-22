@@ -3,7 +3,7 @@
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import { UpdateFeedHero } from '$lib/components/update-feed';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
-	import { addProjectFavorite, removeProjectFavorite } from '$lib/remote/favorites.remote';
+	import { useFavorites } from '$lib/contexts/favorites.svelte';
 	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
 	import { Time } from '$lib/util/time';
 
@@ -13,35 +13,16 @@
 		project,
 		createdBy,
 		projectSlug,
-		isFavorited,
 		onEditProject
 	}: {
 		project: Project;
 		createdBy: string;
 		projectSlug: string;
-		isFavorited: boolean;
 		onEditProject?: () => void;
 	} = $props();
 
-	let optimisticFavorited = $state<boolean | null>(null);
-	const favorited = $derived(optimisticFavorited ?? isFavorited);
-
-	let isTogglingFavorite = false;
-
-	async function toggleFavorite(): Promise<void> {
-		if (isTogglingFavorite) return;
-		isTogglingFavorite = true;
-
-		const next = !favorited;
-		optimisticFavorited = next;
-		try {
-			await (next ? addProjectFavorite(project.id) : removeProjectFavorite(project.id));
-		} catch {
-			optimisticFavorited = !next;
-		} finally {
-			isTogglingFavorite = false;
-		}
-	}
+	const favorites = useFavorites();
+	const favorited = $derived(favorites.isProjectFavorited(project.id));
 
 	const projectQuery = $derived(getProjectPosts({ createdBy, projectSlug }));
 	const bannerUrl = $derived(project.banner.url);
@@ -55,7 +36,7 @@
 		if (!isBannerPending) return;
 
 		const timer = setInterval(() => {
-			void projectQuery.refresh();
+			projectQuery.refresh();
 		}, Time.SECOND * 5);
 		return () => clearInterval(timer);
 	});
@@ -100,7 +81,7 @@
 				{#snippet reference(floating)}
 					<FavoriteHeart
 						{favorited}
-						onToggle={toggleFavorite}
+						onToggle={() => favorites.toggleProject(project.id)}
 						{...floating.reference({
 							class: ['btn-sm']
 						})}

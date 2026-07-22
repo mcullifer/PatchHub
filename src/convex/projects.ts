@@ -215,6 +215,22 @@ export const update = mutation({
 	}
 });
 
+export const remove = mutation({
+	args: {
+		projectId: v.id('projects')
+	},
+	handler: async (ctx, { projectId }) => {
+		const { project } = await requireOwnedProject(ctx, projectId);
+		const now = Date.now();
+		await ctx.db.patch(project._id, { deletedAt: now, updatedAt: now });
+		await ctx.scheduler.runAfter(0, internal.favorites.removeForProject, {
+			projectId: project._id
+		});
+
+		return null;
+	}
+});
+
 export const beginBannerUpload = mutation({
 	args: {
 		projectId: v.id('projects'),

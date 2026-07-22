@@ -9,6 +9,7 @@ import { createConvexClient } from '$lib/server/convex';
 import { loadOwnerProfile } from '$lib/server/projects/ownerProfile';
 import { invalid } from '@sveltejs/kit';
 import * as v from 'valibot';
+import { getFavorites } from './favorites.remote';
 import { getProjectPosts } from './projectPosts.remote';
 
 const ownerSlugSchema = v.string();
@@ -44,7 +45,7 @@ const updateProjectSchema = v.object({
 	description: projectDescriptionSchema
 });
 
-const projectBannerSchema = v.object({
+const projectIdSchema = v.object({
 	projectId: v.string()
 });
 
@@ -112,14 +113,35 @@ export const updateProject = command(
 		});
 		await captureServerEvent(event, user.id, { name: 'project updated' });
 
-		await requested(getOwnerProfile, 1).refreshAll();
-		await requested(getProjectPosts, 1).refreshAll();
+		await Promise.all([
+			requested(getOwnerProfile, 1).refreshAll(),
+			requested(getProjectPosts, 1).refreshAll(),
+			requested(getFavorites, 1).refreshAll()
+		]);
 
 		return project;
 	}
 );
 
-export const beginProjectBannerUpload = command(projectBannerSchema, async ({ projectId }) => {
+export const deleteProject = command(projectIdSchema, async ({ projectId }) => {
+	const event = getRequestEvent();
+	const user = requireAuth(event);
+	const convex = createConvexClient(event);
+
+	await convex.mutation(api.projects.remove, {
+		projectId: projectId as Id<'projects'>
+	});
+	await captureServerEvent(event, user.id, { name: 'project deleted' });
+
+	await Promise.all([
+		requested(getOwnerProfile, 1).refreshAll(),
+		requested(getFavorites, 1).refreshAll()
+	]);
+
+	return null;
+});
+
+export const beginProjectBannerUpload = command(projectIdSchema, async ({ projectId }) => {
 	const event = getRequestEvent();
 	requireAuth(event);
 	const convex = createConvexClient(event);
@@ -182,7 +204,13 @@ export const completeProjectBannerUpload = command(
 			await captureServerEvent(event, user.id, {
 				name: 'project banner uploaded'
 			});
+			await Promise.all([
+				requested(getFavorites, 1).refreshAll(),
+				requested(getProjectPosts, 1).refreshAll()
+			]);
+			return result;
 		}
+
 		await requested(getProjectPosts, 1).refreshAll();
 		return result;
 	}

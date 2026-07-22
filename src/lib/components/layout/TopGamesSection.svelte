@@ -11,10 +11,9 @@
 	type TopGameSectionProps = {
 		games: INamedSteamGame[];
 		item: Snippet<[INamedSteamGame, boolean]>;
-		id?: string;
 		class?: ClassValue;
 	};
-	let { games, item, id, class: classNames = '' }: TopGameSectionProps = $props();
+	let { games, item, class: classNames = '' }: TopGameSectionProps = $props();
 	let showMore = $state(false);
 	const searchPalette = getSearchPalette();
 
@@ -23,7 +22,7 @@
 	const hiddenCount = $derived(gridGames.length - visibleOnStart);
 </script>
 
-<section {id} class={['scroll-mt-4', classNames]}>
+<section class={classNames}>
 	<SectionHeader title="Games">
 		{#snippet attribution()}
 			<button

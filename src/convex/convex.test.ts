@@ -295,23 +295,27 @@ describe('favorites', () => {
 			return { itemId };
 		});
 
-		await owner.mutation(api.favorites.addExternalItem, {
-			externalItemId: itemId
+		await owner.mutation(api.favorites.setExternalItem, {
+			externalItemId: itemId,
+			favorited: true
 		});
-		// Second add is a no-op, not an error
-		await owner.mutation(api.favorites.addExternalItem, {
-			externalItemId: itemId
+		await owner.mutation(api.favorites.setExternalItem, {
+			externalItemId: itemId,
+			favorited: true
 		});
 
 		const favorites = await owner.query(api.favorites.list, {});
-		expect(favorites.externalItems).toHaveLength(1);
-		expect(favorites.externalItems[0]).toMatchObject({
-			id: itemId,
-			externalId: '10'
-		});
+		expect(favorites.externalItems).toEqual([
+			expect.objectContaining({ id: itemId, externalId: '10', name: 'Counter-Strike' })
+		]);
 
-		await owner.mutation(api.favorites.removeExternalItem, {
-			externalItemId: itemId
+		await owner.mutation(api.favorites.setExternalItem, {
+			externalItemId: itemId,
+			favorited: false
+		});
+		await owner.mutation(api.favorites.setExternalItem, {
+			externalItemId: itemId,
+			favorited: false
 		});
 		const afterRemove = await owner.query(api.favorites.list, {});
 		expect(afterRemove.externalItems).toHaveLength(0);
@@ -350,17 +354,22 @@ describe('favorites', () => {
 		});
 
 		const currentUser = t.withIdentity({ subject: 'workos_1' });
-		await currentUser.mutation(api.favorites.addExternalItem, { externalItemId: itemId });
+		await currentUser.mutation(api.favorites.setExternalItem, {
+			externalItemId: itemId,
+			favorited: true
+		});
 
 		const favorites = await currentUser.query(api.favorites.list, {});
-		expect(favorites.externalItems).toHaveLength(1);
-		expect(favorites.externalItems[0]).toMatchObject({ id: itemId });
+		expect(favorites.externalItems).toEqual([expect.objectContaining({ id: itemId })]);
 
 		const otherUser = t.withIdentity({ subject: 'workos_2' });
 		const otherFavorites = await otherUser.query(api.favorites.list, {});
 		expect(otherFavorites.externalItems).toHaveLength(0);
 
-		await currentUser.mutation(api.favorites.removeExternalItem, { externalItemId: itemId });
+		await currentUser.mutation(api.favorites.setExternalItem, {
+			externalItemId: itemId,
+			favorited: false
+		});
 		const afterRemove = await currentUser.query(api.favorites.list, {});
 		expect(afterRemove.externalItems).toHaveLength(0);
 	});
@@ -385,7 +394,10 @@ describe('favorites', () => {
 		});
 
 		await expect(
-			t.mutation(api.favorites.addExternalItem, { externalItemId: itemId })
+			t.mutation(api.favorites.setExternalItem, {
+				externalItemId: itemId,
+				favorited: true
+			})
 		).rejects.toThrow('Not authenticated');
 	});
 
@@ -395,6 +407,46 @@ describe('favorites', () => {
 		await expect(asUser(t, 'nobody').query(api.favorites.list, {})).rejects.toThrow(
 			'User not found'
 		);
+	});
+
+	it('removes project favorites across cleanup batches', async () => {
+		vi.useFakeTimers();
+		const t = createTest();
+
+		const projectId = await t.run(async (ctx) => {
+			const userId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owner',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			const projectId = await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+
+			for (let index = 0; index < 101; index++) {
+				await ctx.db.insert('projectFavorites', { userId, projectId });
+			}
+
+			return projectId;
+		});
+
+		await t.mutation(internal.favorites.removeForProject, { projectId });
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+		const favorites = await t.run(async (ctx) => {
+			return await ctx.db
+				.query('projectFavorites')
+				.withIndex('by_projectId', (q) => q.eq('projectId', projectId))
+				.collect();
+		});
+		expect(favorites).toHaveLength(0);
 	});
 });
 
@@ -1048,6 +1100,70 @@ describe('projects.update', () => {
 		});
 		expect(project?.description).toBeUndefined();
 		expect(project?.updatedAt).toBeGreaterThan(1000);
+	});
+});
+
+describe('projects.remove', () => {
+	it('soft-deletes an owned project and removes its favorites', async () => {
+		vi.useFakeTimers();
+		const t = createTest();
+
+		const projectId = await t.run(async (ctx) => {
+			const ownerId = await ctx.db.insert('users', {
+				authProviderId: 'workos_owner',
+				username: 'owneruser',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_follower',
+				username: 'follower',
+				platformRole: 'member',
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+
+			return await ctx.db.insert('projects', {
+				name: 'PatchHub',
+				normalizedName: 'PATCHHUB',
+				slug: 'patchhub',
+				userId: ownerId,
+				createdAt: 1000,
+				updatedAt: 1000
+			});
+		});
+
+		const owner = asUser(t, 'workos_owner');
+		const follower = asUser(t, 'workos_follower');
+		await owner.mutation(api.favorites.setProject, { projectId, favorited: true });
+		await follower.mutation(api.favorites.setProject, { projectId, favorited: true });
+		expect((await follower.query(api.favorites.list, {})).projects).toEqual([
+			expect.objectContaining({ id: projectId, createdBy: 'owneruser', name: 'PatchHub' })
+		]);
+
+		await expect(follower.mutation(api.projects.remove, { projectId })).rejects.toThrow(
+			'Not authorized'
+		);
+		await expect(owner.mutation(api.projects.remove, { projectId })).resolves.toBeNull();
+		await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+		const project = await t.run(async (ctx) => await ctx.db.get(projectId));
+		const projectFavorites = await t.run(async (ctx) => {
+			return await ctx.db
+				.query('projectFavorites')
+				.withIndex('by_projectId', (q) => q.eq('projectId', projectId))
+				.collect();
+		});
+		const ownerProfile = await t.query(api.projects.getOwnerProfile, {
+			secret: SECRET,
+			createdBy: 'owneruser'
+		});
+		expect(project?.deletedAt).toEqual(expect.any(Number));
+		expect(projectFavorites).toHaveLength(0);
+		expect(ownerProfile?.projects).toHaveLength(0);
+		expect((await owner.query(api.favorites.list, {})).projects).toHaveLength(0);
+		expect((await follower.query(api.favorites.list, {})).projects).toHaveLength(0);
 	});
 });
 

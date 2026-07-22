@@ -25,6 +25,34 @@ const authHandle = authKitHandle({
 	}
 });
 
+// SvelteKit serves remote query responses with `private, no-store`. These queries
+// return the same data for every user, so let browsers (and shared caches) reuse
+// them briefly instead of re-invoking the worker on every navigation.
+const remoteQueryCacheTtlSeconds = new Map<string, number>([
+	['getMostPopularGames', 60],
+	['getGameNews', 60],
+	['searchGames', 60],
+	['getSoftwareSourceSummaries', 60],
+	['getSteamHeaderImage', 3600]
+]);
+
+const remoteCacheHandle: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+	if (!event.isRemoteRequest) return response;
+
+	// event.url is rewritten to the calling page for remote requests; the
+	// endpoint path (/_app/remote/<hash>/<name>) is only on the raw request.
+	const name = new URL(event.request.url).pathname.match(/^\/_app\/remote\/[^/]+\/([^/]+)$/)?.[1];
+	const ttl = name === undefined ? undefined : remoteQueryCacheTtlSeconds.get(name);
+	// Never mark streaming responses cacheable: query.live streams must keep
+	// SvelteKit's no-store (a cached clone would hold the stream open forever).
+	const isStream = response.headers.get('content-type')?.includes('text/event-stream');
+	if (ttl !== undefined && response.ok && !isStream) {
+		response.headers.set('cache-control', `public, max-age=${ttl}`);
+	}
+	return response;
+};
+
 const accountProvisioningHandle: Handle = async ({ event, resolve }) => {
 	if (!event.locals.auth.user) return resolve(event);
 	if (shouldBypassAccountProvisioning(event.url.pathname)) {
@@ -40,4 +68,4 @@ const accountProvisioningHandle: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(authHandle, accountProvisioningHandle);
+export const handle = sequence(remoteCacheHandle, authHandle, accountProvisioningHandle);

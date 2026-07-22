@@ -1,23 +1,15 @@
 <script lang="ts">
 	import Seo from '$lib/components/Seo.svelte';
 	import { Card, GameCard, Icon } from '$lib/components/common-ui';
+	import FavoritesSection from '$lib/components/favorites/FavoritesSection.svelte';
 	import { TextAnimate } from '$lib/components/magic';
 	import TopGamesSection from '$lib/components/layout/TopGamesSection.svelte';
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
-	import { getFavorites } from '$lib/remote/favorites.remote';
 	import { getMostPopularGames } from '$lib/remote/games.remote';
 
 	const currentUser = getCurrentUser();
-	const favorites = currentUser() ? await getFavorites() : { externalItems: [], projectIds: [] };
 	const games = await getMostPopularGames();
-
-	const isFavorited = (favorites: Awaited<ReturnType<typeof getFavorites>>, gameId: number) => {
-		return (
-			favorites.externalItems.some((f) => gameId.toString() === f.externalId) ||
-			favorites.projectIds.some((id) => gameId.toString() === id.toString())
-		);
-	};
 </script>
 
 <Seo
@@ -68,10 +60,14 @@
 </div>
 
 <div class="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6 lg:px-8">
-	<TopGamesSection id="games" {games}>
+	{#if currentUser()}
+		<FavoritesSection />
+	{/if}
+
+	<TopGamesSection {games}>
 		{#snippet item(game, featured)}
 			<svelte:boundary>
-				<GameCard {game} {featured} isFavorited={isFavorited(favorites, game.appid)} />
+				<GameCard {game} {featured} />
 				{#snippet failed()}
 					{@render cardFailed()}
 				{/snippet}
@@ -79,8 +75,5 @@
 		{/snippet}
 	</TopGamesSection>
 
-	<TopSoftwareSection
-		id="software"
-		favoritedExternalItemIds={favorites.externalItems.map((item) => item.id)}
-	/>
+	<TopSoftwareSection />
 </div>

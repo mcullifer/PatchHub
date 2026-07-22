@@ -17,6 +17,7 @@ export type ServerAnalyticsEventName =
 	| 'external item favorite removed'
 	| 'project banner uploaded'
 	| 'project created'
+	| 'project deleted'
 	| 'project favorite added'
 	| 'project favorite removed'
 	| 'project post created'

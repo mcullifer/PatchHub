@@ -3,22 +3,16 @@
 	import { FavoriteHeart, Icon } from '$lib/components/common-ui';
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
+	import { useFavorites } from '$lib/contexts/favorites.svelte';
 	import type { INamedSteamGame } from '$lib/models/Steam';
-	import {
-		addExternalItemFavorite,
-		removeExternalItemFavorite
-	} from '$lib/remote/favorites.remote';
 	import { getSteamHeaderImage } from '$lib/remote/games.remote';
 	import { getDefaultSteamHeaderImageUrl, getSteamLibraryHeroUrl } from '$lib/util/SteamAssets';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 
-	let {
-		game,
-		isFavorited,
-		featured = false
-	}: { game: INamedSteamGame; isFavorited: boolean; featured?: boolean } = $props();
+	let { game, featured = false }: { game: INamedSteamGame; featured?: boolean } = $props();
 
 	const currentUser = getCurrentUser();
+	const favorites = useFavorites();
 	let defaultHeaderImageUrl = $derived(
 		featured ? getSteamLibraryHeroUrl(game.appid) : getDefaultSteamHeaderImageUrl(game.appid)
 	);
@@ -64,28 +58,9 @@
 		}
 	}
 
-	let optimisticFavorited = $state<boolean | null>(null);
-	let favorited = $derived(optimisticFavorited ?? isFavorited);
-
-	let isTogglingFavorite = false;
-
-	async function toggleFavorite() {
-		const externalItemId = game.externalItemId;
-		if (!externalItemId || isTogglingFavorite) return;
-		isTogglingFavorite = true;
-
-		const next = !favorited;
-		optimisticFavorited = next;
-		try {
-			await (next
-				? addExternalItemFavorite(externalItemId)
-				: removeExternalItemFavorite(externalItemId));
-		} catch {
-			optimisticFavorited = !next;
-		} finally {
-			isTogglingFavorite = false;
-		}
-	}
+	let favorited = $derived(
+		game.externalItemId ? favorites.isExternalItemFavorited(game.externalItemId) : false
+	);
 </script>
 
 <div
@@ -136,11 +111,12 @@
 	{/if}
 
 	{#if currentUser() !== null && game.externalItemId}
+		{@const externalItemId = game.externalItemId}
 		<Tooltip>
 			{#snippet reference(floating)}
 				<FavoriteHeart
 					{favorited}
-					onToggle={toggleFavorite}
+					onToggle={() => favorites.toggleExternalItem(externalItemId)}
 					{...floating.reference({
 						class: ['btn-sm absolute top-2 right-2']
 					})}
