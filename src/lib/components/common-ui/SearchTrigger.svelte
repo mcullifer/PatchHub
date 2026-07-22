@@ -4,7 +4,7 @@
 	import { hasKeyboard, modifierKey } from '$lib/util/keyboard';
 	import SearchPalette from './SearchPalette.svelte';
 
-	let open = $state(false);
+	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	function toggle() {
 		open = !open;

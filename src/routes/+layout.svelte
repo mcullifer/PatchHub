@@ -9,12 +9,16 @@
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import { setCurrentUser } from '$lib/contexts/currentUser';
+	import { setSearchPalette } from '$lib/contexts/searchPalette';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
 	setCurrentUser(() => data.user);
+
+	let searchOpen = $state(false);
+	setSearchPalette({ open: () => (searchOpen = true) });
 
 	let lightModeEnabled = $state(false);
 	let analyticsConsentOverride = $state<AnalyticsConsent | null>(null);
@@ -45,7 +49,7 @@
 			</a>
 		{/snippet}
 		{#snippet center()}
-			<SearchTrigger />
+			<SearchTrigger bind:open={searchOpen} />
 		{/snippet}
 		{#snippet end()}
 			<label class="swap swap-rotate">
