@@ -1,5 +1,6 @@
 import adapter from '@sveltejs/adapter-cloudflare';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import pkg from './package.json' with { type: 'json' };
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -16,6 +17,9 @@ const config = {
 		},
 		experimental: {
 			remoteFunctions: true
+		},
+		version: {
+			name: pkg.version
 		}
 	},
 	compilerOptions: {

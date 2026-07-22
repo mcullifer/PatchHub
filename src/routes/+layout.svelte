@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	// sort-ignore
+	import { version } from '$app/env';
 	import { resolve } from '$app/paths';
 	import type { AnalyticsConsent } from '$lib/analytics/consent';
 	import Analytics from '$lib/components/Analytics.svelte';
@@ -9,7 +10,6 @@
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import { setCurrentUser } from '$lib/contexts/currentUser';
 	import type { Snippet } from 'svelte';
-	import { version as appVersion } from '../../package.json';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
@@ -89,6 +89,6 @@
 				</button>
 			{/if}
 		</nav>
-		<p>PatchHub · beta · v{appVersion}</p>
+		<p>PatchHub · beta · v{version}</p>
 	</footer>
 </div>
