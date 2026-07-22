@@ -49,7 +49,6 @@
 		<TextAnimate
 			class="text-base-content/60 mt-3 max-w-xl text-pretty sm:text-lg"
 			content="Patch notes and release feeds for the games and software you follow."
-			by="text"
 			animation="blurInUp"
 			delay={0.5}
 			once
