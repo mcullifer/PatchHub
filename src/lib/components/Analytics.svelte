@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { dev } from '$app/environment';
-	import { beforeNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { env } from '$env/dynamic/public';
 	import {
@@ -89,10 +88,6 @@
 		onConsentChange(choice);
 		settingsOpen = false;
 	}
-
-	beforeNavigate(({ to }) => {
-		if (to?.url.pathname === '/auth/logout') resetIdentity();
-	});
 
 	$effect(() => {
 		const captureAllowed = analyticsCaptureAllowed(consentRequired, consent);

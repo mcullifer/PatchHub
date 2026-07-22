@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { resetAnalyticsIdentity } from '$lib/analytics/logout';
 	import Seo from '$lib/components/Seo.svelte';
 	import { Icon } from '$lib/components/common-ui';
 	import type { PageData } from './$types';
@@ -43,10 +44,12 @@
 				<p class="font-medium">Sign out of PatchHub</p>
 				<p class="text-base-content/70 text-sm">You can sign back in at any time.</p>
 			</div>
-			<a class="btn btn-error btn-outline btn-sm" href={resolve('/auth/logout')}>
-				<Icon icon="logout" size="sm" />
-				Logout
-			</a>
+			<form method="POST" action={resolve('/auth/logout')} onsubmit={resetAnalyticsIdentity}>
+				<button type="submit" class="btn btn-error btn-outline btn-sm">
+					<Icon icon="logout" size="sm" />
+					Logout
+				</button>
+			</form>
 		</div>
 	</div>
 </section>

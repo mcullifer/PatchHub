@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { resetAnalyticsIdentity } from '$lib/analytics/logout';
 	import { Icon, MenuItem } from '$lib/components/common-ui';
 	import Dropdown from '$lib/components/common-ui/floating/Dropdown.svelte';
 	import Menu from '$lib/components/common-ui/Menu.svelte';
@@ -31,6 +32,13 @@
 		<Icon icon="person" />
 	{/if}
 {/snippet}
+
+<form
+	id="profile-logout-form"
+	method="POST"
+	action={resolve('/auth/logout')}
+	onsubmit={resetAnalyticsIdentity}
+></form>
 
 <Dropdown bind:open opts={{ placement: 'bottom-end' }}>
 	{#snippet activator(floating)}
@@ -69,9 +77,11 @@
 			<Icon icon="settings" size="sm" />
 			Settings
 		</MenuItem>
-		<MenuItem href="/auth/logout">
-			<Icon icon="logout" size="sm" />
-			Logout
-		</MenuItem>
+		<li>
+			<button type="submit" form="profile-logout-form">
+				<Icon icon="logout" size="sm" />
+				Logout
+			</button>
+		</li>
 	</Menu>
 </Dropdown>
