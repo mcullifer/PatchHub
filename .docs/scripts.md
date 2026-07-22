@@ -7,7 +7,6 @@
 - `npm run preview` — build and run the Worker locally on port 4173.
 - `npm run preview:worker` — run the existing Worker build without rebuilding.
 - `npm run check:worker` — build and run `wrangler deploy --dry-run`.
-- `npm run steam:sync` — synchronize the searchable Steam catalog.
 
 Local environment values come from `.env` and `.env.local`; start from `.env.example`. Running
 `npx convex dev` manages the Convex development deployment and writes its public URL.

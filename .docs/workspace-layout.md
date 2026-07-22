@@ -12,7 +12,6 @@
 - `src/convex` — schema, queries, mutations, storage, jobs, and Convex tests.
 - `tests` — unit and integration tests outside the Convex module.
 - `e2e` — Playwright tests.
-- `scripts` — operational scripts such as Steam catalog synchronization.
 - `static` — public assets deployed with the app.
 - `.github/assets` — repository-only README images; these are not SvelteKit static assets.
 - `.docs` — durable PatchHub-specific architecture documentation.

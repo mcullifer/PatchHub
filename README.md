@@ -86,6 +86,5 @@ development deployment and writes `PUBLIC_CONVEX_URL` to `.env.local`.
 | `npm run validate`     | Run Svelte, TypeScript, formatting, lint, and unit-test checks |
 | `npm run check:worker` | Build and validate the Worker deployment                       |
 | `npm run test:e2e`     | Run Playwright end-to-end tests                                |
-| `npm run steam:sync`   | Synchronize the searchable Steam catalog                       |
 
 PatchHub is open source and still in beta.
