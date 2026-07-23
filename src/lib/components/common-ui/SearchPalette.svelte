@@ -10,7 +10,15 @@
 	import { onDestroy } from 'svelte';
 	import { on } from 'svelte/events';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	let {
+		open = $bindable(false),
+		placeholders = [],
+		placeholderLabel = ''
+	}: {
+		open?: boolean;
+		placeholders?: readonly ISteamApp[];
+		placeholderLabel?: string;
+	} = $props();
 
 	let query = $state('');
 	let results = $state<ISteamApp[]>([]);
@@ -23,12 +31,13 @@
 	const paletteId = $props.id();
 	const listboxId = `${paletteId}-listbox`;
 	const optionId = (index: number) => `${paletteId}-option-${index}`;
+	const isAboveThreshold = $derived(query.length >= 3);
+	const displayed = $derived(isAboveThreshold ? results : placeholders);
 	const activeOptionId = $derived(
-		selectedIndex !== undefined && results[selectedIndex] !== undefined
+		selectedIndex !== undefined && displayed[selectedIndex] !== undefined
 			? optionId(selectedIndex)
 			: undefined
 	);
-	const isAboveThreshold = $derived(query.length >= 3);
 
 	const debouncedSearch = useDebounce(async (q: string, requestId: number) => {
 		await performSearch(q, requestId);
@@ -172,15 +181,15 @@
 	}
 
 	function moveSelectedIndex(direction: 1 | -1) {
-		if (results.length === 0) return;
+		if (displayed.length === 0) return;
 
 		if (selectedIndex === undefined) {
-			selectedIndex = direction === 1 ? 0 : results.length - 1;
+			selectedIndex = direction === 1 ? 0 : displayed.length - 1;
 			scrollActiveResultIntoView();
 			return;
 		}
 
-		selectedIndex = (selectedIndex + direction + results.length) % results.length;
+		selectedIndex = (selectedIndex + direction + displayed.length) % displayed.length;
 		scrollActiveResultIntoView();
 	}
 
@@ -200,21 +209,21 @@
 				moveSelectedIndex(event.shiftKey ? -1 : 1);
 				break;
 			case 'Home':
-				if (results.length === 0) return;
+				if (displayed.length === 0) return;
 				event.preventDefault();
 				selectedIndex = 0;
 				scrollActiveResultIntoView();
 				break;
 			case 'End':
-				if (results.length === 0) return;
+				if (displayed.length === 0) return;
 				event.preventDefault();
-				selectedIndex = results.length - 1;
+				selectedIndex = displayed.length - 1;
 				scrollActiveResultIntoView();
 				break;
 			case 'Enter':
-				if (selectedIndex !== undefined && results[selectedIndex] !== undefined) {
+				if (selectedIndex !== undefined && displayed[selectedIndex] !== undefined) {
 					event.preventDefault();
-					submitResult(results[selectedIndex]);
+					submitResult(displayed[selectedIndex]);
 				}
 				break;
 			case 'Escape':
@@ -269,23 +278,18 @@
 			id={listboxId}
 			role="listbox"
 		>
-			{#if !isAboveThreshold}
-				<li role="presentation">
-					<span class="text-base-content/50">Search for a game</span>
-				</li>
-			{:else if results.length === 0 && loading}
-				<li role="presentation">
-					<span class="text-base-content/50">Searching…</span>
-				</li>
-			{:else}
-				{#each results as result, i (result.appid)}
+			{#if displayed.length > 0}
+				{#if !isAboveThreshold && placeholderLabel}
+					<li class="menu-title" role="presentation">{placeholderLabel}</li>
+				{/if}
+				{#each displayed as result, i (result.appid)}
 					<li role="none">
 						<button
 							id={optionId(i)}
 							role="option"
 							tabindex="-1"
 							aria-selected={selectedIndex === i}
-							class={selectedIndex === i ? 'menu-active' : ''}
+							class={selectedIndex === i ? 'menu-focus' : ''}
 							type="button"
 							onclick={() => submitResult(result)}
 							onmouseenter={() => (selectedIndex = i)}
@@ -293,11 +297,19 @@
 							{result.name}
 						</button>
 					</li>
-				{:else}
-					<li role="presentation">
-						<span class="text-base-content/50">No results found</span>
-					</li>
 				{/each}
+			{:else if !isAboveThreshold}
+				<li role="presentation">
+					<span class="text-base-content/50">Search for a game</span>
+				</li>
+			{:else if loading}
+				<li role="presentation">
+					<span class="text-base-content/50">Searching…</span>
+				</li>
+			{:else}
+				<li role="presentation">
+					<span class="text-base-content/50">No results found</span>
+				</li>
 			{/if}
 		</ul>
 

@@ -10,8 +10,10 @@
 	import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
 	import { setCurrentUser } from '$lib/contexts/currentUser';
 	import { Favorites, setFavorites } from '$lib/contexts/favorites.svelte';
+	import { setPopularGames } from '$lib/contexts/popularGames';
 	import { setSearchPalette } from '$lib/contexts/searchPalette';
 	import { getFavorites } from '$lib/remote/favorites.remote';
+	import { getMostPopularGames } from '$lib/remote/games.remote';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
@@ -21,6 +23,8 @@
 	const favoritesUserId = $derived(data.user?.id ?? null);
 	const favoritesQuery = $derived(favoritesUserId ? getFavorites() : null);
 	setFavorites(new Favorites(() => favoritesQuery));
+	const popularGamesQuery = getMostPopularGames();
+	setPopularGames(popularGamesQuery);
 
 	let searchOpen = $state(false);
 	setSearchPalette({ open: () => (searchOpen = true) });
@@ -54,7 +58,11 @@
 			</a>
 		{/snippet}
 		{#snippet center()}
-			<SearchTrigger bind:open={searchOpen} />
+			<SearchTrigger
+				bind:open={searchOpen}
+				placeholderLabel="Most played"
+				placeholders={(popularGamesQuery.current ?? []).slice(0, 12)}
+			/>
 		{/snippet}
 		{#snippet end()}
 			<label class="swap swap-rotate">

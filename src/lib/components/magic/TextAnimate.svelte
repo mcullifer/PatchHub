@@ -208,7 +208,10 @@
 		if (!content) return [];
 		switch (by) {
 			case 'word':
-				return content.split(/(\s+)/);
+				// Keep each word's trailing whitespace inside its own segment: a
+				// standalone space segment is an atomic inline-block that can land
+				// at the start of a wrapped line, indenting it.
+				return content.match(/\S+\s*/g) ?? [];
 			case 'character':
 				return content.split('');
 			case 'line':
@@ -277,7 +280,7 @@
 	whileInView={startOnView ? 'show' : undefined}
 	animate={startOnView ? undefined : 'show'}
 	inViewOptions={{ once }}
-	aria-label={accessible ? segments.join(' ') : undefined}
+	aria-label={accessible ? content : undefined}
 	class="whitespace-pre-wrap {className}"
 	><!-- The container is pre-wrap: any whitespace surviving between these blocks renders
 	literally, so they must stay glued together. -->{#if accessible}<span

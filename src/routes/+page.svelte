@@ -2,9 +2,10 @@
 	import Seo from '$lib/components/Seo.svelte';
 	import { Card, GameCard, Icon } from '$lib/components/common-ui';
 	import FavoritesSection from '$lib/components/favorites/FavoritesSection.svelte';
-	import { TextAnimate } from '$lib/components/magic';
 	import TopGamesSection from '$lib/components/layout/TopGamesSection.svelte';
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
+	import { TextAnimate } from '$lib/components/magic';
+	import { DotPattern } from '$lib/components/magic/dot-pattern';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 
 	const currentUser = getCurrentUser();
@@ -53,6 +54,20 @@
 			delay={0.5}
 			once
 		/>
+		<div
+			class="absolute top-1/2 right-4 hidden -translate-y-1/2 sm:right-6 lg:right-8 lg:block"
+			aria-hidden="true"
+		>
+			<div class="relative h-52 w-80 xl:w-[26rem]">
+				<div class="absolute -inset-y-4 -right-4 -left-[26rem]">
+					<DotPattern
+						glow={true}
+						animated={false}
+						class="mask-[linear-gradient(to_right,transparent,white_30%,white_88%,transparent),linear-gradient(to_bottom,transparent,white_28%,white_72%,transparent)] [mask-composite:intersect]"
+					/>
+				</div>
+			</div>
+		</div>
 	</header>
 </div>
 

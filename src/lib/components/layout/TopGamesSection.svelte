@@ -2,10 +2,10 @@
 	import { Icon, VisibleWhenInView } from '$lib/components/common-ui';
 	import SectionHeader from '$lib/components/layout/SectionHeader.svelte';
 	import { NumberTicker } from '$lib/components/magic';
+	import { usePopularGames } from '$lib/contexts/popularGames';
 	import { getSearchPalette } from '$lib/contexts/searchPalette';
 	import { hasKeyboard, modifierKey } from '$lib/util/keyboard';
 	import type { INamedSteamGame } from '$lib/models/Steam';
-	import { getMostPopularGames } from '$lib/remote/games.remote';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 
@@ -17,6 +17,7 @@
 
 	let showMore = $state(false);
 	const searchPalette = getSearchPalette();
+	const popularGamesQuery = usePopularGames();
 
 	const visibleOnStart = 5;
 </script>
@@ -62,7 +63,7 @@
 	</SectionHeader>
 
 	<svelte:boundary>
-		{@const loadedGames = await getMostPopularGames()}
+		{@const loadedGames = await popularGamesQuery}
 		{@const gridGames = loadedGames.slice(1)}
 		{@const hiddenCount = gridGames.length - visibleOnStart}
 

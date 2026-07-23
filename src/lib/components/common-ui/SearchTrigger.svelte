@@ -1,10 +1,19 @@
 <script lang="ts">
 	import { hotkey, Hotkeys } from '$lib/actions/hotkey';
 	import { Icon } from '$lib/components/common-ui';
+	import type { ISteamApp } from '$lib/models/Steam';
 	import { hasKeyboard, modifierKey } from '$lib/util/keyboard';
 	import SearchPalette from './SearchPalette.svelte';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	let {
+		open = $bindable(false),
+		placeholders = [],
+		placeholderLabel = ''
+	}: {
+		open?: boolean;
+		placeholders?: readonly ISteamApp[];
+		placeholderLabel?: string;
+	} = $props();
 
 	function toggle() {
 		open = !open;
@@ -36,4 +45,4 @@
 	<Icon icon="search" size="sm" />
 </button>
 
-<SearchPalette bind:open />
+<SearchPalette bind:open {placeholders} {placeholderLabel} />
