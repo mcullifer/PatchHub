@@ -55,6 +55,11 @@ export default defineSchema({
 		.searchIndex('search_searchName', {
 			searchField: 'searchName',
 			filterFields: ['type']
+		})
+		.searchIndex('search_name', {
+			searchField: 'name',
+			filterFields: ['type'],
+			staged: true
 		}),
 
 	// Singleton row tracking steam catalog sync progress
