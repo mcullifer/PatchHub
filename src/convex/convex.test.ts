@@ -236,7 +236,6 @@ describe('users.getOrCreate', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000,
 				deletedAt: 2000
 			});
@@ -272,18 +271,13 @@ describe('favorites', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const itemId = await ctx.db.insert('externalItems', {
 				name: 'Counter-Strike',
-				normalizedName: 'COUNTERSTRIKE',
 				type: 'steam',
 				externalId: '10',
-				appType: 'game',
 				slug: 'counter-strike',
-				searchName: 'counter strike',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { itemId };
@@ -323,25 +317,19 @@ describe('favorites', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_2',
 				username: 'otheruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const itemId = await ctx.db.insert('externalItems', {
 				name: 'Counter-Strike',
-				normalizedName: 'COUNTERSTRIKE',
 				type: 'steam',
 				externalId: '10',
-				appType: 'game',
 				slug: 'counter-strike',
-				searchName: 'counter strike',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { itemId };
@@ -375,13 +363,9 @@ describe('favorites', () => {
 			return {
 				itemId: await ctx.db.insert('externalItems', {
 					name: 'Counter-Strike',
-					normalizedName: 'COUNTERSTRIKE',
 					type: 'steam',
 					externalId: '10',
-					appType: 'game',
 					slug: 'counter-strike',
-					searchName: 'counter strike',
-					createdAt: 1000,
 					updatedAt: 1000
 				})
 			};
@@ -412,7 +396,6 @@ describe('favorites', () => {
 				authProviderId: 'workos_owner',
 				username: 'owner',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -420,7 +403,6 @@ describe('favorites', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 
@@ -790,7 +772,6 @@ describe('projects.getOwnedBySlug', () => {
 					authProviderId: `workos_other_${index}`,
 					username: `other${index}`,
 					platformRole: 'member',
-					createdAt: index,
 					updatedAt: index
 				});
 				await ctx.db.insert('projects', {
@@ -798,7 +779,6 @@ describe('projects.getOwnedBySlug', () => {
 					normalizedName: `OTHER_PROJECT_${index}`,
 					slug: 'patchhub',
 					userId,
-					createdAt: index,
 					updatedAt: index
 				});
 			}
@@ -807,7 +787,6 @@ describe('projects.getOwnedBySlug', () => {
 				authProviderId: 'workos_target',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('projects', {
@@ -815,7 +794,6 @@ describe('projects.getOwnedBySlug', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId: targetUserId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -839,14 +817,12 @@ describe('projects.getOwnedBySlug', () => {
 				authProviderId: 'workos_owner',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_other',
 				username: 'other123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('projects', {
@@ -854,7 +830,6 @@ describe('projects.getOwnedBySlug', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId: ownerId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -877,7 +852,6 @@ describe('projects.getOwnerProfile', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 
@@ -887,7 +861,6 @@ describe('projects.getOwnerProfile', () => {
 					normalizedName: `PROJECT_${index}`,
 					slug: `project-${index}`,
 					userId,
-					createdAt: index,
 					updatedAt: index
 				});
 			}
@@ -898,7 +871,6 @@ describe('projects.getOwnerProfile', () => {
 					normalizedName: `DELETED_PROJECT_${index}`,
 					slug: `deleted-project-${index}`,
 					userId,
-					createdAt: 1000 + index,
 					updatedAt: 1000 + index,
 					deletedAt: 2000 + index
 				});
@@ -940,7 +912,6 @@ describe('projects.getOwnerProfile', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('projects', {
@@ -948,7 +919,6 @@ describe('projects.getOwnerProfile', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -977,7 +947,6 @@ describe('projects.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1012,7 +981,6 @@ describe('projects.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1040,7 +1008,6 @@ describe('projects.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1068,14 +1035,12 @@ describe('projects.update', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_other',
 				username: 'otheruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projects', {
@@ -1084,7 +1049,6 @@ describe('projects.update', () => {
 				slug: 'patchhub',
 				description: 'Old description',
 				userId: ownerId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1125,14 +1089,12 @@ describe('projects.remove', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_follower',
 				username: 'follower',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 
@@ -1141,7 +1103,6 @@ describe('projects.remove', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId: ownerId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1188,7 +1149,6 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const bannerStorageId = await ctx.storage.store(
@@ -1200,7 +1160,6 @@ describe('projects project banners', () => {
 				slug: 'patchhub',
 				bannerStorageId,
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1224,7 +1183,6 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1256,14 +1214,12 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_other',
 				username: 'otheruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projects', {
@@ -1271,7 +1227,6 @@ describe('projects project banners', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId: ownerId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1299,7 +1254,6 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1308,7 +1262,6 @@ describe('projects project banners', () => {
 				slug: 'patchhub',
 				bannerUpload: { status: 'pending', attemptId: 'attempt-1', startedAt: 1000 },
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const storageId = await ctx.storage.store(
@@ -1352,7 +1305,6 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1361,7 +1313,6 @@ describe('projects project banners', () => {
 				slug: 'patchhub',
 				bannerUpload: { status: 'pending', attemptId: 'attempt-1', startedAt: 1000 },
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const storageId = await ctx.storage.store(new Blob(['nope'], { type: 'text/plain' }));
@@ -1400,7 +1351,6 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projects', {
@@ -1408,7 +1358,6 @@ describe('projects project banners', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1436,7 +1385,6 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const previousStorageId = await ctx.storage.store(
@@ -1454,7 +1402,6 @@ describe('projects project banners', () => {
 				bannerStorageId: previousStorageId,
 				bannerUpload: { status: 'pending', attemptId: 'attempt-1', startedAt: 1000 },
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { projectId, previousStorageId, storageId };
@@ -1494,7 +1441,6 @@ describe('projects project banners', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const storageId = await ctx.storage.store(
@@ -1511,7 +1457,6 @@ describe('projects project banners', () => {
 					storageId
 				},
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { projectId, storageId };
@@ -1548,14 +1493,12 @@ describe('projectPosts.create', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_other',
 				username: 'otheruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1563,7 +1506,6 @@ describe('projectPosts.create', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId: ownerId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { projectId };
@@ -1588,7 +1530,6 @@ describe('projectPosts.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1596,7 +1537,6 @@ describe('projectPosts.create', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { projectId };
@@ -1622,7 +1562,6 @@ describe('projectPosts.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1630,7 +1569,6 @@ describe('projectPosts.create', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { projectId };
@@ -1682,7 +1620,6 @@ describe('projectPosts.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1690,7 +1627,6 @@ describe('projectPosts.create', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { projectId };
@@ -1760,7 +1696,6 @@ describe('projectPosts.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1768,7 +1703,6 @@ describe('projectPosts.create', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 
@@ -1781,7 +1715,6 @@ describe('projectPosts.create', () => {
 				content: TIPTAP_DOC,
 				status: 'published',
 				publishedAt: 1,
-				createdAt: 1,
 				updatedAt: 1
 			});
 
@@ -1794,7 +1727,6 @@ describe('projectPosts.create', () => {
 					slug: `draft-post-${index}`,
 					content: TIPTAP_DOC,
 					status: 'draft',
-					createdAt: 1000 + index,
 					updatedAt: 1000 + index
 				});
 			}
@@ -1821,7 +1753,6 @@ describe('projectPosts.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1829,7 +1760,6 @@ describe('projectPosts.create', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return { projectId };
@@ -1854,7 +1784,6 @@ describe('projectPosts.create', () => {
 				authProviderId: 'workos_1',
 				username: 'owner123',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projects', {
@@ -1862,7 +1791,6 @@ describe('projectPosts.create', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1894,14 +1822,12 @@ describe('projectPosts lifecycle mutations', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_other',
 				username: 'otheruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1909,7 +1835,6 @@ describe('projectPosts lifecycle mutations', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId: ownerId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projectPosts', {
@@ -1920,7 +1845,6 @@ describe('projectPosts lifecycle mutations', () => {
 				slug: 'release-1',
 				content: TIPTAP_DOC,
 				status: 'draft',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -1955,7 +1879,6 @@ describe('projectPosts lifecycle mutations', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -1963,7 +1886,6 @@ describe('projectPosts lifecycle mutations', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projectPosts', {
@@ -1975,7 +1897,6 @@ describe('projectPosts lifecycle mutations', () => {
 				content: TIPTAP_DOC,
 				status: 'published',
 				publishedAt: 1000,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -2006,7 +1927,6 @@ describe('projectPosts lifecycle mutations', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			const projectId = await ctx.db.insert('projects', {
@@ -2014,7 +1934,6 @@ describe('projectPosts lifecycle mutations', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projectPosts', {
@@ -2025,7 +1944,6 @@ describe('projectPosts lifecycle mutations', () => {
 				slug: 'release-1',
 				content: TIPTAP_DOC,
 				status: 'draft',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});
@@ -2064,7 +1982,6 @@ describe('projectPosts lifecycle mutations', () => {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 			return await ctx.db.insert('projects', {
@@ -2072,7 +1989,6 @@ describe('projectPosts lifecycle mutations', () => {
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				userId,
-				createdAt: 1000,
 				updatedAt: 1000
 			});
 		});

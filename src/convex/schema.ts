@@ -19,7 +19,6 @@ export default defineSchema({
 		username: v.optional(v.string()),
 		email: v.optional(v.string()),
 		platformRole: v.union(v.literal('member'), v.literal('admin')),
-		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
@@ -30,7 +29,6 @@ export default defineSchema({
 		authProviderId: v.string(),
 		name: v.string(),
 		slug: v.optional(v.string()),
-		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
@@ -40,15 +38,10 @@ export default defineSchema({
 	// Search index catalog for Steam games and other external sources
 	externalItems: defineTable({
 		name: v.string(),
-		normalizedName: v.optional(v.string()),
 		type: v.union(v.literal('steam'), v.literal('software')),
 		externalId: v.optional(v.string()), // e.g., Steam app ID
-		source: v.optional(v.string()),
-		appType: v.optional(v.string()),
 		slug: v.string(),
-		searchName: v.optional(v.string()),
 		metadataJson: v.optional(v.string()),
-		createdAt: v.optional(v.number()),
 		updatedAt: v.number()
 	})
 		.index('by_type_and_externalId', ['type', 'externalId'])
@@ -95,7 +88,6 @@ export default defineSchema({
 		),
 		userId: v.optional(v.id('users')),
 		orgId: v.optional(v.id('organizations')),
-		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
@@ -114,7 +106,6 @@ export default defineSchema({
 		content: v.string(), // Stringified TipTap JSON document, not rendered HTML
 		status: v.union(v.literal('draft'), v.literal('published'), v.literal('archived')),
 		publishedAt: v.optional(v.number()),
-		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
