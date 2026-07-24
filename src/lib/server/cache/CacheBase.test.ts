@@ -11,10 +11,14 @@ class FakeCache extends CacheBase {
 	setTtlMs: number | null = null;
 
 	private result: CacheReadResult<unknown>;
-	private readonly claimWon: boolean;
+	private readonly claimWon: boolean | Promise<boolean>;
 	private readonly deferRefreshes: boolean;
 
-	constructor(result: CacheReadResult<unknown>, claimWon = false, deferRefreshes = false) {
+	constructor(
+		result: CacheReadResult<unknown>,
+		claimWon: boolean | Promise<boolean> = false,
+		deferRefreshes = false
+	) {
 		super();
 		this.result = result;
 		this.claimWon = claimWon;
@@ -24,7 +28,7 @@ class FakeCache extends CacheBase {
 	protected async claimRefetch(_key: string, claimWindowMs: number): Promise<boolean> {
 		this.claimCalls++;
 		this.claimWindowMs = claimWindowMs;
-		return this.claimWon;
+		return await this.claimWon;
 	}
 
 	protected deferRefresh(_key: string, refresh: Promise<unknown>): boolean {
@@ -72,6 +76,27 @@ describe('CacheBase.getOrCreate', () => {
 		expect(cache.setTtlMs).toBe(Time.MINUTE);
 	});
 
+	it('serves stale data without waiting for the refetch claim', async () => {
+		let finishClaim: (claimed: boolean) => void = () => {};
+		const claim = new Promise<boolean>((resolve) => {
+			finishClaim = resolve;
+		});
+		const cache = new FakeCache({ status: 'stale', value: 'cached' }, claim, true);
+		const create = vi.fn(async () => 'upstream');
+
+		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toEqual({
+			value: 'cached',
+			servedStale: true
+		});
+		expect(create).not.toHaveBeenCalled();
+		expect(cache.deferredRefreshes).toHaveLength(1);
+
+		finishClaim(true);
+		await cache.deferredRefreshes[0];
+		expect(create).toHaveBeenCalledOnce();
+		expect(cache.setCalls).toBe(1);
+	});
+
 	it('serves stale data while the claim winner refreshes in the background', async () => {
 		const cache = new FakeCache({ status: 'stale', value: 'cached' }, true, true);
 		let finishRefresh: (value: string) => void = () => {};
@@ -89,6 +114,7 @@ describe('CacheBase.getOrCreate', () => {
 		expect(cache.setCalls).toBe(0);
 		expect(cache.deferredRefreshes).toHaveLength(1);
 
+		await vi.waitFor(() => expect(create).toHaveBeenCalledOnce());
 		finishRefresh('upstream');
 		await cache.deferredRefreshes[0];
 		expect(cache.setCalls).toBe(1);

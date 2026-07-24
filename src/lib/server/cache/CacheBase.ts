@@ -7,6 +7,8 @@ type CacheOptions = {
 	ttlMs: number;
 };
 
+type RefreshResult<T> = { status: 'not-claimed' } | { status: 'refreshed'; value: T };
+
 export abstract class CacheBase implements ICache {
 	protected abstract claimRefetch(key: string, claimWindowMs: number): Promise<boolean>;
 	protected abstract deferRefresh(key: string, refresh: Promise<unknown>): boolean;
@@ -15,6 +17,20 @@ export abstract class CacheBase implements ICache {
 		const value = await create();
 		await this.set(key, value, { ttlMs: opts.ttlMs });
 		return value;
+	}
+
+	private async refreshIfClaimed<T>(
+		key: string,
+		create: () => Promise<T>,
+		opts: CacheOptions
+	): Promise<RefreshResult<T>> {
+		const claimed = await this.claimRefetch(key, refetchClaimWindowMs);
+		if (!claimed) return { status: 'not-claimed' };
+
+		return {
+			status: 'refreshed',
+			value: await this.refresh(key, create, opts)
+		};
 	}
 
 	abstract get<T>(key: string): Promise<CacheReadResult<T>>;
@@ -30,24 +46,23 @@ export abstract class CacheBase implements ICache {
 			return { value: cached.value, servedStale: false };
 		}
 
-		const claimed = await this.claimRefetch(key, refetchClaimWindowMs);
-		if (!claimed) {
-			return cached.status === 'stale' ? { value: cached.value, servedStale: true } : null;
-		}
-
-		const refresh = this.refresh(key, create, opts);
-		if (cached.status === 'stale' && this.deferRefresh(key, refresh)) {
-			return { value: cached.value, servedStale: true };
-		}
-
-		try {
-			const value = await refresh;
-			return { value, servedStale: false };
-		} catch (error) {
-			if (cached.status === 'stale') {
+		const refresh = this.refreshIfClaimed(key, create, opts);
+		if (cached.status === 'stale') {
+			if (this.deferRefresh(key, refresh)) {
 				return { value: cached.value, servedStale: true };
 			}
-			throw error;
+
+			try {
+				const result = await refresh;
+				return result.status === 'refreshed'
+					? { value: result.value, servedStale: false }
+					: { value: cached.value, servedStale: true };
+			} catch {
+				return { value: cached.value, servedStale: true };
+			}
 		}
+
+		const result = await refresh;
+		return result.status === 'refreshed' ? { value: result.value, servedStale: false } : null;
 	}
 }
