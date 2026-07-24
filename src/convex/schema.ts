@@ -19,7 +19,7 @@ export default defineSchema({
 		username: v.optional(v.string()),
 		email: v.optional(v.string()),
 		platformRole: v.union(v.literal('member'), v.literal('admin')),
-		createdAt: v.number(),
+		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
@@ -30,7 +30,7 @@ export default defineSchema({
 		authProviderId: v.string(),
 		name: v.string(),
 		slug: v.optional(v.string()),
-		createdAt: v.number(),
+		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
@@ -40,26 +40,21 @@ export default defineSchema({
 	// Search index catalog for Steam games and other external sources
 	externalItems: defineTable({
 		name: v.string(),
-		normalizedName: v.string(),
-		type: v.string(), // 'steam', 'software', etc.
+		normalizedName: v.optional(v.string()),
+		type: v.union(v.literal('steam'), v.literal('software')),
 		externalId: v.optional(v.string()), // e.g., Steam app ID
 		source: v.optional(v.string()),
-		appType: v.string(),
+		appType: v.optional(v.string()),
 		slug: v.string(),
-		searchName: v.string(), // normalized, space-separated, lowercase
+		searchName: v.optional(v.string()),
 		metadataJson: v.optional(v.string()),
-		createdAt: v.number(),
+		createdAt: v.optional(v.number()),
 		updatedAt: v.number()
 	})
 		.index('by_type_and_externalId', ['type', 'externalId'])
-		.searchIndex('search_searchName', {
-			searchField: 'searchName',
-			filterFields: ['type']
-		})
 		.searchIndex('search_name', {
 			searchField: 'name',
-			filterFields: ['type'],
-			staged: true
+			filterFields: ['type']
 		}),
 
 	// Singleton row tracking steam catalog sync progress
@@ -100,7 +95,7 @@ export default defineSchema({
 		),
 		userId: v.optional(v.id('users')),
 		orgId: v.optional(v.id('organizations')),
-		createdAt: v.number(),
+		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
@@ -119,16 +114,11 @@ export default defineSchema({
 		content: v.string(), // Stringified TipTap JSON document, not rendered HTML
 		status: v.union(v.literal('draft'), v.literal('published'), v.literal('archived')),
 		publishedAt: v.optional(v.number()),
-		createdAt: v.number(),
+		createdAt: v.optional(v.number()),
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number())
 	})
-		.index('by_projectId_and_deletedAt_and_status_and_createdAt', [
-			'projectId',
-			'deletedAt',
-			'status',
-			'createdAt'
-		])
+		.index('by_projectId_and_deletedAt_and_status', ['projectId', 'deletedAt', 'status'])
 		.index('by_projectId_and_deletedAt_and_status_and_publishedAt', [
 			'projectId',
 			'deletedAt',

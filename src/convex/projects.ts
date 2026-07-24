@@ -150,14 +150,12 @@ export const create = mutation({
 						errorCode: 'upload_failed';
 				  };
 			userId: Id<'users'>;
-			createdAt: number;
 			updatedAt: number;
 		} = {
 			name,
 			normalizedName: normalizeName(name),
 			slug,
 			userId: user._id,
-			createdAt: now,
 			updatedAt: now
 		};
 
@@ -537,7 +535,7 @@ export async function findOwner(
 			id: user._id,
 			authProviderId: user.authProviderId,
 			name: user.username,
-			createdAt: user.createdAt
+			createdAt: user._creationTime
 		};
 	}
 
@@ -550,7 +548,7 @@ export async function findOwner(
 			kind: 'org',
 			id: organization._id,
 			name: organization.name,
-			createdAt: organization.createdAt
+			createdAt: organization._creationTime
 		};
 	}
 

@@ -3,13 +3,9 @@ import type { MutationCtx } from '../_generated/server';
 
 export type ExternalItemValues = {
 	name: string;
-	normalizedName: string;
-	type: string;
+	type: Doc<'externalItems'>['type'];
 	externalId: string;
-	source?: string;
-	appType: string;
 	slug: string;
-	searchName: string;
 	metadataJson?: string;
 	updatedAt: number;
 };
@@ -33,32 +29,21 @@ export async function upsertExternalItem(
 
 		await ctx.db.patch(existing._id, {
 			name: values.name,
-			normalizedName: values.normalizedName,
-			source: values.source,
-			appType: values.appType,
 			slug: values.slug,
-			searchName: values.searchName,
 			metadataJson: values.metadataJson,
 			updatedAt: values.updatedAt
 		});
 		return true;
 	}
 
-	await ctx.db.insert('externalItems', {
-		...values,
-		createdAt: values.updatedAt
-	});
+	await ctx.db.insert('externalItems', values);
 	return true;
 }
 
 function hasExternalItemChanges(existing: Doc<'externalItems'>, values: ExternalItemValues) {
 	return (
 		existing.name !== values.name ||
-		existing.normalizedName !== values.normalizedName ||
-		existing.source !== values.source ||
-		existing.appType !== values.appType ||
 		existing.slug !== values.slug ||
-		existing.searchName !== values.searchName ||
 		existing.metadataJson !== values.metadataJson
 	);
 }

@@ -48,7 +48,6 @@ export const setupAccount = form(setupAccountSchema, async ({ username }) => {
 	const user = await convex.mutation(api.users.getOrCreate, {
 		email: workosUser.email ?? undefined,
 		username,
-		createdAt: new Date(workosUser.createdAt).getTime(),
 		updatedAt: new Date(workosUser.updatedAt).getTime()
 	});
 

@@ -19,6 +19,7 @@ import type * as lib_serverSecret from "../lib/serverSecret.js";
 import type * as lib_steam from "../lib/steam.js";
 import type * as lib_strings from "../lib/strings.js";
 import type * as lib_usernames from "../lib/usernames.js";
+import type * as migrations from "../migrations.js";
 import type * as projectPosts from "../projectPosts.js";
 import type * as projects from "../projects.js";
 import type * as steamSync from "../steamSync.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   "lib/steam": typeof lib_steam;
   "lib/strings": typeof lib_strings;
   "lib/usernames": typeof lib_usernames;
+  migrations: typeof migrations;
   projectPosts: typeof projectPosts;
   projects: typeof projects;
   steamSync: typeof steamSync;
@@ -76,4 +78,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+  migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
 };

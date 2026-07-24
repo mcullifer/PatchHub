@@ -61,7 +61,6 @@ export const getOrCreate = mutation({
 	args: {
 		email: v.optional(v.string()),
 		username: v.string(),
-		createdAt: v.number(),
 		updatedAt: v.number()
 	},
 	handler: async (ctx, args): Promise<Doc<'users'>> => {
@@ -94,13 +93,11 @@ export const getOrCreate = mutation({
 			email?: string;
 			username: string;
 			platformRole: 'member';
-			createdAt: number;
 			updatedAt: number;
 		} = {
 			authProviderId: identity.subject,
 			username: usernameValidation.username,
 			platformRole: 'member',
-			createdAt: args.createdAt,
 			updatedAt: args.updatedAt
 		};
 

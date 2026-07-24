@@ -1,6 +1,5 @@
 import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { getSoftwareSource } from '$lib/server/software/SoftwareSourceRegistry';
-import { normalizeSearchName } from '$convex/lib/strings';
 import { api } from '$convex/_generated/api';
 
 export class SoftwareCatalogService {
@@ -18,11 +17,8 @@ export class SoftwareCatalogService {
 		await convex.mutation(api.catalog.upsertSoftwareSource, {
 			secret: getConvexServerSecret(),
 			name: source.name,
-			normalizedName: normalizeSearchName(source.name),
 			externalId: source.id,
-			source: source.vendor,
 			slug: source.slug,
-			searchName: normalizeSearchName(`${source.name} ${source.vendor}`),
 			metadataJson: JSON.stringify({
 				vendor: source.vendor,
 				provider: source.provider,

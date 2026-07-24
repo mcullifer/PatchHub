@@ -129,7 +129,6 @@ export const create = mutation({
 			content: string;
 			status: 'draft' | 'published';
 			publishedAt?: number;
-			createdAt: number;
 			updatedAt: number;
 		} = {
 			projectId: project._id,
@@ -139,7 +138,6 @@ export const create = mutation({
 			slug,
 			content: args.content,
 			status: args.status,
-			createdAt: now,
 			updatedAt: now
 		};
 
@@ -332,7 +330,7 @@ function toProjectPostListItemDto(post: Doc<'projectPosts'>): ProjectPostListIte
 		slug: post.slug,
 		status: post.status,
 		publishedAt: post.publishedAt ?? null,
-		createdAt: post.createdAt
+		createdAt: post._creationTime
 	};
 }
 
@@ -346,8 +344,8 @@ function compareProjectPostsNewestFirst(
 	left: Doc<'projectPosts'>,
 	right: Doc<'projectPosts'>
 ): number {
-	const leftSortAt = left.publishedAt ?? left.createdAt;
-	const rightSortAt = right.publishedAt ?? right.createdAt;
+	const leftSortAt = left.publishedAt ?? left._creationTime;
+	const rightSortAt = right.publishedAt ?? right._creationTime;
 	if (leftSortAt !== rightSortAt) {
 		return rightSortAt - leftSortAt;
 	}
@@ -481,7 +479,7 @@ async function listDraftProjectPosts(
 ): Promise<Doc<'projectPosts'>[]> {
 	return await ctx.db
 		.query('projectPosts')
-		.withIndex('by_projectId_and_deletedAt_and_status_and_createdAt', (q) =>
+		.withIndex('by_projectId_and_deletedAt_and_status', (q) =>
 			q.eq('projectId', projectId).eq('deletedAt', undefined).eq('status', 'draft')
 		)
 		.order('desc')

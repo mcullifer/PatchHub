@@ -1,5 +1,6 @@
 import { v, type Infer } from 'convex/values';
-import { createSlug, normalizeName, normalizeSearchName } from './strings';
+import type { ExternalItemValues } from './externalItems';
+import { createSlug } from './strings';
 
 export const STEAM_SOURCE = 'steam';
 
@@ -17,18 +18,17 @@ export type SteamAppListPage = {
 	lastAppId: number | null;
 };
 
-export function createSteamExternalItemValues(app: SteamAppListItem, now: number) {
+export function createSteamExternalItemValues(
+	app: SteamAppListItem,
+	now: number
+): ExternalItemValues {
 	const externalId = app.appid.toString();
 
 	return {
 		name: app.name,
-		normalizedName: normalizeName(app.name) || externalId,
 		type: STEAM_SOURCE,
 		externalId,
-		source: 'steam_api',
-		appType: 'game',
 		slug: createSlug(app.name, externalId),
-		searchName: normalizeSearchName(app.name) || externalId,
 		metadataJson: JSON.stringify({
 			lastModified: app.last_modified,
 			priceChangeNumber: app.price_change_number

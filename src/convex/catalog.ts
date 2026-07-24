@@ -4,31 +4,37 @@ import { mutation, query } from './_generated/server';
 import { upsertExternalItem } from './lib/externalItems';
 import { requireServerSecret } from './lib/serverSecret';
 import { STEAM_SOURCE } from './lib/steam';
-import { normalizeSearchName } from './lib/strings';
 
 const SEARCH_RESULT_LIMIT = 20;
 const MAX_APP_ID_LOOKUPS = 200;
 
-export const searchSteam = query({
+export const searchExternalItems = query({
 	args: { query: v.string() },
 	handler: async (ctx, args) => {
-		const searchName = normalizeSearchName(args.query.trim());
-		if (!searchName) return [];
+		const searchQuery = args.query.trim();
+		if (!searchQuery) return [];
 
 		const items = await ctx.db
 			.query('externalItems')
-			.withSearchIndex('search_searchName', (q) =>
-				q.search('searchName', searchName).eq('type', STEAM_SOURCE)
-			)
+			.withSearchIndex('search_name', (q) => q.search('name', searchQuery))
 			.take(SEARCH_RESULT_LIMIT);
 
-		return items
-			.filter((item) => item.externalId !== undefined)
-			.map((item) => ({
-				appid: Number.parseInt(item.externalId!, 10),
-				name: item.name,
-				slug: item.slug
-			}));
+		const results: Array<
+			| { type: 'steam'; appid: number; name: string; slug: string }
+			| { type: 'software'; name: string; slug: string }
+		> = [];
+		for (const item of items) {
+			if (item.type === 'software') {
+				results.push({ type: item.type, name: item.name, slug: item.slug });
+				continue;
+			}
+
+			const appid = Number(item.externalId);
+			if (!Number.isSafeInteger(appid) || appid <= 0) continue;
+
+			results.push({ type: item.type, appid, name: item.name, slug: item.slug });
+		}
+		return results;
 	}
 });
 
@@ -74,7 +80,10 @@ export const getSteamAppByAppId = query({
 });
 
 export const getItemIdByTypeAndExternalId = query({
-	args: { type: v.string(), externalId: v.string() },
+	args: {
+		type: v.union(v.literal('steam'), v.literal('software')),
+		externalId: v.string()
+	},
 	handler: async (ctx, args) => {
 		const item = await ctx.db
 			.query('externalItems')
@@ -91,11 +100,8 @@ export const upsertSoftwareSource = mutation({
 	args: {
 		secret: v.string(),
 		name: v.string(),
-		normalizedName: v.string(),
 		externalId: v.string(),
-		source: v.optional(v.string()),
 		slug: v.string(),
-		searchName: v.string(),
 		metadataJson: v.optional(v.string())
 	},
 	handler: async (ctx, args) => {
@@ -103,13 +109,9 @@ export const upsertSoftwareSource = mutation({
 
 		await upsertExternalItem(ctx, {
 			name: args.name,
-			normalizedName: args.normalizedName,
 			type: 'software',
 			externalId: args.externalId,
-			source: args.source,
-			appType: 'software',
 			slug: args.slug,
-			searchName: args.searchName,
 			metadataJson: args.metadataJson,
 			updatedAt: Date.now()
 		});

@@ -2,8 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Icon } from '$lib/components/common-ui';
+	import type { ExternalItemSearchResult } from '$lib/models/ExternalItem';
 	import type { ISteamApp } from '$lib/models/Steam';
-	import { searchGames } from '$lib/remote/games.remote';
+	import { searchCatalog } from '$lib/remote/catalog.remote';
 	import { hasKeyboard, modifierKey } from '$lib/util/keyboard';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 	import { useDebounce } from 'runed';
@@ -21,7 +22,7 @@
 	} = $props();
 
 	let query = $state('');
-	let results = $state<ISteamApp[]>([]);
+	let results = $state<ExternalItemSearchResult[]>([]);
 	let selectedIndex = $state<number | undefined>();
 	let loading = $state(false);
 	let inputElement: HTMLInputElement | undefined;
@@ -32,7 +33,15 @@
 	const listboxId = `${paletteId}-listbox`;
 	const optionId = (index: number) => `${paletteId}-option-${index}`;
 	const isAboveThreshold = $derived(query.length >= 3);
-	const displayed = $derived(isAboveThreshold ? results : placeholders);
+	const placeholderResults = $derived(
+		placeholders.map((result): ExternalItemSearchResult => ({
+			type: 'steam',
+			appid: result.appid,
+			name: result.name,
+			slug: result.slug ?? result.appid.toString()
+		}))
+	);
+	const displayed = $derived(isAboveThreshold ? results : placeholderResults);
 	const activeOptionId = $derived(
 		selectedIndex !== undefined && displayed[selectedIndex] !== undefined
 			? optionId(selectedIndex)
@@ -64,7 +73,7 @@
 
 		loading = true;
 		try {
-			const found = await searchGames(q);
+			const found = await searchCatalog(q);
 			if (destroyed || requestId !== searchRequestId) return;
 
 			results = found;
@@ -95,9 +104,14 @@
 		});
 	}
 
-	function submitResult(result: ISteamApp) {
+	function submitResult(result: ExternalItemSearchResult) {
 		open = false;
-		goto(resolve(getSteamGamePath(result) as `/${string}/${string}/${string}`));
+		if (result.type === 'steam') {
+			goto(resolve(getSteamGamePath(result) as `/${string}/${string}/${string}`));
+			return;
+		}
+
+		goto(resolve(`/software/${result.slug}`));
 	}
 
 	function requestClose() {
@@ -260,7 +274,7 @@
 				oninput={scheduleSearch}
 				onkeydown={handleKeydown}
 				type="text"
-				placeholder="Search games…"
+				placeholder="Search games and software…"
 				class="grow bg-transparent py-4 text-base outline-none"
 				role="combobox"
 				aria-autocomplete="list"
@@ -282,7 +296,7 @@
 				{#if !isAboveThreshold && placeholderLabel}
 					<li class="menu-title" role="presentation">{placeholderLabel}</li>
 				{/if}
-				{#each displayed as result, i (result.appid)}
+				{#each displayed as result, i (`${result.type}:${result.type === 'steam' ? result.appid : result.slug}`)}
 					<li role="none">
 						<button
 							id={optionId(i)}
@@ -294,13 +308,16 @@
 							onclick={() => submitResult(result)}
 							onmouseenter={() => (selectedIndex = i)}
 						>
-							{result.name}
+							<span class="grow text-left">{result.name}</span>
+							<span class="text-base-content/50 text-xs">
+								{result.type === 'steam' ? 'Steam' : 'Software'}
+							</span>
 						</button>
 					</li>
 				{/each}
 			{:else if !isAboveThreshold}
 				<li role="presentation">
-					<span class="text-base-content/50">Search for a game</span>
+					<span class="text-base-content/50">Search for a game or software</span>
 				</li>
 			{:else if loading}
 				<li role="presentation">

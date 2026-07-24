@@ -1,11 +1,10 @@
 import { getRequestEvent, query } from '$app/server';
-import type { INamedSteamGame, IRankedSteamGame, ISteamApp } from '$lib/models/Steam';
+import type { INamedSteamGame, IRankedSteamGame } from '$lib/models/Steam';
 import { ConvexCache } from '$lib/server/cache/ConvexCache';
 import { getAppNews, getPopularSteamGames } from '$lib/server/steam/SteamApiClient';
 import {
 	attachSteamAppNames,
-	getSteamAppNamesByAppIds,
-	searchSteamApps
+	getSteamAppNamesByAppIds
 } from '$lib/server/steam/SteamCatalogRepository';
 import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService';
 import { Time } from '$lib/util/time';
@@ -17,7 +16,6 @@ const gameNewsSchema = v.object({
 	appid: v.number(),
 	count: v.optional(v.number(), 10)
 });
-const gameSearchSchema = v.string();
 const steamAppIdSchema = v.number();
 
 export const getGameNews = query(gameNewsSchema, async ({ appid, count }) => {
@@ -71,11 +69,6 @@ export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> =>
 		console.error(message, error);
 		return [];
 	}
-});
-
-export const searchGames = query(gameSearchSchema, async (searchQuery): Promise<ISteamApp[]> => {
-	if (!searchQuery || searchQuery.trim() === '') return [];
-	return await searchSteamApps(searchQuery);
 });
 
 export const getSteamHeaderImage = query(

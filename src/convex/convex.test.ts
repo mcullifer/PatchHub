@@ -193,7 +193,6 @@ describe('users.getOrCreate', () => {
 		const created = await owner.mutation(api.users.getOrCreate, {
 			email: 'owner@example.com',
 			username: '  Owner123  ',
-			createdAt: 1000,
 			updatedAt: 2000
 		});
 
@@ -208,7 +207,6 @@ describe('users.getOrCreate', () => {
 
 		const again = await owner.mutation(api.users.getOrCreate, {
 			username: 'different',
-			createdAt: 3000,
 			updatedAt: 4000
 		});
 		expect(again._id).toBe(created._id);
@@ -219,14 +217,12 @@ describe('users.getOrCreate', () => {
 
 		await asUser(t, 'workos_1').mutation(api.users.getOrCreate, {
 			username: 'owner123',
-			createdAt: 1000,
 			updatedAt: 1000
 		});
 
 		await expect(
 			asUser(t, 'workos_2').mutation(api.users.getOrCreate, {
 				username: 'OWNER123',
-				createdAt: 1000,
 				updatedAt: 1000
 			})
 		).rejects.toThrow('Username is already taken');
@@ -249,7 +245,6 @@ describe('users.getOrCreate', () => {
 		await expect(
 			asUser(t, 'workos_1').mutation(api.users.getOrCreate, {
 				username: 'owner123',
-				createdAt: 1000,
 				updatedAt: 1000
 			})
 		).rejects.toThrow('Account is disabled');
@@ -261,7 +256,6 @@ describe('users.getOrCreate', () => {
 		await expect(
 			t.mutation(api.users.getOrCreate, {
 				username: 'owner123',
-				createdAt: 1000,
 				updatedAt: 1000
 			})
 		).rejects.toThrow('Not authenticated');
@@ -744,7 +738,7 @@ describe('fetchSteamAppListPage', () => {
 });
 
 describe('catalog', () => {
-	it('finds steam apps via search and by app id', async () => {
+	it('searches Steam and software items by name and finds Steam apps by app id', async () => {
 		const t = createTest();
 
 		await t.mutation(internal.steamSync.importBatch, {
@@ -753,10 +747,28 @@ describe('catalog', () => {
 				{ appid: 440, name: 'Team Fortress 2' }
 			]
 		});
+		await t.mutation(api.catalog.upsertSoftwareSource, {
+			secret: SECRET,
+			name: 'GitHub Changelog',
+			externalId: 'github-changelog',
+			slug: 'github-changelog',
+			metadataJson: JSON.stringify({ vendor: 'GitHub' })
+		});
 
-		const results = await t.query(api.catalog.searchSteam, { query: 'counter' });
-		expect(results).toHaveLength(1);
-		expect(results[0]).toMatchObject({ appid: 10, name: 'Counter-Strike' });
+		const steamResults = await t.query(api.catalog.searchExternalItems, {
+			query: 'COUNTER STRIKE'
+		});
+		expect(steamResults).toHaveLength(1);
+		expect(steamResults[0]).toMatchObject({
+			type: 'steam',
+			appid: 10,
+			name: 'Counter-Strike'
+		});
+
+		const softwareResults = await t.query(api.catalog.searchExternalItems, { query: 'github' });
+		expect(softwareResults).toEqual([
+			{ type: 'software', name: 'GitHub Changelog', slug: 'github-changelog' }
+		]);
 
 		const byId = await t.query(api.catalog.getSteamAppByAppId, { appid: 440 });
 		expect(byId).toMatchObject({ appid: 440, name: 'Team Fortress 2', slug: 'team-fortress-2' });
