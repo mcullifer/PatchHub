@@ -303,13 +303,13 @@
 							role="option"
 							tabindex="-1"
 							aria-selected={selectedIndex === i}
-							class={selectedIndex === i ? 'menu-focus' : ''}
+							class={['flex! w-full justify-between', { 'menu-focus': selectedIndex === i }]}
 							type="button"
 							onclick={() => submitResult(result)}
 							onmouseenter={() => (selectedIndex = i)}
 						>
-							<span class="grow text-left">{result.name}</span>
-							<span class="text-base-content/50 text-xs">
+							<span class="text-left">{result.name}</span>
+							<span class="text-base-content/50 shrink-0 text-xs">
 								{result.type === 'steam' ? 'Steam' : 'Software'}
 							</span>
 						</button>
