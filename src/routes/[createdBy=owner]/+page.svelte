@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import Seo from '$lib/components/Seo.svelte';
-	import { Card, EmptyState, Icon } from '$lib/components/common-ui';
+	import { EmptyState, Icon } from '$lib/components/common-ui';
+	import HeroDots from '$lib/components/layout/HeroDots.svelte';
+	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
 	import ProjectFormModal from '$lib/components/projects/ProjectFormModal.svelte';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { getOwnerProfile } from '$lib/remote/projects.remote';
@@ -18,19 +19,13 @@
 	const isOwner = $derived(currentUser()?.id === profile.owner.id);
 	const projectCount = $derived(profile.projects.length);
 	const avatarLetter = $derived(ownerName.charAt(0).toUpperCase());
-	const ownerKindLabel = $derived(
-		profile.owner.kind === 'org' ? 'Organization' : 'Personal account'
-	);
+	const ownerKindLabel = $derived(profile.owner.kind === 'org' ? 'Organization' : 'Personal');
 
 	function formatMonthYear(timestamp: number): string {
 		return new Date(timestamp).toLocaleDateString(undefined, {
 			month: 'long',
 			year: 'numeric'
 		});
-	}
-
-	function formatDate(timestamp: number): string {
-		return new Date(timestamp).toLocaleDateString();
 	}
 </script>
 
@@ -47,96 +42,63 @@
 />
 
 <svelte:boundary>
-	<section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-		<Card class="bg-base-200 card-sm">
-			<div class="flex items-center gap-4">
-				<div class={['avatar', !profilePictureUrl && 'avatar-placeholder']}>
-					<div class="bg-secondary text-secondary-content ring-base-300 rounded-box w-20 ring-4">
-						{#if profilePictureUrl}
-							<img
-								src={profilePictureUrl}
-								alt={`${ownerName}'s profile picture`}
-								class="object-cover"
-							/>
-						{:else}
-							<span class="text-3xl font-semibold">{avatarLetter}</span>
-						{/if}
-					</div>
-				</div>
-				<div class="flex min-w-0 flex-col items-start gap-1">
-					<h1 class="max-w-full truncate text-2xl font-bold">{ownerName}</h1>
-					<p class="text-base-content/60 text-sm">{ownerKindLabel}</p>
-					<p class="text-base-content/60 text-sm">
-						<span class="inline-flex items-center gap-1.5">
-							<span aria-hidden="true" class="inline-flex"
-								><Icon icon="calendar_month" size="xs" /></span
-							>
-							Joined {formatMonthYear(profile.owner.createdAt)}
-						</span>
-					</p>
-				</div>
-			</div>
-		</Card>
+	<div class="bg-base-200 border-base-300 relative overflow-hidden border-b">
+		<div
+			class="relative mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-8 sm:gap-5 sm:px-6 sm:py-10 lg:px-8"
+		>
+			<HeroDots class="h-36" />
 
-		<div class="flex items-center justify-between gap-3">
-			<div class="flex items-baseline gap-2">
-				<h2 class="text-lg font-semibold">Projects</h2>
-				<span class="badge badge-ghost badge-sm" aria-label={`${projectCount} projects`}>
-					{projectCount}
-				</span>
+			<div class={['avatar shrink-0', !profilePictureUrl && 'avatar-placeholder']}>
+				<div
+					class="bg-secondary text-secondary-content ring-base-300 rounded-box w-16 ring-2 sm:w-24 sm:ring-4"
+				>
+					{#if profilePictureUrl}
+						<img
+							src={profilePictureUrl}
+							alt={`${ownerName}'s profile picture`}
+							class="object-cover"
+						/>
+					{:else}
+						<span class="text-2xl font-semibold sm:text-4xl">{avatarLetter}</span>
+					{/if}
+				</div>
 			</div>
+
+			<div class="flex min-w-0 flex-col gap-1.5 sm:gap-2">
+				<h1 class="truncate text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
+					{ownerName}
+				</h1>
+				<div
+					class="text-base-content/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:gap-x-4 sm:text-sm"
+				>
+					<span class="badge badge-soft badge-secondary badge-sm">{ownerKindLabel}</span>
+					<span class="inline-flex items-center gap-1.5">
+						<Icon icon="folder_open" size="xs" />
+						{projectCount}
+						{projectCount === 1 ? 'project' : 'projects'}
+					</span>
+					<span class="inline-flex items-center gap-1.5">
+						<Icon icon="calendar_month" size="xs" />
+						Joined {formatMonthYear(profile.owner.createdAt)}
+					</span>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<section class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+		<div class="mb-4 flex items-center justify-between gap-3">
+			<h2 class="text-base-content/50 text-xs font-semibold tracking-widest uppercase">Projects</h2>
 			{#if isOwner}
 				{@render newProjectButton()}
 			{/if}
 		</div>
 
 		{#if profile.projects.length > 0}
-			<ul class="list bg-base-200 rounded-box overflow-hidden">
+			<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each profile.projects as project (project.id)}
 					<li>
-						<a
-							class="list-row hover:bg-base-300 focus-visible:bg-base-300 group"
-							href={resolve('/[createdBy=owner]/[project]', {
-								createdBy: params.createdBy,
-								project: project.slug
-							})}
-						>
-							<div
-								aria-hidden="true"
-								class="bg-secondary/15 text-secondary rounded-box flex size-10 shrink-0 items-center justify-center"
-							>
-								<Icon icon="folder_open" size="sm" />
-							</div>
-							<div class="min-w-0">
-								<div class="flex items-center justify-between gap-3">
-									<span class="group-hover:text-primary truncate font-semibold">
-										{project.name}
-									</span>
-									<span class="text-base-content/50 shrink-0 text-xs sm:hidden">
-										{formatDate(project.updatedAt)}
-									</span>
-								</div>
-								{#if project.description}
-									<p class="text-base-content/70 mt-1 line-clamp-2 text-sm sm:line-clamp-1">
-										{project.description}
-									</p>
-								{:else}
-									<p class="text-base-content/50 mt-1 text-sm">No description</p>
-								{/if}
-							</div>
-							<div class="hidden shrink-0 items-center gap-3 sm:flex">
-								<span class="text-base-content/50 text-xs">
-									Updated {formatDate(project.updatedAt)}
-								</span>
-								<span aria-hidden="true">
-									<Icon
-										icon="arrow_forward"
-										size="sm"
-										class="text-base-content/40 group-hover:text-primary"
-									/>
-								</span>
-							</div>
-						</a>
+						<ProjectCard {project} createdBy={params.createdBy} />
 					</li>
 				{/each}
 			</ul>
@@ -158,15 +120,28 @@
 	</section>
 
 	{#snippet pending()}
-		<section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-			<div class="flex items-center gap-4">
-				<div class="skeleton rounded-box size-20"></div>
-				<div class="flex flex-col gap-2">
-					<div class="skeleton h-6 w-40"></div>
-					<div class="skeleton h-4 w-24"></div>
+		<div class="bg-base-200 border-base-300 border-b">
+			<div
+				class="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-8 sm:gap-5 sm:px-6 sm:py-10 lg:px-8"
+			>
+				<div class="skeleton rounded-box size-16 shrink-0 sm:size-24"></div>
+				<div class="flex flex-col gap-1.5 sm:gap-2">
+					<div class="skeleton h-8 w-40 sm:h-10 sm:w-56"></div>
+					<div class="flex flex-wrap gap-2">
+						<div class="skeleton h-5 w-20"></div>
+						<div class="skeleton h-5 w-24"></div>
+						<div class="skeleton h-5 w-32"></div>
+					</div>
 				</div>
 			</div>
-			<div class="skeleton h-64 w-full"></div>
+		</div>
+		<section class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+			<div class="skeleton mb-4 h-4 w-24"></div>
+			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				{#each { length: 3 }}
+					<div class="skeleton aspect-[1200/630]"></div>
+				{/each}
+			</div>
 		</section>
 	{/snippet}
 </svelte:boundary>

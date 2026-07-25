@@ -14,7 +14,7 @@
 	} = $props();
 </script>
 
-<div class="navbar {classNames}">
+<header class="navbar {classNames}">
 	<div class="navbar-start gap-2">
 		{#if start}
 			{@render start()}
@@ -30,4 +30,4 @@
 			{@render end()}
 		{/if}
 	</div>
-</div>
+</header>

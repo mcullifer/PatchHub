@@ -480,7 +480,7 @@ async function markBannerUploadFailed(
 	});
 }
 
-async function getOwnerProfileData(ctx: ProjectLookupCtx, createdBy: string) {
+async function getOwnerProfileData(ctx: Pick<QueryCtx, 'db' | 'storage'>, createdBy: string) {
 	const owner = await findOwner(ctx, createdBy);
 	if (!owner) return null;
 
@@ -488,13 +488,18 @@ async function getOwnerProfileData(ctx: ProjectLookupCtx, createdBy: string) {
 
 	return {
 		owner,
-		projects: projects.map((project) => ({
-			id: project._id,
-			name: project.name,
-			slug: project.slug,
-			description: project.description ?? null,
-			updatedAt: project.updatedAt
-		}))
+		projects: await Promise.all(
+			projects.map(async (project) => ({
+				id: project._id,
+				name: project.name,
+				slug: project.slug,
+				description: project.description ?? null,
+				bannerUrl: project.bannerStorageId
+					? await ctx.storage.getUrl(project.bannerStorageId)
+					: null,
+				updatedAt: project.updatedAt
+			}))
+		)
 	};
 }
 

@@ -62,10 +62,9 @@
 	}
 </script>
 
-<header
+<div
 	class="card card-sm md:card-md bg-base-200 overflow-hidden"
 	aria-busy={loading || imagePending}
-	aria-label={loading ? title : undefined}
 >
 	<div class="grid md:min-h-64 md:grid-cols-2">
 		<figure class="bg-base-300 relative aspect-[2/1] md:aspect-auto">
@@ -113,4 +112,4 @@
 			{/if}
 		</div>
 	</div>
-</header>
+</div>

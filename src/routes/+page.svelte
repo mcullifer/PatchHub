@@ -1,11 +1,12 @@
 <script lang="ts">
 	import Seo from '$lib/components/Seo.svelte';
-	import { Card, GameCard, Icon } from '$lib/components/common-ui';
-	import FavoritesSection from '$lib/components/favorites/FavoritesSection.svelte';
+	import { Card, Icon } from '$lib/components/common-ui';
+	import FavoritesSection from '$lib/components/layout/FavoritesSection.svelte';
+	import GameCard from '$lib/components/layout/GameCard.svelte';
+	import HeroDots from '$lib/components/layout/HeroDots.svelte';
 	import TopGamesSection from '$lib/components/layout/TopGamesSection.svelte';
 	import TopSoftwareSection from '$lib/components/layout/TopSoftwareSection.svelte';
 	import { TextAnimate } from '$lib/components/magic';
-	import { DotPattern } from '$lib/components/magic/dot-pattern';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 
 	const currentUser = getCurrentUser();
@@ -36,7 +37,7 @@
 {/snippet}
 
 <div class="bg-base-200 relative overflow-hidden">
-	<header class="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+	<div class="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
 		<h1 class="text-4xl font-bold tracking-tighter text-balance md:text-6xl">
 			<TextAnimate class="inline" content="One place for" animation="blurInUp" once />
 			<TextAnimate
@@ -54,21 +55,8 @@
 			delay={0.5}
 			once
 		/>
-		<div
-			class="absolute top-1/2 right-4 hidden -translate-y-1/2 sm:right-6 lg:right-8 lg:block"
-			aria-hidden="true"
-		>
-			<div class="relative h-52 w-80 xl:w-[26rem]">
-				<div class="absolute -inset-y-4 -right-4 -left-[26rem]">
-					<DotPattern
-						glow={true}
-						animated={false}
-						class="mask-[linear-gradient(to_right,transparent,white_30%,white_88%,transparent),linear-gradient(to_bottom,transparent,white_28%,white_72%,transparent)] [mask-composite:intersect]"
-					/>
-				</div>
-			</div>
-		</div>
-	</header>
+		<HeroDots class="h-52" />
+	</div>
 </div>
 
 <div class="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6 lg:px-8">
