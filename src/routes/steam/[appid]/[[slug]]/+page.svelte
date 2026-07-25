@@ -175,7 +175,7 @@
 
 	{#key routeSteamAppId}
 		<svelte:boundary>
-			{@const rawNews = await getGameNews({ appid: routeSteamAppId, count: 10 })}
+			{@const rawNews = await getGameNews({ appid: routeSteamAppId })}
 			{@const news = parseNews(rawNews, routeSteamAppId)}
 			{@const selectedNews =
 				news.newsitems.find((newsItem) => newsItem.gid === selectedNewsId) ??

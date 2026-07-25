@@ -1,7 +1,7 @@
-import { normalizeSoftwareFeedItem } from '$lib/server/software/SoftwareFeedNormalizer';
+import { normalizeSoftwareFeedItem } from '$lib/server/software/feed';
 import { describe, expect, it } from 'vitest';
 
-describe('SoftwareFeedNormalizer', () => {
+describe('feed normalization', () => {
 	it('normalizes feed entries into software update DTOs', () => {
 		const entry = normalizeSoftwareFeedItem(
 			{
@@ -77,6 +77,6 @@ describe('SoftwareFeedNormalizer', () => {
 		expect(entry.title).toBe('Release notes');
 		expect(entry.publishedAt).toBeNull();
 		expect(entry.contentHtml).toBeNull();
-		expect(entry.metadata.kbId).toBeNull();
+		expect(entry.metadata).toEqual({});
 	});
 });

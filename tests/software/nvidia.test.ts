@@ -1,7 +1,7 @@
-import { parseNvidiaDriverSearchHtml } from '$lib/server/software/NvidiaDriverSearchAdapter';
+import { parseNvidiaDriverSearchHtml } from '$lib/server/software/nvidia';
 import { describe, expect, it } from 'vitest';
 
-describe('NvidiaDriverSearchAdapter', () => {
+describe('NVIDIA updates', () => {
 	it('parses Game Ready driver search results', () => {
 		const entries = parseNvidiaDriverSearchHtml(`
 			<tr id="driverList">
@@ -35,7 +35,7 @@ describe('NvidiaDriverSearchAdapter', () => {
 			id: 'nvidia-game-ready-driver-596.36',
 			title: 'GeForce Game Ready Driver 596.36',
 			sourceUrl: 'https://www.nvidia.com/download/driverResults.aspx/267256/en-us',
-			publishedAt: '2026-04-28T05:00:00.000Z',
+			publishedAt: '2026-04-28',
 			authors: ['NVIDIA'],
 			metadata: {
 				updateType: 'Game Ready Driver',

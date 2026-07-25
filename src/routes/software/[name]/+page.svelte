@@ -11,6 +11,7 @@
 		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
 	import type { SoftwareUpdateEntry } from '$lib/models/Software';
+	import { parseDateForDisplay } from '$lib/util/time';
 	import DOMPurify from 'dompurify';
 	import { onMount, tick } from 'svelte';
 	import type { PageData } from './$types';
@@ -54,7 +55,7 @@
 
 	function formatDate(value: string | null): string {
 		if (!value) return 'Unknown';
-		return dateFormatter.format(new Date(value));
+		return dateFormatter.format(parseDateForDisplay(value));
 	}
 
 	function getArticleMeta(entry: SoftwareUpdateEntry): UpdateFeedMetaItem[] {

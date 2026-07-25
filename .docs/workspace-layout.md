@@ -4,7 +4,7 @@
 - `src/lib/components` — UI grouped by product area; reuse `common-ui` before adding primitives.
 - `src/lib/remote` — SvelteKit remote functions for app-internal reads and mutations.
 - `src/lib/server` — server-only auth, Convex access, HTTP clients, caching, and external sources.
-- `src/lib/server/steam` — Steam catalog, API, assets, and update-source integration.
+- `src/lib/server/steam` — Steam API and asset fallback integration.
 - `src/lib/server/software` — software source registry, fetching, parsing, and normalization.
 - `src/lib/projects` — project banner and upload helpers shared by project UI.
 - `src/lib/services` — client-safe domain services, including BBCode parsing.

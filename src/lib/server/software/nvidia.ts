@@ -1,28 +1,27 @@
 import type { SoftwareSource, SoftwareUpdateEntry } from '$lib/models/Software';
 import { UPSTREAM_FETCH_OPTIONS, boundedFetch } from '$lib/server/http/boundedFetch';
 
-type NvidiaDriverRelease = {
-	id: string;
-	version: string;
-	releaseDate: string | null;
-	sourceUrl: string;
-	title: string;
-	summary: string;
-	contentHtml: string;
-	releaseNotesUrl: string | null;
-	downloadUrl: string | null;
+const nvidiaBaseUrl = 'https://www.nvidia.com';
+const nvidiaMonths: Record<string, number> = {
+	January: 0,
+	February: 1,
+	March: 2,
+	April: 3,
+	May: 4,
+	June: 5,
+	July: 6,
+	August: 7,
+	September: 8,
+	October: 9,
+	November: 10,
+	December: 11
 };
 
-const nvidiaBaseUrl = 'https://www.nvidia.com';
 export async function fetchNvidiaGameReadyDrivers(
 	source: SoftwareSource,
 	fetchFn: typeof fetch = fetch
 ): Promise<SoftwareUpdateEntry[]> {
-	if (!source.searchUrl) {
-		throw new Error('NVIDIA source is missing a search URL');
-	}
-
-	const response = await boundedFetch(fetchFn, source.searchUrl, UPSTREAM_FETCH_OPTIONS);
+	const response = await boundedFetch(fetchFn, source.upstreamUrl, UPSTREAM_FETCH_OPTIONS);
 
 	if (!response.ok) {
 		throw new Error(`NVIDIA driver search returned ${response.status}`);
@@ -34,27 +33,7 @@ export async function fetchNvidiaGameReadyDrivers(
 export function parseNvidiaDriverSearchHtml(html: string): SoftwareUpdateEntry[] {
 	return getDriverBlocks(html)
 		.map(parseDriverBlock)
-		.filter((release): release is NvidiaDriverRelease => release !== null)
-		.map((release) => ({
-			id: release.id,
-			title: release.title,
-			summary: release.summary,
-			contentHtml: release.contentHtml,
-			sourceUrl: release.sourceUrl,
-			publishedAt: release.releaseDate,
-			updatedAt: null,
-			authors: ['NVIDIA'],
-			metadata: {
-				kbId: null,
-				build: null,
-				windowsVersion: null,
-				updateType: 'Game Ready Driver',
-				servicingChannel: null,
-				driverVersion: release.version,
-				releaseNotesUrl: release.releaseNotesUrl,
-				downloadUrl: release.downloadUrl
-			}
-		}));
+		.filter((entry): entry is SoftwareUpdateEntry => entry !== null);
 }
 
 function getDriverBlocks(html: string): string[] {
@@ -77,7 +56,7 @@ function getDriverBlocks(html: string): string[] {
 	return blocks;
 }
 
-function parseDriverBlock(block: string): NvidiaDriverRelease | null {
+function parseDriverBlock(block: string): SoftwareUpdateEntry | null {
 	const text = htmlToText(block);
 	const header = text.match(
 		/GeForce Game Ready Driver\s*(?:\^?\{?WHQL\}?)?\s*([\d.]+)\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})/
@@ -85,24 +64,27 @@ function parseDriverBlock(block: string): NvidiaDriverRelease | null {
 	if (!header) return null;
 
 	const version = header[1];
-	const releaseDate = normalizeNvidiaDate(header[2]);
+	const publishedAt = normalizeNvidiaDate(header[2]);
 	const sourceUrl = getDriverDetailsUrl(block) ?? '';
-	const releaseNotesUrl = getReleaseNotesUrl(block);
-	const downloadUrl = getDownloadUrl(block);
+	const releaseNotesUrl = getLinkUrl(block, 'Release Notes');
+	const downloadUrl = getLinkUrl(block, 'Download');
 	const contentText = getReleaseContentText(text);
-	const summary = getSummary(contentText);
-	const contentHtml = renderReleaseHtml(contentText, releaseNotesUrl, downloadUrl);
 
 	return {
 		id: `nvidia-game-ready-driver-${version}`,
-		version,
-		releaseDate,
-		sourceUrl,
 		title: `GeForce Game Ready Driver ${version}`,
-		summary,
-		contentHtml,
-		releaseNotesUrl,
-		downloadUrl
+		summary: getSummary(contentText),
+		contentHtml: renderReleaseHtml(contentText, releaseNotesUrl, downloadUrl),
+		sourceUrl,
+		publishedAt,
+		updatedAt: null,
+		authors: ['NVIDIA'],
+		metadata: {
+			updateType: 'Game Ready Driver',
+			driverVersion: version,
+			...(releaseNotesUrl ? { releaseNotesUrl } : {}),
+			...(downloadUrl ? { downloadUrl } : {})
+		}
 	};
 }
 
@@ -111,20 +93,12 @@ function getDriverDetailsUrl(block: string): string | null {
 	return match ? toAbsoluteNvidiaUrl(match[1]) : null;
 }
 
-function getReleaseNotesUrl(block: string): string | null {
-	const releaseNotesLink = [
-		...block.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gis)
-	].find((match) => htmlToText(match[2]).includes('Release Notes'));
+function getLinkUrl(block: string, label: string): string | null {
+	const link = [...block.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gis)].find(
+		(match) => htmlToText(match[2]).includes(label)
+	);
 
-	return releaseNotesLink ? toAbsoluteNvidiaUrl(releaseNotesLink[1]) : null;
-}
-
-function getDownloadUrl(block: string): string | null {
-	const downloadLink = [
-		...block.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gis)
-	].find((match) => htmlToText(match[2]).includes('Download'));
-
-	return downloadLink ? toAbsoluteNvidiaUrl(downloadLink[1]) : null;
+	return link ? toAbsoluteNvidiaUrl(link[1]) : null;
 }
 
 function toAbsoluteNvidiaUrl(url: string): string {
@@ -233,9 +207,13 @@ function decodeHtmlEntities(value: string): string {
 }
 
 function normalizeNvidiaDate(value: string): string | null {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return null;
-	return date.toISOString();
+	const match = value.match(/^([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})$/);
+	if (!match) return null;
+
+	const month = nvidiaMonths[match[1]];
+	if (month === undefined) return null;
+
+	return `${match[3]}-${String(month + 1).padStart(2, '0')}-${match[2].padStart(2, '0')}`;
 }
 
 function getSummary(value: string): string {

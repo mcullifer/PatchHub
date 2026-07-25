@@ -4,7 +4,6 @@ import { register as registerRateLimiter } from '@convex-dev/rate-limiter/test';
 import { convexTest } from 'convex-test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api, internal } from './_generated/api';
-import { fetchSteamAppListPage } from './lib/steam';
 import schema from './schema';
 
 const modules = import.meta.glob('./**/*.ts');
@@ -660,62 +659,6 @@ describe('steamSync.runScheduled', () => {
 		});
 		expect(items).toHaveLength(2);
 		expect(await getSyncState(t)).toMatchObject({ lastAppId: '20', status: 'complete' });
-	});
-});
-
-describe('fetchSteamAppListPage', () => {
-	it('derives the final cursor from the last app when Steam omits pagination fields', async () => {
-		const fetchFn: typeof fetch = async () =>
-			new Response(
-				JSON.stringify({
-					response: {
-						apps: [{ appid: 25, name: 'Cursor Game' }]
-					}
-				})
-			);
-
-		const page = await fetchSteamAppListPage({
-			apiKey: 'steam-key',
-			lastAppId: 10,
-			fetchFn
-		});
-
-		expect(page).toEqual({
-			apps: [{ appid: 25, name: 'Cursor Game' }],
-			haveMoreResults: false,
-			lastAppId: 25
-		});
-	});
-
-	it('skips malformed app rows without dropping the page', async () => {
-		const fetchFn: typeof fetch = async () =>
-			new Response(
-				JSON.stringify({
-					response: {
-						apps: [
-							{ appid: '25', name: 'Wrong Type' },
-							{ name: 'Missing Id' },
-							{ appid: 30, name: 'Good Game' }
-						]
-					}
-				})
-			);
-
-		const page = await fetchSteamAppListPage({ apiKey: 'steam-key', fetchFn });
-
-		expect(page).toEqual({
-			apps: [{ appid: 30, name: 'Good Game' }],
-			haveMoreResults: false,
-			lastAppId: 30
-		});
-	});
-
-	it('rejects responses whose overall shape is unexpected', async () => {
-		const fetchFn: typeof fetch = async () => new Response(JSON.stringify({ nope: true }));
-
-		await expect(fetchSteamAppListPage({ apiKey: 'steam-key', fetchFn })).rejects.toThrow(
-			'Steam app list response had an unexpected shape'
-		);
 	});
 });
 

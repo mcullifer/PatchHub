@@ -4,7 +4,7 @@ import type { Id } from '$convex/_generated/dataModel';
 import { captureServerEvent } from '$lib/server/analytics';
 import { requireAuth } from '$lib/server/auth/authContext';
 import { createConvexClient } from '$lib/server/convex';
-import { getSoftwareSource } from '$lib/server/software/SoftwareSourceRegistry';
+import { getSoftwareSource } from '$lib/server/software/sources';
 import { getDefaultSteamHeaderImageUrl } from '$lib/util/SteamAssets';
 import * as v from 'valibot';
 

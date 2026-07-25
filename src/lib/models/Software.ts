@@ -1,9 +1,5 @@
-export type SoftwareSourceHealthStatus = 'fresh' | 'cached' | 'unavailable';
-
 export type SoftwareSourceHealth = {
-	status: SoftwareSourceHealthStatus;
-	checkedAt: string | null;
-	latestItemAt: string | null;
+	available: boolean;
 	error: string | null;
 };
 
@@ -19,8 +15,7 @@ export type SoftwareSource = {
 	imageUrl: string;
 	imageAlt: string;
 	adapter: 'atom-feed' | 'nvidia-driver-search';
-	feedUrl: string | null;
-	searchUrl: string | null;
+	upstreamUrl: string;
 	supportUrl: string;
 	releaseInfoUrl: string | null;
 	cacheTtlMs: number;
@@ -28,14 +23,13 @@ export type SoftwareSource = {
 };
 
 export type SoftwareUpdateMetadata = {
-	kbId: string | null;
-	build: string | null;
-	windowsVersion: string | null;
-	updateType: string | null;
-	servicingChannel: string | null;
-	driverVersion: string | null;
-	releaseNotesUrl: string | null;
-	downloadUrl: string | null;
+	kbId?: string;
+	build?: string;
+	windowsVersion?: string;
+	updateType?: string;
+	driverVersion?: string;
+	releaseNotesUrl?: string;
+	downloadUrl?: string;
 };
 
 export type SoftwareUpdateEntry = {

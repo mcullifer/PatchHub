@@ -4,13 +4,13 @@
 	import { NumberTicker } from '$lib/components/magic';
 	import { usePopularGames } from '$lib/contexts/popularGames';
 	import { getSearchPalette } from '$lib/contexts/searchPalette';
+	import type { IPopularSteamGame } from '$lib/models/Steam';
 	import { hasKeyboard, modifierKey } from '$lib/util/keyboard';
-	import type { INamedSteamGame } from '$lib/models/Steam';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 
 	type TopGameSectionProps = {
-		item: Snippet<[INamedSteamGame, boolean]>;
+		item: Snippet<[IPopularSteamGame, boolean]>;
 		class?: ClassValue;
 	};
 	let { item, class: classNames = '' }: TopGameSectionProps = $props();

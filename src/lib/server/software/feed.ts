@@ -108,15 +108,11 @@ function getWindowsUpdateMetadata(title: string, content: string): SoftwareUpdat
 	const kbId = text.match(/\bKB\d{6,8}\b/i)?.[0]?.toUpperCase() ?? null;
 	const build = text.match(/\b\d{5}\.\d{3,5}\b/)?.[0] ?? null;
 	const windowsVersion = text.match(/\b\d{2}H\d\b/i)?.[0]?.toUpperCase() ?? null;
+	const metadata: SoftwareUpdateMetadata = {};
 
-	return {
-		kbId,
-		build,
-		windowsVersion,
-		updateType: null,
-		servicingChannel: null,
-		driverVersion: null,
-		releaseNotesUrl: null,
-		downloadUrl: null
-	};
+	if (kbId) metadata.kbId = kbId;
+	if (build) metadata.build = build;
+	if (windowsVersion) metadata.windowsVersion = windowsVersion;
+
+	return metadata;
 }

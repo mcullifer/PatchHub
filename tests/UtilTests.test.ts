@@ -4,6 +4,7 @@ import {
 	normalizeName,
 	normalizeSearchName
 } from '$convex/lib/strings';
+import { parseDateForDisplay } from '$lib/util/time';
 import { describe, expect, it } from 'vitest';
 
 describe('UtilTests', () => {
@@ -51,5 +52,13 @@ describe('UtilTests', () => {
 		expect(createSlug('東方地霊殿 〜 Subterranean Animism.', '1100150')).toBe(
 			'東方地霊殿-subterranean-animism'
 		);
+	});
+
+	it('keeps date-only values on the same local calendar day', () => {
+		const date = parseDateForDisplay('2026-04-28');
+
+		expect(date.getFullYear()).toBe(2026);
+		expect(date.getMonth()).toBe(3);
+		expect(date.getDate()).toBe(28);
 	});
 });

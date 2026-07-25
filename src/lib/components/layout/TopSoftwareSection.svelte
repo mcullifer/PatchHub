@@ -6,6 +6,7 @@
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { useFavorites } from '$lib/contexts/favorites.svelte';
 	import { getSoftwareSourceSummaries } from '$lib/remote/software.remote';
+	import { parseDateForDisplay } from '$lib/util/time';
 	import type { ClassValue } from 'svelte/elements';
 
 	let { class: className }: { class?: ClassValue } = $props();
@@ -21,7 +22,7 @@
 
 	function formatDate(value: string | null | undefined): string {
 		if (!value) return 'No updates yet';
-		return dateFormatter.format(new Date(value));
+		return dateFormatter.format(parseDateForDisplay(value));
 	}
 </script>
 
@@ -95,7 +96,7 @@
 								<Icon icon="calendar_month" size="xs" />
 								{formatDate(summary.latestUpdate?.publishedAt)}
 							</span>
-							{#if summary.health.status === 'unavailable'}
+							{#if !summary.health.available}
 								<span class="text-warning inline-flex items-center gap-1">
 									<Icon icon="cloud_off" size="xs" />
 									Source unavailable

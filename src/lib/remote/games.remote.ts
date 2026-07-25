@@ -1,35 +1,31 @@
 import { getRequestEvent, query } from '$app/server';
-import type { INamedSteamGame, IRankedSteamGame } from '$lib/models/Steam';
+import { api } from '$convex/_generated/api';
+import type { IPopularSteamGame } from '$lib/models/Steam';
 import { ConvexCache } from '$lib/server/cache/ConvexCache';
-import { getAppNews, getPopularSteamGames } from '$lib/server/steam/SteamApiClient';
-import {
-	attachSteamAppNames,
-	getSteamAppNamesByAppIds
-} from '$lib/server/steam/SteamCatalogRepository';
-import { getSteamHeaderImageUrl } from '$lib/server/steam/SteamAssetService';
+import { createConvexClient } from '$lib/server/convex';
+import { DEFAULT_NEWS_COUNT, fetchGameNews, fetchPopularGames } from '$lib/server/steam/api';
+import { resolveHeaderImageUrl } from '$lib/server/steam/images';
 import { Time } from '$lib/util/time';
 import * as v from 'valibot';
 
 const popularGamesTtlMs = Time.HOUR;
 const gameNewsTtlMs = Time.MINUTE * 15;
-const gameNewsSchema = v.object({
-	appid: v.number(),
-	count: v.optional(v.number(), 10)
-});
+
 const steamAppIdSchema = v.number();
+const gameNewsSchema = v.object({
+	appid: steamAppIdSchema,
+	count: v.optional(v.number(), DEFAULT_NEWS_COUNT)
+});
 
 export const getGameNews = query(gameNewsSchema, async ({ appid, count }) => {
 	if (!appid) return null;
+
 	const event = getRequestEvent();
 	try {
 		const result = await new ConvexCache().getOrCreate(
 			`steam:news:${appid}:${count}`,
 			async () => {
-				const response = await getAppNews({
-					appid: appid.toString(),
-					count,
-					fetchFn: event.fetch
-				});
+				const response = await fetchGameNews({ appId: appid, count, fetchFn: event.fetch });
 				return response.appnews;
 			},
 			{ ttlMs: gameNewsTtlMs }
@@ -40,49 +36,49 @@ export const getGameNews = query(gameNewsSchema, async ({ appid, count }) => {
 	}
 });
 
-export const getMostPopularGames = query(async (): Promise<INamedSteamGame[]> => {
+export const getMostPopularGames = query(async () => {
 	const event = getRequestEvent();
-	let upstreamFailure: unknown = null;
 	try {
 		const result = await new ConvexCache().getOrCreate(
 			'steam:popular',
-			async () => {
-				try {
-					const rankedGames = await getPopularSteamGames({ fetchFn: event.fetch });
-					const rankedGamesWithName = await getAppNames(rankedGames.ranks);
-					return rankedGamesWithName.filter((game) => game.name !== '' && game.name !== undefined);
-				} catch (error) {
-					upstreamFailure = error;
-					throw error;
-				}
-			},
+			() => loadPopularGames(event.fetch),
 			{ ttlMs: popularGamesTtlMs }
 		);
-		if (upstreamFailure) {
-			console.error('Failed to fetch popular Steam games', upstreamFailure);
-		}
 		return result?.value ?? [];
 	} catch (error) {
-		const message = upstreamFailure
-			? 'Failed to fetch popular Steam games'
-			: 'Failed to read popular Steam games cache';
-		console.error(message, error);
+		console.error('Failed to load popular Steam games', error);
 		return [];
 	}
 });
 
-export const getSteamHeaderImage = query(
-	steamAppIdSchema,
-	async (appid): Promise<string | null> => {
-		if (!Number.isInteger(appid)) return null;
+export const getSteamHeaderImage = query(steamAppIdSchema, async (appid) => {
+	if (!Number.isInteger(appid)) return null;
 
-		const event = getRequestEvent();
-		return await getSteamHeaderImageUrl(event.fetch, appid);
-	}
-);
+	const event = getRequestEvent();
+	return resolveHeaderImageUrl(event.fetch, appid);
+});
 
-async function getAppNames(rankedGames: IRankedSteamGame[]): Promise<INamedSteamGame[]> {
+async function loadPopularGames(fetchFn: typeof fetch) {
+	const { ranks: rankedGames } = await fetchPopularGames(fetchFn);
+	if (rankedGames.length === 0) return [];
+
 	const appIds = rankedGames.map((game) => game.appid);
-	const appNames = await getSteamAppNamesByAppIds(appIds);
-	return attachSteamAppNames(rankedGames, appNames);
+	const catalogGames = await createConvexClient().query(api.catalog.getSteamAppNamesByAppIds, {
+		appIds
+	});
+	const games: IPopularSteamGame[] = [];
+
+	for (const game of rankedGames) {
+		const catalogGame = catalogGames[game.appid.toString()];
+		if (!catalogGame?.name) continue;
+
+		games.push({
+			...game,
+			name: catalogGame.name,
+			slug: catalogGame.slug,
+			externalItemId: catalogGame.id
+		});
+	}
+
+	return games;
 }

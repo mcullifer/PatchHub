@@ -1,6 +1,8 @@
 import type { SoftwareSource } from '$lib/models/Software';
 import { Time } from '$lib/util/time';
 
+const cacheTtlMs = Time.MINUTE * 5;
+
 export const softwareSources = {
 	'windows-11': {
 		id: 'windows-11',
@@ -15,12 +17,12 @@ export const softwareSources = {
 			'https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/MSFT-Windows-11-Search-bar?wid=1200&hei=630&fit=crop',
 		imageAlt: 'Windows 11 desktop interface',
 		adapter: 'atom-feed',
-		feedUrl: 'https://support.microsoft.com/en-us/feed/atom/4ec863cc-2ecd-e187-6cb3-b50c6545db92',
-		searchUrl: null,
+		upstreamUrl:
+			'https://support.microsoft.com/en-us/feed/atom/4ec863cc-2ecd-e187-6cb3-b50c6545db92',
 		supportUrl: 'https://support.microsoft.com/en-us/windows/windows-11-release-information',
 		releaseInfoUrl:
 			'https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information',
-		cacheTtlMs: Time.HOUR,
+		cacheTtlMs,
 		rendering: 'full'
 	},
 	'nvidia-game-ready-drivers': {
@@ -36,12 +38,11 @@ export const softwareSources = {
 			'https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/geforce-rtx-50series-og-1200x630.jpg',
 		imageAlt: 'NVIDIA GeForce RTX graphics cards',
 		adapter: 'nvidia-driver-search',
-		feedUrl: null,
-		searchUrl:
+		upstreamUrl:
 			'https://www.nvidia.com/Download/processFind.aspx?psid=131&pfid=1066&osid=135&lid=1&whql=1&ctk=0&dtcid=1',
 		supportUrl: 'https://www.nvidia.com/en-us/geforce/drivers/',
 		releaseInfoUrl: null,
-		cacheTtlMs: Time.HOUR,
+		cacheTtlMs,
 		rendering: 'full'
 	},
 	'google-chrome': {
@@ -56,11 +57,10 @@ export const softwareSources = {
 		imageUrl: '/google-chrome.png',
 		imageAlt: 'Google Chrome browser',
 		adapter: 'atom-feed',
-		feedUrl: 'https://chromereleases.googleblog.com/feeds/posts/default/-/Stable%20updates',
-		searchUrl: null,
+		upstreamUrl: 'https://chromereleases.googleblog.com/feeds/posts/default/-/Stable%20updates',
 		supportUrl: 'https://support.google.com/chrome/',
 		releaseInfoUrl: 'https://chromereleases.googleblog.com/',
-		cacheTtlMs: Time.HOUR,
+		cacheTtlMs,
 		rendering: 'excerpt'
 	},
 	'github-changelog': {
@@ -75,11 +75,10 @@ export const softwareSources = {
 		imageUrl: '/github-changelog.png',
 		imageAlt: 'GitHub logo',
 		adapter: 'atom-feed',
-		feedUrl: 'https://github.blog/changelog/feed/',
-		searchUrl: null,
+		upstreamUrl: 'https://github.blog/changelog/feed/',
 		supportUrl: 'https://support.github.com/',
 		releaseInfoUrl: 'https://github.blog/changelog/',
-		cacheTtlMs: Time.MINUTE * 30,
+		cacheTtlMs,
 		rendering: 'excerpt'
 	}
 } as const satisfies Record<string, SoftwareSource>;

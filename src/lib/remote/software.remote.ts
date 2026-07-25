@@ -1,8 +1,8 @@
 import { getRequestEvent, query } from '$app/server';
 import type { SoftwareSourceSummary } from '$lib/models/Software';
-import { SoftwareUpdateService } from '$lib/server/software/SoftwareUpdateService';
+import { getSourceSummaries } from '$lib/server/software/updates';
 
 export const getSoftwareSourceSummaries = query(async (): Promise<SoftwareSourceSummary[]> => {
 	const event = getRequestEvent();
-	return SoftwareUpdateService.getSourceSummaries(6, event.fetch);
+	return getSourceSummaries(6, event.fetch);
 });

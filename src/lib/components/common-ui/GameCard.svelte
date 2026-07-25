@@ -4,12 +4,12 @@
 	import { Tooltip } from '$lib/components/common-ui/floating';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { useFavorites } from '$lib/contexts/favorites.svelte';
-	import type { INamedSteamGame } from '$lib/models/Steam';
+	import type { IPopularSteamGame } from '$lib/models/Steam';
 	import { getSteamHeaderImage } from '$lib/remote/games.remote';
 	import { getDefaultSteamHeaderImageUrl, getSteamLibraryHeroUrl } from '$lib/util/SteamAssets';
 	import { getSteamGamePath } from '$lib/util/SteamRoute';
 
-	let { game, featured = false }: { game: INamedSteamGame; featured?: boolean } = $props();
+	let { game, featured = false }: { game: IPopularSteamGame; featured?: boolean } = $props();
 
 	const currentUser = getCurrentUser();
 	const favorites = useFavorites();
@@ -58,9 +58,7 @@
 		}
 	}
 
-	let favorited = $derived(
-		game.externalItemId ? favorites.isExternalItemFavorited(game.externalItemId) : false
-	);
+	let favorited = $derived(favorites.isExternalItemFavorited(game.externalItemId));
 </script>
 
 <div
@@ -110,13 +108,12 @@
 		</span>
 	{/if}
 
-	{#if currentUser() !== null && game.externalItemId}
-		{@const externalItemId = game.externalItemId}
+	{#if currentUser() !== null}
 		<Tooltip>
 			{#snippet reference(floating)}
 				<FavoriteHeart
 					{favorited}
-					onToggle={() => favorites.toggleExternalItem(externalItemId)}
+					onToggle={() => favorites.toggleExternalItem(game.externalItemId)}
 					{...floating.reference({
 						class: ['btn-sm absolute top-2 right-2']
 					})}
