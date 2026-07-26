@@ -11,3 +11,7 @@ export function getSteamGamePath(game: SteamRouteItem): string {
 	const slug = game.slug || (game.name ? createSlug(game.name, appid) : appid);
 	return `/steam/${appid}/${slug}`;
 }
+
+export function getSteamStoreUrl(appid: number): string {
+	return `https://store.steampowered.com/app/${appid}/`;
+}

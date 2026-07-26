@@ -11,3 +11,15 @@ export function parseDateForDisplay(value: string): Date {
 
 	return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
 }
+
+const feedDateFormatter = new Intl.DateTimeFormat(undefined, {
+	month: 'short',
+	day: 'numeric',
+	year: 'numeric'
+});
+
+export function formatFeedDate(value: Date | number | string | null): string {
+	if (value === null) return 'Unknown';
+	if (typeof value === 'string') return feedDateFormatter.format(parseDateForDisplay(value));
+	return feedDateFormatter.format(new Date(value));
+}

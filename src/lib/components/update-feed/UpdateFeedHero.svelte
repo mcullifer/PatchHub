@@ -10,7 +10,8 @@
 		imagePending = false,
 		onimageerror,
 		fallbackIcon,
-		actions
+		actions,
+		overlay
 	}: {
 		title: string;
 		description?: string | null;
@@ -21,6 +22,7 @@
 		onimageerror?: () => void | Promise<void>;
 		fallbackIcon: Snippet;
 		actions?: Snippet;
+		overlay?: Snippet;
 	} = $props();
 
 	let failedImageUrl = $state<string | null>(null);
@@ -63,7 +65,7 @@
 </script>
 
 <div
-	class="card card-sm md:card-md bg-base-200 overflow-hidden"
+	class="card card-sm md:card-md bg-base-200 relative overflow-hidden max-sm:rounded-none"
 	aria-busy={loading || imagePending}
 >
 	<div class="grid md:min-h-64 md:grid-cols-2">
@@ -95,21 +97,29 @@
 		</figure>
 
 		<!-- Negative margin floats the title onto the image's faded area on mobile. -->
-		<div class="card-body relative -mt-14 justify-center md:mt-0">
+		<div class={['card-body relative -mt-14 md:mt-0 md:justify-start', overlay && 'md:pr-24']}>
 			{#if loading}
 				<div class="skeleton h-8 w-3/4 max-w-xl"></div>
-				<div class="skeleton mt-2 h-4 w-full max-w-lg"></div>
+				{#if description}
+					<div class="skeleton mt-2 h-4 w-full max-w-lg"></div>
+				{/if}
 			{:else}
-				<h1 class="text-2xl font-bold text-pretty md:text-3xl">{title}</h1>
+				<h1 class="text-3xl font-bold text-pretty">{title}</h1>
 				{#if description}
 					<p class="text-base-content/70 text-sm">{description}</p>
 				{/if}
 				{#if actions}
-					<div class="mt-2">
+					<div class="mt-2 flex flex-wrap gap-2 md:mt-auto">
 						{@render actions()}
 					</div>
 				{/if}
 			{/if}
 		</div>
 	</div>
+
+	{#if overlay}
+		<div class="absolute top-3 right-3 z-10 flex items-center gap-2">
+			{@render overlay()}
+		</div>
+	{/if}
 </div>

@@ -207,21 +207,23 @@ function renderDisclosure(summary: string | null, content: string): string {
 	return `<details class="collapse collapse-arrow bg-base-300 border-base-content/10 not-prose my-4 border shadow-md"><summary class="collapse-title min-h-10 px-4 py-2 text-base font-medium">${summaryContent}</summary><div class="collapse-content text-base leading-7 text-base-content/80">${content}</div></details>`;
 }
 
+function renderYouTubeFacade(videoId: string): string {
+	const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+	const fallback = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+	return `<button type="button" class="bbcode-youtube-preview not-prose group rounded-box relative my-4 block w-full cursor-pointer overflow-hidden bg-black" data-youtube-id="${videoId}" aria-label="Play YouTube video"><img src="${thumbnail}" data-fallback-src="${fallback}" alt="" loading="lazy" class="aspect-video w-full object-cover transition-opacity group-hover:opacity-75" /><span class="pointer-events-none absolute inset-0 flex items-center justify-center"><span class="flex h-12 w-[4.5rem] items-center justify-center rounded-xl bg-black/70 text-lg text-white transition-colors group-hover:bg-red-600">&#9654;</span></span></button>`;
+}
+
 function renderYouTubePreview(node: ElementNode): string {
 	const videoId = sanitizeYouTubeId(node.tag.value || node.tag.attributes.previewyoutube || '');
 	if (!videoId) return escapeHtml(node.tag.raw);
 
-	const href = `https://www.youtube.com/watch?v=${videoId}`;
-	const thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-	return `<a href="${href}" class="bbcode-youtube-preview"><img src="${thumbnail}" alt="YouTube Video Thumbnail" /></a>`;
+	return renderYouTubeFacade(videoId);
 }
 
 function renderVideo(node: ElementNode): string {
 	const youtubeId = sanitizeYouTubeId(node.tag.value || node.tag.attributes.video || '');
 	if (youtubeId) {
-		const href = `https://www.youtube.com/watch?v=${youtubeId}`;
-		const thumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-		return `<a href="${href}" class="bbcode-youtube-preview"><img src="${thumbnail}" alt="YouTube Video Thumbnail" /></a>`;
+		return renderYouTubeFacade(youtubeId);
 	}
 
 	const sources = ['webm', 'mp4']

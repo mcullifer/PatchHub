@@ -81,7 +81,7 @@
 					{#if !showMore && hiddenCount > 0}
 						<button
 							type="button"
-							class="card card-border border-base-content/20 bg-base-200/50 hover:bg-base-200 hover:border-primary grid min-h-40 cursor-pointer place-items-center transition-colors"
+							class="card card-border border-base-content/20 bg-base-200/50 hover:bg-base-200 hover:border-primary grid aspect-[460/215] cursor-pointer place-items-center transition-colors"
 							onclick={() => {
 								showMore = true;
 							}}

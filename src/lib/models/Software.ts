@@ -48,6 +48,7 @@ export type SoftwareSourceDetail = {
 	source: SoftwareSource;
 	entries: SoftwareUpdateEntry[];
 	health: SoftwareSourceHealth;
+	externalItemId: string | null;
 };
 
 export type SoftwareSourceSummary = {

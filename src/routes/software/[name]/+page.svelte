@@ -1,8 +1,10 @@
 <script lang="ts">
 	import Seo from '$lib/components/Seo.svelte';
-	import { Icon } from '$lib/components/common-ui';
+	import { FavoriteHeart, Icon } from '$lib/components/common-ui';
+	import { Tooltip } from '$lib/components/common-ui/floating';
 	import {
 		UpdateFeedArticle,
+		UpdateFeedContent,
 		UpdateFeedEmptyState,
 		UpdateFeedHero,
 		UpdateFeedPostList,
@@ -10,23 +12,22 @@
 		type UpdateFeedMetaItem,
 		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
+	import { updateFeedGridClass } from '$lib/components/update-feed/layout';
+	import { scrollArticleIntoView } from '$lib/components/update-feed/scrollArticle';
+	import { getCurrentUser } from '$lib/contexts/currentUser';
+	import { useFavorites } from '$lib/contexts/favorites.svelte';
 	import type { SoftwareUpdateEntry } from '$lib/models/Software';
-	import { parseDateForDisplay } from '$lib/util/time';
-	import DOMPurify from 'dompurify';
-	import { onMount, tick } from 'svelte';
+	import { formatFeedDate } from '$lib/util/time';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let selectedId = $state<string | null>(null);
-	let canRenderSanitizedHtml = $state(false);
 
 	const articleSectionId = 'software-update-article';
-	const dateFormatter = new Intl.DateTimeFormat(undefined, {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric'
-	});
+	const currentUser = getCurrentUser();
+	const favorites = useFavorites();
+	const externalItemId = $derived(data.detail.externalItemId);
 	const selectedUpdate = $derived(getSelectedUpdate(data.detail.entries));
 	const isExcerptSource = $derived(data.detail.source.rendering === 'excerpt');
 	const articleBadges = $derived<UpdateFeedBadge[]>(
@@ -36,14 +37,10 @@
 		data.detail.entries.map((entry, index) => ({
 			id: entry.id,
 			title: entry.title,
-			dateLabel: formatDate(entry.publishedAt),
+			dateLabel: formatFeedDate(entry.publishedAt),
 			isSelected: isSelected(entry, index)
 		}))
 	);
-
-	onMount(() => {
-		canRenderSanitizedHtml = true;
-	});
 
 	function getSelectedUpdate(entries: SoftwareUpdateEntry[]): SoftwareUpdateEntry | null {
 		return entries.find((entry) => entry.id === selectedId) ?? entries[0] ?? null;
@@ -53,14 +50,9 @@
 		return selectedId === entry.id || (selectedId === null && index === 0);
 	}
 
-	function formatDate(value: string | null): string {
-		if (!value) return 'Unknown';
-		return dateFormatter.format(parseDateForDisplay(value));
-	}
-
 	function getArticleMeta(entry: SoftwareUpdateEntry): UpdateFeedMetaItem[] {
 		const meta: (UpdateFeedMetaItem | null)[] = [
-			{ label: 'Published', value: formatDate(entry.publishedAt) },
+			{ label: 'Published', value: formatFeedDate(entry.publishedAt) },
 			entry.metadata.driverVersion
 				? { label: 'Driver', value: entry.metadata.driverVersion }
 				: null,
@@ -76,26 +68,37 @@
 
 	async function selectUpdate(id: string): Promise<void> {
 		selectedId = id;
-		await tick();
-
-		const articleSection = document.getElementById(articleSectionId);
-		if (!articleSection) return;
-
-		const isScrolledPastArticleStart = articleSection.getBoundingClientRect().top < 96;
-		if (isScrolledPastArticleStart) {
-			articleSection.scrollIntoView({ block: 'start' });
-		}
+		await scrollArticleIntoView(articleSectionId);
 	}
 </script>
 
 <Seo
 	title={data.detail.source.name}
-	description="Release notes and updates for {data.detail.source.name}, tracked on PatchHub."
+	description="{data.detail.source.description} | Tracked on PatchHub"
 />
 
-<div class="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-3 p-2 sm:gap-4 sm:p-4 lg:p-6">
+<div class="mx-auto flex min-h-full w-full max-w-6xl flex-col pb-4 sm:gap-4 sm:p-4">
 	{#snippet fallbackIcon()}
 		<Icon icon={data.detail.source.icon} size="xl" class="text-base-content/30" />
+	{/snippet}
+
+	{#snippet overlay()}
+		{#if currentUser() !== null && externalItemId}
+			<Tooltip>
+				{#snippet reference(floating)}
+					<FavoriteHeart
+						favorited={favorites.isExternalItemFavorited(externalItemId)}
+						onToggle={() => favorites.toggleExternalItem(externalItemId)}
+						{...floating.reference({
+							class: ['btn-sm']
+						})}
+					/>
+				{/snippet}
+				<div class="bg-neutral text-neutral-content rounded-lg p-2 text-sm font-normal">
+					Favorite
+				</div>
+			</Tooltip>
+		{/if}
 	{/snippet}
 
 	<UpdateFeedHero
@@ -104,16 +107,17 @@
 		imageUrl={data.detail.source.imageUrl}
 		imageAlt={data.detail.source.imageAlt}
 		{fallbackIcon}
+		{overlay}
 	/>
 
 	{#if data.detail.health.error}
-		<div class="alert alert-warning alert-soft">
+		<div class="alert alert-warning alert-soft max-sm:mx-4">
 			<Icon icon="warning" />
 			<span>{data.detail.health.error}</span>
 		</div>
 	{/if}
 
-	<div class="grid min-h-0 gap-3 sm:gap-4 lg:grid-cols-4">
+	<div class={updateFeedGridClass}>
 		<UpdateFeedPostList
 			title="Updates"
 			ariaLabel="Software updates"
@@ -122,7 +126,7 @@
 			onselect={selectUpdate}
 		/>
 
-		<section id={articleSectionId} class="min-w-0 scroll-mt-24 lg:col-span-3">
+		<section id={articleSectionId} class="min-w-0 scroll-mt-24">
 			{#if selectedUpdate}
 				<UpdateFeedArticle
 					title={selectedUpdate.title}
@@ -132,7 +136,7 @@
 					meta={getArticleMeta(selectedUpdate)}
 				>
 					{#if isExcerptSource}
-						<div class="flex flex-col gap-4">
+						<div class="flex max-w-[70ch] flex-col gap-4">
 							<p class="text-base-content/80 leading-relaxed text-pretty">
 								{selectedUpdate.summary}
 							</p>
@@ -149,20 +153,7 @@
 							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						</div>
 					{:else if selectedUpdate.contentHtml}
-						{#if canRenderSanitizedHtml}
-							<div
-								class="patchhub-rich-text prose prose-img:rounded-box prose-pre:bg-base-300 prose-pre:text-base-content prose-a:link prose-a:link-primary max-w-none"
-							>
-								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-								{@html DOMPurify.sanitize(selectedUpdate.contentHtml)}
-							</div>
-						{:else}
-							<div
-								class="skeleton min-h-64 w-full"
-								role="status"
-								aria-label="Loading article content"
-							></div>
-						{/if}
+						<UpdateFeedContent html={selectedUpdate.contentHtml} />
 					{:else}
 						<div class="alert alert-info alert-soft">
 							<Icon icon="info" />

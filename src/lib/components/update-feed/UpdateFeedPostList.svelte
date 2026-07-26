@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Icon, Menu } from '$lib/components/common-ui';
+	import { Icon } from '$lib/components/common-ui';
 	import type { UpdateFeedPostListItem } from './UpdateFeedTypes';
 
 	let {
@@ -16,70 +16,85 @@
 		onselect: (id: string) => void;
 	} = $props();
 
+	let sheet = $state<HTMLDialogElement | null>(null);
+
 	const selectedItem = $derived(items.find((item) => item.isSelected) ?? items[0] ?? null);
 
 	function selectItem(id: string): void {
-		// The mobile dropdown is focus-based, so dropping focus closes it.
-		(document.activeElement as HTMLElement | null)?.blur();
+		sheet?.close();
 		onselect(id);
 	}
 </script>
 
-{#snippet postItems()}
+{#snippet postItems(padding: string)}
 	{#each items as item (item.id)}
-		<li>
-			<button
-				type="button"
-				class={['flex flex-col items-start gap-1', item.isSelected && 'menu-active']}
-				onclick={() => selectItem(item.id)}
-			>
-				<time class="text-xs opacity-60">{item.dateLabel}</time>
-				<span class="font-medium">{item.title}</span>
-				{#if item.badgeLabel}
-					<span class="badge badge-soft badge-info badge-xs">{item.badgeLabel}</span>
-				{/if}
-			</button>
-		</li>
+		<button
+			type="button"
+			class={[
+				'flex flex-col items-start gap-0.5 border-l-2 text-left transition-colors',
+				padding,
+				item.isSelected ? 'border-primary bg-base-200' : 'hover:bg-base-200/60 border-transparent'
+			]}
+			onclick={() => selectItem(item.id)}
+		>
+			<time class="text-base-content/50 text-xs">{item.dateLabel}</time>
+			<span class={['text-sm', item.isSelected ? 'font-semibold' : 'font-medium']}>
+				{item.title}
+			</span>
+			{#if item.badgeLabel}
+				<span class="badge badge-soft badge-info badge-xs">{item.badgeLabel}</span>
+			{/if}
+		</button>
 	{/each}
 {/snippet}
 
-<aside class="h-fit min-w-0 lg:sticky lg:top-20">
-	<!-- Mobile: a single full-width dropdown, no card chrome around it. -->
+<aside class="sticky top-16 z-30 h-fit min-w-0 md:top-20">
 	{#if selectedItem}
-		<nav class="dropdown w-full lg:hidden" aria-label={ariaLabel}>
-			<div
-				tabindex="0"
-				role="button"
-				class="btn btn-block border-base-content/10 justify-between border"
+		<div class="px-4 py-3 md:hidden">
+			<button
+				type="button"
+				class="bg-base-100/85 border-base-content/20 rounded-box flex w-full items-center gap-3 border px-4 py-3 text-left shadow-lg backdrop-blur"
+				onclick={() => sheet?.showModal()}
 			>
-				<span class="min-w-0 truncate">{selectedItem.dateLabel} — {selectedItem.title}</span>
-				<Icon icon="expand_more" size="sm" class="shrink-0 opacity-60" />
-			</div>
-			<ul
-				tabindex="-1"
-				class="dropdown-content menu bg-base-100 rounded-box border-base-content/10 z-10 mt-2 max-h-80 w-full flex-nowrap overflow-y-auto border p-2 shadow-lg"
-			>
-				{@render postItems()}
-			</ul>
-		</nav>
+				<div class="min-w-0 flex-1">
+					<span class="text-base-content/50 block text-xs font-semibold tracking-wide uppercase">
+						{title} · {items.length}
+					</span>
+					<span class="block truncate font-medium">{selectedItem.title}</span>
+				</div>
+				<time class="text-base-content/50 shrink-0 text-xs">{selectedItem.dateLabel}</time>
+				<Icon icon="expand_more" class="shrink-0 opacity-60" />
+			</button>
+		</div>
 	{/if}
 
-	<div class="card card-sm bg-base-200 hidden shadow-lg lg:block">
-		<div class="card-body">
-			<div class="flex items-center justify-between gap-2">
-				<h2 class="card-title">{title}</h2>
-				<span class="badge badge-primary badge-soft">{items.length}</span>
-			</div>
-
-			{#if selectedItem}
-				<nav class="max-h-[70vh] overflow-y-auto" aria-label={ariaLabel}>
-					<Menu class="w-full p-0">
-						{@render postItems()}
-					</Menu>
-				</nav>
-			{:else}
-				<p class="text-base-content/70">{emptyMessage}</p>
-			{/if}
+	<div class="max-md:hidden">
+		<div class="flex items-baseline justify-between px-3 pb-2">
+			<h2 class="text-base-content/50 text-xs font-semibold tracking-wide uppercase">{title}</h2>
+			<span class="text-base-content/40 text-xs">{items.length}</span>
 		</div>
+
+		{#if selectedItem}
+			<nav class="flex max-h-[70vh] flex-col overflow-y-auto" aria-label={ariaLabel}>
+				{@render postItems('rounded-r-lg px-3 py-2.5')}
+			</nav>
+		{:else}
+			<p class="text-base-content/70 px-3">{emptyMessage}</p>
+		{/if}
 	</div>
 </aside>
+
+<dialog bind:this={sheet} class="modal modal-bottom md:hidden">
+	<div class="modal-box flex max-h-[75vh] flex-col overflow-hidden px-0">
+		<div class="flex shrink-0 items-baseline justify-between px-5 pb-3">
+			<h2 class="text-lg font-semibold">{title}</h2>
+			<span class="text-base-content/50 text-sm">{items.length}</span>
+		</div>
+		<nav class="flex min-h-0 flex-col overflow-y-auto" aria-label={ariaLabel}>
+			{@render postItems('px-5 py-3')}
+		</nav>
+	</div>
+	<form method="dialog" class="modal-backdrop">
+		<button>close</button>
+	</form>
+</dialog>

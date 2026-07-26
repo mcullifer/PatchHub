@@ -25,7 +25,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		game: {
 			appid,
 			name: app.name,
-			slug: app.slug
+			slug: app.slug,
+			externalItemId: app.id
 		}
 	};
 };

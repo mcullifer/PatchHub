@@ -1,9 +1,16 @@
 import UpdateFeedArticle from './UpdateFeedArticle.svelte';
+import UpdateFeedContent from './UpdateFeedContent.svelte';
 import UpdateFeedEmptyState from './UpdateFeedEmptyState.svelte';
 import UpdateFeedHero from './UpdateFeedHero.svelte';
 import UpdateFeedPostList from './UpdateFeedPostList.svelte';
 
-export { UpdateFeedArticle, UpdateFeedEmptyState, UpdateFeedHero, UpdateFeedPostList };
+export {
+	UpdateFeedArticle,
+	UpdateFeedContent,
+	UpdateFeedEmptyState,
+	UpdateFeedHero,
+	UpdateFeedPostList
+};
 export type {
 	UpdateFeedBadge,
 	UpdateFeedMetaItem,

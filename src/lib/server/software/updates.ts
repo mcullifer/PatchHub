@@ -24,7 +24,12 @@ export async function getSourceDetail(
 	const source = getSoftwareSource(slug);
 	if (!source) return null;
 
-	return loadSourceDetail(source, limit, fetchFn);
+	const [detail, externalItemId] = await Promise.all([
+		loadSourceDetail(source, limit, fetchFn),
+		ensureExternalItemId(source).catch(() => null)
+	]);
+
+	return { ...detail, externalItemId };
 }
 
 async function loadSourceDetail(
@@ -45,7 +50,8 @@ async function loadSourceDetail(
 			health: {
 				available: true,
 				error: result.servedStale ? staleSourceError : null
-			}
+			},
+			externalItemId: null
 		};
 	} catch (error) {
 		return createUnavailableDetail(source, getErrorMessage(error));
@@ -92,7 +98,8 @@ function createUnavailableDetail(source: SoftwareSource, error: string): Softwar
 		health: {
 			available: false,
 			error
-		}
+		},
+		externalItemId: null
 	};
 }
 

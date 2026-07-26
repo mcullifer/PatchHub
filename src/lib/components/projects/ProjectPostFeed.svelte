@@ -8,9 +8,11 @@
 		type UpdateFeedBadge,
 		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
+	import { updateFeedGridClass } from '$lib/components/update-feed/layout';
+	import { scrollArticleIntoView } from '$lib/components/update-feed/scrollArticle';
 	import TipTap, { type TipTapContent } from '$lib/components/wysiwyg/TipTap.svelte';
 	import { getProjectPost, type getProjectPosts } from '$lib/remote/projectPosts.remote';
-	import { tick } from 'svelte';
+	import { formatFeedDate } from '$lib/util/time';
 
 	type ProjectPostsResult = Awaited<ReturnType<typeof getProjectPosts>>;
 	type Project = ProjectPostsResult['project'];
@@ -44,16 +46,8 @@
 	);
 	const articleSectionId = 'project-post';
 
-	function formatDate(timestamp: number | null): string {
-		return new Date(timestamp ?? Date.now()).toLocaleDateString(undefined, {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		});
-	}
-
 	function getPostDate(post: { publishedAt: number | null; createdAt: number }): string {
-		return formatDate(post.publishedAt ?? post.createdAt);
+		return formatFeedDate(post.publishedAt ?? post.createdAt);
 	}
 
 	function kindLabel(kind: ProjectPost['kind']): string {
@@ -81,12 +75,7 @@
 
 	async function selectPost(slug: string): Promise<void> {
 		selectedPostSlug = slug;
-		await tick();
-
-		const articleSection = document.getElementById(articleSectionId);
-		if (articleSection && articleSection.getBoundingClientRect().top < 96) {
-			articleSection.scrollIntoView({ block: 'start' });
-		}
+		await scrollArticleIntoView(articleSectionId);
 	}
 </script>
 
@@ -110,7 +99,7 @@
 {/if}
 
 {#if posts.length > 0}
-	<div class="grid min-h-0 gap-3 sm:gap-4 lg:grid-cols-4">
+	<div class={updateFeedGridClass}>
 		<UpdateFeedPostList
 			title="Posts"
 			ariaLabel={`${project.name} posts`}
@@ -119,7 +108,7 @@
 			onselect={selectPost}
 		/>
 
-		<section id={articleSectionId} class="min-w-0 scroll-mt-24 lg:col-span-3">
+		<section id={articleSectionId} class="min-w-0 scroll-mt-24">
 			<svelte:boundary>
 				{#if selectedPostSummary}
 					{@const selectedResult = await getProjectPost({

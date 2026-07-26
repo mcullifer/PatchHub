@@ -194,15 +194,15 @@ describe('BBCodeParser - YouTube Videos', () => {
 	it('should parse previewyoutube with simple video ID', () => {
 		const result = parser.parse('[previewyoutube=dQw4w9WgXcQ][/previewyoutube]');
 		expect(result.html).toContain('https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
-		expect(result.html).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-		expect(result.html).toContain('YouTube Video Thumbnail');
+		expect(result.html).toContain('data-youtube-id="dQw4w9WgXcQ"');
+		expect(result.html).toContain('aria-label="Play YouTube video"');
 		expect(result.errors).toHaveLength(0);
 	});
 
 	it('should parse previewyoutube with semicolon-separated format', () => {
 		const result = parser.parse('[previewyoutube=dQw4w9WgXcQ;full][/previewyoutube]');
 		expect(result.html).toContain('https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
-		expect(result.html).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+		expect(result.html).toContain('data-youtube-id="dQw4w9WgXcQ"');
 		expect(result.errors).toHaveLength(0);
 	});
 
@@ -215,7 +215,7 @@ describe('BBCodeParser - YouTube Videos', () => {
 	it('should handle video tag with YouTube ID', () => {
 		const result = parser.parse('[video=dQw4w9WgXcQ][/video]');
 		expect(result.html).toContain('https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
-		expect(result.html).toContain('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+		expect(result.html).toContain('data-youtube-id="dQw4w9WgXcQ"');
 		expect(result.errors).toHaveLength(0);
 	});
 });

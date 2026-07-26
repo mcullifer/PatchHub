@@ -21,7 +21,7 @@
 	currentLabel: string | null
 )}
 	<section
-		class="mx-auto flex w-full max-w-7xl flex-col gap-3 px-2 py-4 sm:gap-4 sm:px-4 sm:py-6 lg:px-6"
+		class="mx-auto flex w-full max-w-6xl flex-col gap-3 px-2 py-4 sm:gap-4 sm:px-4 sm:py-6 lg:px-6"
 	>
 		<div class="breadcrumbs text-sm">
 			<ul>

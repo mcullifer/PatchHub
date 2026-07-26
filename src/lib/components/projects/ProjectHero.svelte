@@ -42,20 +42,18 @@
 	});
 </script>
 
-<div class="relative">
-	<UpdateFeedHero
-		title={project.name}
-		{description}
-		imageUrl={bannerUrl}
-		imageAlt={bannerUrl ? `${project.name} banner` : ''}
-		imagePending={isBannerPending}
-	>
-		{#snippet fallbackIcon()}
-			<Icon icon="image" size="xl" class="text-base-content/30" />
-		{/snippet}
-	</UpdateFeedHero>
+<UpdateFeedHero
+	title={project.name}
+	{description}
+	imageUrl={bannerUrl}
+	imageAlt={bannerUrl ? `${project.name} banner` : ''}
+	imagePending={isBannerPending}
+>
+	{#snippet fallbackIcon()}
+		<Icon icon="image" size="xl" class="text-base-content/30" />
+	{/snippet}
 
-	<div class="absolute top-3 right-3 z-10 flex items-center gap-2">
+	{#snippet overlay()}
 		{#if isOwner && onEditProject}
 			<Tooltip>
 				{#snippet reference(floating)}
@@ -92,5 +90,5 @@
 				</div>
 			</Tooltip>
 		{/if}
-	</div>
-</div>
+	{/snippet}
+</UpdateFeedHero>
