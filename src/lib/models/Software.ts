@@ -23,9 +23,6 @@ export type SoftwareSource = {
 };
 
 export type SoftwareUpdateMetadata = {
-	kbId?: string;
-	build?: string;
-	windowsVersion?: string;
 	updateType?: string;
 	driverVersion?: string;
 	releaseNotesUrl?: string;

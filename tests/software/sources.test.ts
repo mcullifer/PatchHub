@@ -3,9 +3,12 @@ import { Time } from '$lib/util/time';
 import { describe, expect, it } from 'vitest';
 
 describe('source registry', () => {
-	it('keeps existing sources on full rendering', () => {
-		expect(getSoftwareSource('windows-11')?.rendering).toBe('full');
+	it('keeps the NVIDIA source on full rendering', () => {
 		expect(getSoftwareSource('nvidia-game-ready-drivers')?.rendering).toBe('full');
+	});
+
+	it('does not register the retired Windows 11 feed', () => {
+		expect(getSoftwareSource('windows-11')).toBeNull();
 	});
 
 	it('registers the Google Chrome stable feed', () => {

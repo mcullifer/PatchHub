@@ -53,14 +53,7 @@
 	function getArticleMeta(entry: SoftwareUpdateEntry): UpdateFeedMetaItem[] {
 		const meta: (UpdateFeedMetaItem | null)[] = [
 			{ label: 'Published', value: formatFeedDate(entry.publishedAt) },
-			entry.metadata.driverVersion
-				? { label: 'Driver', value: entry.metadata.driverVersion }
-				: null,
-			entry.metadata.kbId ? { label: 'KB', value: entry.metadata.kbId } : null,
-			entry.metadata.windowsVersion
-				? { label: 'Windows', value: entry.metadata.windowsVersion }
-				: null,
-			entry.metadata.build ? { label: 'Build', value: entry.metadata.build } : null
+			entry.metadata.driverVersion ? { label: 'Driver', value: entry.metadata.driverVersion } : null
 		];
 
 		return meta.filter((item): item is UpdateFeedMetaItem => item !== null);

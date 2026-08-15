@@ -1,8 +1,4 @@
-import type {
-	SoftwareSource,
-	SoftwareUpdateEntry,
-	SoftwareUpdateMetadata
-} from '$lib/models/Software';
+import type { SoftwareSource, SoftwareUpdateEntry } from '$lib/models/Software';
 import { createSlug } from '$convex/lib/strings';
 
 export type FeedItemLike = {
@@ -26,10 +22,6 @@ export function normalizeSoftwareFeedItem(
 	const sourceUrl = item.url?.trim() || '';
 	const publishedAt = normalizeDate(item.published);
 	const updatedAt = normalizeDate(item.updated);
-	const metadata = getWindowsUpdateMetadata(
-		title,
-		item.content ?? item.summary ?? item.description ?? ''
-	);
 	const fallbackId = createSlug(title, sourceSlug);
 	const id = item.id?.trim() || sourceUrl || `${sourceSlug}-${fallbackId}`;
 	const feedSummary = item.summary?.trim() || item.description?.trim() || null;
@@ -49,7 +41,7 @@ export function normalizeSoftwareFeedItem(
 		publishedAt,
 		updatedAt,
 		authors: normalizeAuthors(item.authors),
-		metadata
+		metadata: {}
 	};
 }
 
@@ -101,18 +93,4 @@ function decodeHtmlEntities(value: string): string {
 function decodeCodePoint(entity: string, codePoint: number): string {
 	if (!Number.isInteger(codePoint) || codePoint < 0 || codePoint > 0x10ffff) return entity;
 	return String.fromCodePoint(codePoint);
-}
-
-function getWindowsUpdateMetadata(title: string, content: string): SoftwareUpdateMetadata {
-	const text = `${title} ${content}`;
-	const kbId = text.match(/\bKB\d{6,8}\b/i)?.[0]?.toUpperCase() ?? null;
-	const build = text.match(/\b\d{5}\.\d{3,5}\b/)?.[0] ?? null;
-	const windowsVersion = text.match(/\b\d{2}H\d\b/i)?.[0]?.toUpperCase() ?? null;
-	const metadata: SoftwareUpdateMetadata = {};
-
-	if (kbId) metadata.kbId = kbId;
-	if (build) metadata.build = build;
-	if (windowsVersion) metadata.windowsVersion = windowsVersion;
-
-	return metadata;
 }
