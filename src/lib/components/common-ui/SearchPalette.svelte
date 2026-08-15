@@ -48,9 +48,7 @@
 			: undefined
 	);
 
-	const debouncedSearch = useDebounce(async (q: string, requestId: number) => {
-		await performSearch(q, requestId);
-	}, 200);
+	const debouncedSearch = useDebounce(performSearch, 200);
 
 	function clearResults() {
 		results = [];
@@ -65,13 +63,6 @@
 	async function performSearch(q: string, requestId: number) {
 		if (destroyed) return;
 
-		if (q.length < 3) {
-			if (requestId === searchRequestId) clearResults();
-			loading = false;
-			return;
-		}
-
-		loading = true;
 		try {
 			const found = await searchCatalog(q);
 			if (destroyed || requestId !== searchRequestId) return;
@@ -189,22 +180,20 @@
 		}
 	}
 
-	function scrollActiveResultIntoView() {
-		if (selectedIndex === undefined) return;
-		document.getElementById(optionId(selectedIndex))?.scrollIntoView({ block: 'nearest' });
+	function selectIndex(index: number) {
+		selectedIndex = index;
+		document.getElementById(optionId(index))?.scrollIntoView({ block: 'nearest' });
 	}
 
 	function moveSelectedIndex(direction: 1 | -1) {
 		if (displayed.length === 0) return;
 
 		if (selectedIndex === undefined) {
-			selectedIndex = direction === 1 ? 0 : displayed.length - 1;
-			scrollActiveResultIntoView();
+			selectIndex(direction === 1 ? 0 : displayed.length - 1);
 			return;
 		}
 
-		selectedIndex = (selectedIndex + direction + displayed.length) % displayed.length;
-		scrollActiveResultIntoView();
+		selectIndex((selectedIndex + direction + displayed.length) % displayed.length);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -225,14 +214,12 @@
 			case 'Home':
 				if (displayed.length === 0) return;
 				event.preventDefault();
-				selectedIndex = 0;
-				scrollActiveResultIntoView();
+				selectIndex(0);
 				break;
 			case 'End':
 				if (displayed.length === 0) return;
 				event.preventDefault();
-				selectedIndex = displayed.length - 1;
-				scrollActiveResultIntoView();
+				selectIndex(displayed.length - 1);
 				break;
 			case 'Enter':
 				if (selectedIndex !== undefined && displayed[selectedIndex] !== undefined) {
