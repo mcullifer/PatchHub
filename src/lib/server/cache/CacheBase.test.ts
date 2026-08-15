@@ -1,41 +1,27 @@
 import { Time } from '$lib/util/time';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CacheBase } from './CacheBase';
 import type { CacheReadResult } from './ICache';
 
 class FakeCache extends CacheBase {
 	claimCalls = 0;
-	deferredRefreshes: Promise<unknown>[] = [];
 	setCalls = 0;
 	claimWindowMs: number | null = null;
 	setTtlMs: number | null = null;
 
 	private result: CacheReadResult<unknown>;
 	private readonly claimWon: boolean | Promise<boolean>;
-	private readonly deferRefreshes: boolean;
 
-	constructor(
-		result: CacheReadResult<unknown>,
-		claimWon: boolean | Promise<boolean> = false,
-		deferRefreshes = false
-	) {
+	constructor(result: CacheReadResult<unknown>, claimWon: boolean | Promise<boolean> = false) {
 		super();
 		this.result = result;
 		this.claimWon = claimWon;
-		this.deferRefreshes = deferRefreshes;
 	}
 
 	protected async claimRefetch(_key: string, claimWindowMs: number): Promise<boolean> {
 		this.claimCalls++;
 		this.claimWindowMs = claimWindowMs;
 		return await this.claimWon;
-	}
-
-	protected deferRefresh(_key: string, refresh: Promise<unknown>): boolean {
-		if (!this.deferRefreshes) return false;
-
-		this.deferredRefreshes.push(refresh);
-		return true;
 	}
 
 	async get<T>(): Promise<CacheReadResult<T>> {
@@ -47,9 +33,40 @@ class FakeCache extends CacheBase {
 		this.setTtlMs = opts.ttlMs;
 		this.result = { status: 'fresh', value };
 	}
+
+	replaceResult(result: CacheReadResult<unknown>) {
+		this.result = result;
+	}
+}
+
+class CoordinatedFakeCache extends CacheBase {
+	claimCalls = 0;
+
+	private claimed = false;
+	private result: CacheReadResult<unknown> = { status: 'stale', value: 'cached' };
+
+	protected async claimRefetch(): Promise<boolean> {
+		this.claimCalls++;
+		if (this.claimed) return false;
+
+		this.claimed = true;
+		return true;
+	}
+
+	async get<T>(): Promise<CacheReadResult<T>> {
+		return this.result as CacheReadResult<T>;
+	}
+
+	async set<T>(_key: string, value: T): Promise<void> {
+		this.result = { status: 'fresh', value };
+	}
 }
 
 describe('CacheBase.getOrCreate', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it('returns a fresh hit without claiming or creating', async () => {
 		const cache = new FakeCache({ status: 'fresh', value: 'cached' });
 		const create = vi.fn(async () => 'upstream');
@@ -76,29 +93,65 @@ describe('CacheBase.getOrCreate', () => {
 		expect(cache.setTtlMs).toBe(Time.MINUTE);
 	});
 
-	it('serves stale data without waiting for the refetch claim', async () => {
+	it('waits for the refetch claim before creating', async () => {
 		let finishClaim: (claimed: boolean) => void = () => {};
 		const claim = new Promise<boolean>((resolve) => {
 			finishClaim = resolve;
 		});
-		const cache = new FakeCache({ status: 'stale', value: 'cached' }, claim, true);
+		const cache = new FakeCache({ status: 'stale', value: 'cached' }, claim);
 		const create = vi.fn(async () => 'upstream');
+		const result = cache.getOrCreate('key', create, { ttlMs: Time.MINUTE });
 
-		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toEqual({
-			value: 'cached',
-			servedStale: true
-		});
+		await Promise.resolve();
 		expect(create).not.toHaveBeenCalled();
-		expect(cache.deferredRefreshes).toHaveLength(1);
 
 		finishClaim(true);
-		await cache.deferredRefreshes[0];
+		await expect(result).resolves.toEqual({ value: 'upstream', servedStale: false });
 		expect(create).toHaveBeenCalledOnce();
 		expect(cache.setCalls).toBe(1);
 	});
 
-	it('serves stale data while the claim winner refreshes in the background', async () => {
-		const cache = new FakeCache({ status: 'stale', value: 'cached' }, true, true);
+	it('waits for the claim winner to refresh a stale value', async () => {
+		vi.useFakeTimers();
+		const cache = new FakeCache({ status: 'stale', value: 'cached' });
+		const create = vi.fn(async () => 'unused');
+		const result = cache.getOrCreate('key', create, { ttlMs: Time.MINUTE });
+
+		await vi.advanceTimersByTimeAsync(0);
+		cache.replaceResult({ status: 'fresh', value: 'upstream' });
+		await vi.advanceTimersByTimeAsync(100);
+
+		await expect(result).resolves.toEqual({ value: 'upstream', servedStale: false });
+		expect(create).not.toHaveBeenCalled();
+	});
+
+	it('shares one refresh result between concurrent callers', async () => {
+		vi.useFakeTimers();
+		const cache = new CoordinatedFakeCache();
+		let finishRefresh: (value: string) => void = () => {};
+		const create = vi.fn(
+			async () =>
+				await new Promise<string>((resolve) => {
+					finishRefresh = resolve;
+				})
+		);
+		const requests = Array.from({ length: 10 }, () =>
+			cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })
+		);
+
+		await vi.advanceTimersByTimeAsync(0);
+		expect(create).toHaveBeenCalledOnce();
+		finishRefresh('upstream');
+		await vi.advanceTimersByTimeAsync(100);
+
+		await expect(Promise.all(requests)).resolves.toEqual(
+			Array.from({ length: 10 }, () => ({ value: 'upstream', servedStale: false }))
+		);
+		expect(cache.claimCalls).toBe(10);
+	});
+
+	it('returns the refreshed value to the claim winner', async () => {
+		const cache = new FakeCache({ status: 'stale', value: 'cached' }, true);
 		let finishRefresh: (value: string) => void = () => {};
 		const create = vi.fn(
 			async () =>
@@ -107,18 +160,12 @@ describe('CacheBase.getOrCreate', () => {
 				})
 		);
 
-		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toEqual({
-			value: 'cached',
-			servedStale: true
-		});
-		expect(cache.setCalls).toBe(0);
-		expect(cache.deferredRefreshes).toHaveLength(1);
-
+		const result = cache.getOrCreate('key', create, { ttlMs: Time.MINUTE });
 		await vi.waitFor(() => expect(create).toHaveBeenCalledOnce());
 		finishRefresh('upstream');
-		await cache.deferredRefreshes[0];
+
+		await expect(result).resolves.toEqual({ value: 'upstream', servedStale: false });
 		expect(cache.setCalls).toBe(1);
-		expect(await cache.get<string>()).toEqual({ status: 'fresh', value: 'upstream' });
 	});
 
 	it('serves stale data when the claim winner create fails', async () => {
@@ -136,22 +183,28 @@ describe('CacheBase.getOrCreate', () => {
 		expect(cache.setCalls).toBe(0);
 	});
 
-	it('serves stale data when another caller owns the claim', async () => {
+	it('serves stale data when the claim winner does not finish within the claim window', async () => {
+		vi.useFakeTimers();
 		const cache = new FakeCache({ status: 'stale', value: 'cached' });
 		const create = vi.fn(async () => 'upstream');
+		const result = cache.getOrCreate('key', create, { ttlMs: Time.MINUTE });
 
-		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toEqual({
+		await vi.advanceTimersByTimeAsync(Time.SECOND * 30);
+		await expect(result).resolves.toEqual({
 			value: 'cached',
 			servedStale: true
 		});
 		expect(create).not.toHaveBeenCalled();
 	});
 
-	it('returns null on a miss when another caller owns the claim', async () => {
+	it('returns null when a missing value is not populated within the claim window', async () => {
+		vi.useFakeTimers();
 		const cache = new FakeCache({ status: 'miss' });
 		const create = vi.fn(async () => 'upstream');
+		const result = cache.getOrCreate('key', create, { ttlMs: Time.MINUTE });
 
-		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toBeNull();
+		await vi.advanceTimersByTimeAsync(Time.SECOND * 30);
+		await expect(result).resolves.toBeNull();
 		expect(create).not.toHaveBeenCalled();
 	});
 

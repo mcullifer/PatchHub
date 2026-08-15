@@ -1,4 +1,3 @@
-import { getRequestEvent } from '$app/server';
 import { createConvexClient, getConvexServerSecret } from '$lib/server/convex';
 import { api } from '$convex/_generated/api';
 import { CacheBase } from './CacheBase';
@@ -11,22 +10,6 @@ export class ConvexCache extends CacheBase {
 			key,
 			claimWindowMs
 		});
-	}
-
-	protected deferRefresh(key: string, refresh: Promise<unknown>): boolean {
-		try {
-			const executionContext = getRequestEvent().platform?.ctx;
-			if (!executionContext) return false;
-
-			executionContext.waitUntil(
-				refresh.catch((error) => {
-					console.error(`Failed to refresh cache entry "${key}"`, error);
-				})
-			);
-			return true;
-		} catch {
-			return false;
-		}
 	}
 
 	async get<T>(key: string): Promise<CacheReadResult<T>> {
