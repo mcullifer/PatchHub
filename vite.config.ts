@@ -2,14 +2,12 @@ import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
-import webfontDownload from 'vite-plugin-webfont-dl';
 import { defineConfig } from 'vitest/config';
 import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
-		webfontDownload(),
 		sveltekit({
 			preprocess: vitePreprocess({ style: true }),
 			adapter: adapter(),
