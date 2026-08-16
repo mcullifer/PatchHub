@@ -65,27 +65,6 @@ export default defineSchema({
 		slug: v.string(),
 		description: v.optional(v.string()),
 		bannerStorageId: v.optional(v.id('_storage')),
-		bannerUpload: v.optional(
-			v.union(
-				v.object({
-					status: v.literal('pending'),
-					attemptId: v.string(),
-					startedAt: v.number(),
-					storageId: v.optional(v.id('_storage')),
-					contentType: v.optional(v.string())
-				}),
-				v.object({
-					status: v.literal('failed'),
-					attemptId: v.string(),
-					failedAt: v.number(),
-					errorCode: v.union(
-						v.literal('upload_failed'),
-						v.literal('invalid_file'),
-						v.literal('expired')
-					)
-				})
-			)
-		),
 		userId: v.optional(v.id('users')),
 		orgId: v.optional(v.id('organizations')),
 		updatedAt: v.number(),

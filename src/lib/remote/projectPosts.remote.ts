@@ -71,6 +71,8 @@ export const getProjectPosts = query(ownerProjectSchema, async ({ createdBy, pro
 	return result;
 });
 
+export type ProjectDetails = Awaited<ReturnType<typeof getProjectPosts>>['project'];
+
 export const getProjectPost = query(
 	projectPostSchema,
 	async ({ createdBy, projectSlug, postSlug }) => {

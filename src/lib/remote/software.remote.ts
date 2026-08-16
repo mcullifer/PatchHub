@@ -1,17 +1,15 @@
 import { command, form, getRequestEvent, query } from '$app/server';
 import { api } from '$convex/_generated/api';
-import {
-	IMAGE_UPLOAD_MAX_BYTES,
-	getImageUploadValidationError,
-	uploadImageToConvexStorage
-} from '$convex/lib/imageUpload';
+import type { Id } from '$convex/_generated/dataModel';
 import { createSlug } from '$convex/lib/strings';
+import { uploadImageToStorage } from '$lib/images/imageUpload';
+import { IMAGE_UPLOAD_MAX_BYTES, getImageUploadValidationError } from '$lib/images/imageValidation';
 import type { SoftwareSourceSummary } from '$lib/models/Software';
 import { getAuthContext } from '$lib/server/auth/authContext';
-import { createConvexClient } from '$lib/server/convex';
+import { createConvexClient, generateConvexBannerUploadUrl } from '$lib/server/convex';
 import { boundedFetch } from '$lib/server/http/boundedFetch';
 import { getSourceSummaries } from '$lib/server/software/updates';
-import { error, invalid } from '@sveltejs/kit';
+import { error, invalid, type RequestEvent } from '@sveltejs/kit';
 import * as v from 'valibot';
 
 const httpUrlSchema = v.pipe(
@@ -27,8 +25,10 @@ const httpUrlSchema = v.pipe(
 const createSoftwareSourceSchema = v.object({
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
 	feedUrl: httpUrlSchema,
-	imageFile: v.optional(v.file()),
-	imageUrl: v.optional(v.union([v.literal(''), httpUrlSchema]), '')
+	bannerFile: v.optional(v.file()),
+	bannerUrl: v.optional(v.union([v.literal(''), httpUrlSchema]), ''),
+	bannerStorageId: v.optional(v.string()),
+	bannerContentType: v.optional(v.string())
 });
 
 const updateSoftwareSourceRenderingSchema = v.object({
@@ -41,60 +41,64 @@ export const getSoftwareSourceSummaries = query(async (): Promise<SoftwareSource
 	return getSourceSummaries(event.fetch);
 });
 
+export const generateSoftwareBannerUploadUrl = command(async () => {
+	const event = getRequestEvent();
+	await requireAdmin(event);
+
+	return await generateConvexBannerUploadUrl(event);
+});
+
 export const createSoftwareSource = form(createSoftwareSourceSchema, async (input, issue) => {
 	const event = getRequestEvent();
-	const { user } = await getAuthContext(event);
-	if (user?.platformRole !== 'admin') {
-		error(403, 'Admin access required');
-	}
+	await requireAdmin(event);
 	const name = input.name.trim();
 	const slug = createSlug(name, 'software');
 	const convex = createConvexClient(event);
-	const uploadUrl = await convex.mutation(api.catalog.generateSoftwareSourceImageUploadUrl, {
-		slug
-	});
 
-	const uploadedImage = input.imageFile?.size ? input.imageFile : null;
-	const imageUrl = input.imageUrl || null;
-	if (!uploadedImage && !imageUrl) {
-		invalid(issue.imageFile('Choose an image file or provide an image URL'));
+	const uploadedBanner = input.bannerFile?.size ? input.bannerFile : null;
+	const bannerUrl = input.bannerUrl || null;
+	let bannerStorageId = input.bannerStorageId as Id<'_storage'> | undefined;
+	let bannerContentType = input.bannerContentType || undefined;
+	if (uploadedBanner) {
+		invalid(issue.bannerFile('Unable to upload the attached banner directly'));
 	}
-	if (uploadedImage && imageUrl) {
-		invalid(issue.imageUrl('Choose an image file or provide an image URL, not both'));
+	if ((!bannerStorageId || !bannerContentType) && !bannerUrl) {
+		invalid(issue.bannerFile('Choose a banner file or provide a banner URL'));
+	}
+	if (bannerStorageId && bannerUrl) {
+		invalid(issue.bannerUrl('Choose a banner file or provide a banner URL, not both'));
 	}
 
-	let image: Blob;
-	if (uploadedImage) {
-		image = uploadedImage;
-	} else if (imageUrl) {
+	if (bannerUrl) {
 		let response: Response;
 		try {
-			response = await boundedFetch(event.fetch, imageUrl, {
+			response = await boundedFetch(event.fetch, bannerUrl, {
 				timeoutMs: 10_000,
 				maxBytes: IMAGE_UPLOAD_MAX_BYTES,
 				userAgent: 'PatchHub/beta'
 			});
 		} catch {
-			invalid(issue.imageUrl('Unable to download an image from that URL'));
+			invalid(issue.bannerUrl('Unable to download a banner from that URL'));
 		}
 		if (!response.ok) {
-			invalid(issue.imageUrl(`Image request failed with status ${response.status}`));
+			invalid(issue.bannerUrl(`Banner request failed with status ${response.status}`));
 		}
-		image = await response.blob();
-	} else {
-		invalid(issue.imageFile('Choose an image file or provide an image URL'));
-	}
+		const banner = await response.blob();
+		const bannerError = getImageUploadValidationError(banner, 'Banner image');
+		if (bannerError) {
+			invalid(issue.bannerUrl(bannerError));
+		}
 
-	const imageError = await getImageUploadValidationError(image, 'Card image');
-	if (imageError) {
-		invalid(uploadedImage ? issue.imageFile(imageError) : issue.imageUrl(imageError));
+		const uploadUrl = await generateConvexBannerUploadUrl(event);
+		try {
+			bannerStorageId = await uploadImageToStorage(event.fetch, uploadUrl, banner);
+			bannerContentType = banner.type;
+		} catch {
+			error(502, 'Unable to upload the software banner');
+		}
 	}
-
-	let imageStorageId;
-	try {
-		imageStorageId = await uploadImageToConvexStorage(event.fetch, uploadUrl, image);
-	} catch {
-		error(502, 'Unable to upload the software source image');
+	if (!bannerStorageId || !bannerContentType) {
+		invalid(issue.bannerFile('Choose a banner file or provide a banner URL'));
 	}
 
 	const metadataJson = JSON.stringify({
@@ -112,9 +116,10 @@ export const createSoftwareSource = form(createSoftwareSourceSchema, async (inpu
 		name,
 		slug,
 		metadataJson,
-		imageStorageId,
-		imageContentType: image.type
+		bannerStorageId,
+		bannerContentType
 	});
+	await getSoftwareSourceSummaries().refresh();
 
 	return { id: source.id, slug: source.slug };
 });
@@ -123,11 +128,13 @@ export const updateSoftwareSourceRendering = command(
 	updateSoftwareSourceRenderingSchema,
 	async (input) => {
 		const event = getRequestEvent();
-		const { user } = await getAuthContext(event);
-		if (user?.platformRole !== 'admin') {
-			error(403, 'Admin access required');
-		}
+		await requireAdmin(event);
 
 		await createConvexClient(event).mutation(api.catalog.updateSoftwareSourceRendering, input);
 	}
 );
+
+async function requireAdmin(event: RequestEvent) {
+	const { user } = await getAuthContext(event);
+	if (user?.platformRole !== 'admin') error(403, 'Admin access required');
+}

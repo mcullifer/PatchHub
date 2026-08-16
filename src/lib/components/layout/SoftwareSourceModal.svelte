@@ -1,99 +1,105 @@
 <script lang="ts">
 	import { Icon } from '$lib/components/common-ui';
-	import { createSoftwareSource, getSoftwareSourceSummaries } from '$lib/remote/software.remote';
 	import {
 		IMAGE_UPLOAD_ACCEPT,
+		IMAGE_UPLOAD_FORMATS_LABEL,
 		IMAGE_UPLOAD_MAX_SIZE_LABEL,
 		getImageUploadValidationError
-	} from '$convex/lib/imageUpload';
+	} from '$lib/images/imageValidation';
+	import { uploadImageToStorage } from '$lib/images/imageUpload';
+	import {
+		createSoftwareSource,
+		generateSoftwareBannerUploadUrl
+	} from '$lib/remote/software.remote';
+	import { tick } from 'svelte';
+	import * as v from 'valibot';
 
-	type SoftwareSourceImport = {
-		name: string;
-		feedUrl: string;
-		imageUrl: string;
-	};
-
-	let {
-		summariesQuery
-	}: {
-		summariesQuery: ReturnType<typeof getSoftwareSourceSummaries>;
-	} = $props();
+	const softwareSourceImportSchema = v.object({
+		name: v.string(),
+		feedUrl: v.string(),
+		imageUrl: v.string()
+	});
 
 	let dialog = $state<HTMLDialogElement | null>(null);
-	let nameInput = $state<HTMLInputElement | null>(null);
-	let feedUrlInput = $state<HTMLInputElement | null>(null);
-	let imageInput = $state<HTMLInputElement | null>(null);
-	let imageUrlInput = $state<HTMLInputElement | null>(null);
 	let sourceJson = $state('');
 	let sourceJsonIssue = $state<string | null>(null);
-	let imageFileIssue = $state<string | null>(null);
+	let bannerIssue = $state<string | null>(null);
 	let saveError = $state<string | null>(null);
+	let isUploading = $state(false);
 
 	const sourceJsonPlaceholder =
 		'{"name":"Google Chrome","feedUrl":"https://example.com/releases.xml","imageUrl":"https://example.com/product-image.png"}';
-	const saving = $derived(createSoftwareSource.pending > 0);
+	const saving = $derived(createSoftwareSource.pending > 0 || isUploading);
 	const enhance = createSoftwareSource.enhance(async (form) => {
 		saveError = null;
-		const image = imageInput?.files?.[0] ?? null;
-		imageFileIssue = image ? await getImageUploadValidationError(image, 'Card image') : null;
-		if (imageFileIssue) return;
+		const banner = form.fields.bannerFile.value();
+		const bannerUrl = form.fields.bannerUrl.value();
+		bannerIssue = banner ? getImageUploadValidationError(banner, 'Banner image') : null;
+		if (bannerIssue) return;
+		if (banner && bannerUrl) {
+			bannerIssue = 'Choose a banner file or provide a banner URL, not both';
+			return;
+		}
 
 		try {
-			const succeeded = await form.submit().updates();
-			if (!succeeded) return;
+			if (banner) {
+				isUploading = true;
+				const uploadUrl = await generateSoftwareBannerUploadUrl();
+				const storageId = await uploadImageToStorage(fetch, uploadUrl, banner);
+				form.fields.set({
+					bannerFile: undefined,
+					bannerStorageId: storageId,
+					bannerContentType: banner.type
+				});
+				await tick();
+			}
+			if (!(await form.submit())) return;
 
 			form.element.reset();
 			sourceJson = '';
 			sourceJsonIssue = null;
-			imageFileIssue = null;
+			bannerIssue = null;
 			dialog?.close();
-			await summariesQuery.refresh();
 		} catch (error) {
 			saveError = error instanceof Error ? error.message : 'Unable to add software source';
+		} finally {
+			isUploading = false;
 		}
 	});
 
 	export function open(): void {
 		saveError = null;
-		imageFileIssue = null;
+		bannerIssue = null;
 		dialog?.showModal();
 	}
 
-	async function validateImageFile(event: Event): Promise<void> {
-		const input = event.currentTarget as HTMLInputElement;
-		const image = input.files?.[0] ?? null;
-		const issue = image ? await getImageUploadValidationError(image, 'Card image') : null;
-		if (input.files?.[0] === image) imageFileIssue = issue;
+	function validateBanner(): void {
+		const banner = createSoftwareSource.fields.bannerFile.value();
+		bannerIssue = banner ? getImageUploadValidationError(banner, 'Banner image') : null;
+		createSoftwareSource.fields.set({
+			bannerStorageId: undefined,
+			bannerContentType: undefined
+		});
 	}
 
-	function importSourceJson(event: Event): void {
+	function importSourceJson(json: string): void {
 		sourceJsonIssue = null;
-		const json = (event.currentTarget as HTMLTextAreaElement).value;
 		if (!json.trim()) return;
 
 		try {
-			const source = JSON.parse(json) as unknown;
-			if (!isSoftwareSourceImport(source)) throw new Error();
-
-			if (nameInput) nameInput.value = source.name;
-			if (feedUrlInput) feedUrlInput.value = source.feedUrl;
-			if (imageUrlInput) imageUrlInput.value = source.imageUrl;
-			if (imageInput) imageInput.value = '';
-			imageFileIssue = null;
+			const source = v.parse(softwareSourceImportSchema, JSON.parse(json));
+			createSoftwareSource.fields.set({
+				name: source.name,
+				feedUrl: source.feedUrl,
+				bannerUrl: source.imageUrl,
+				bannerFile: undefined,
+				bannerStorageId: undefined,
+				bannerContentType: undefined
+			});
+			bannerIssue = null;
 		} catch {
 			sourceJsonIssue = 'Paste JSON with name, feedUrl, and imageUrl values.';
 		}
-	}
-
-	function isSoftwareSourceImport(value: unknown): value is SoftwareSourceImport {
-		if (typeof value !== 'object' || value === null) return false;
-		const source = value as Record<string, unknown>;
-
-		return (
-			typeof source.name === 'string' &&
-			typeof source.feedUrl === 'string' &&
-			typeof source.imageUrl === 'string'
-		);
 	}
 </script>
 
@@ -111,22 +117,23 @@
 		</p>
 
 		<form {...enhance} class="mt-4 flex flex-col" enctype="multipart/form-data">
+			<input {...createSoftwareSource.fields.bannerStorageId.as('hidden', '')} />
+			<input {...createSoftwareSource.fields.bannerContentType.as('hidden', '')} />
 			<fieldset class="fieldset">
 				<label class="label" for="software-source-json">Paste source JSON</label>
 				<textarea
 					id="software-source-json"
 					class="textarea min-h-24 w-full font-mono text-xs"
 					bind:value={sourceJson}
-					oninput={importSourceJson}
+					oninput={(event) => importSourceJson(event.currentTarget.value)}
 					placeholder={sourceJsonPlaceholder}></textarea>
-				<p class="label">Fills the name, feed URL, and card image URL below.</p>
+				<p class="label">Fills the name, feed URL, and banner URL below.</p>
 				{#if sourceJsonIssue}
 					<p class="text-error text-sm">{sourceJsonIssue}</p>
 				{/if}
 
 				<label class="label" for="software-source-name">Name</label>
 				<input
-					bind:this={nameInput}
 					{...createSoftwareSource.fields.name.as('text')}
 					id="software-source-name"
 					class="input w-full"
@@ -141,42 +148,42 @@
 
 				<label class="label" for="software-source-feed-url">Feed URL</label>
 				<input
-					bind:this={feedUrlInput}
 					{...createSoftwareSource.fields.feedUrl.as('url')}
 					id="software-source-feed-url"
 					class="input w-full"
 					required
 					placeholder="https://example.com/releases.xml"
 				/>
-
-				<label class="label" for="software-source-image-file">Card image file</label>
-				<input
-					bind:this={imageInput}
-					{...createSoftwareSource.fields.imageFile.as('file')}
-					id="software-source-image-file"
-					class="file-input w-full"
-					accept={IMAGE_UPLOAD_ACCEPT}
-					onchange={validateImageFile}
-				/>
-				<p class="label">
-					Drag and drop or choose an image up to {IMAGE_UPLOAD_MAX_SIZE_LABEL}.
-				</p>
-				{#each createSoftwareSource.fields.imageFile.issues() ?? [] as issue (issue.message)}
+				{#each createSoftwareSource.fields.feedUrl.issues() ?? [] as issue (issue.message)}
 					<p class="text-error text-sm">{issue.message}</p>
 				{/each}
-				{#if imageFileIssue}
-					<p class="text-error text-sm">{imageFileIssue}</p>
+
+				<label class="label" for="software-source-banner-file">Banner file</label>
+				<input
+					{...createSoftwareSource.fields.bannerFile.as('file')}
+					id="software-source-banner-file"
+					class="file-input w-full"
+					accept={IMAGE_UPLOAD_ACCEPT}
+					onchange={validateBanner}
+				/>
+				<p class="label">
+					Drag and drop or choose a {IMAGE_UPLOAD_FORMATS_LABEL} image up to {IMAGE_UPLOAD_MAX_SIZE_LABEL}.
+				</p>
+				{#each createSoftwareSource.fields.bannerFile.issues() ?? [] as issue (issue.message)}
+					<p class="text-error text-sm">{issue.message}</p>
+				{/each}
+				{#if bannerIssue}
+					<p class="text-error text-sm">{bannerIssue}</p>
 				{/if}
 
-				<label class="label" for="software-source-image-url">Or card image URL</label>
+				<label class="label" for="software-source-banner-url">Or banner URL</label>
 				<input
-					bind:this={imageUrlInput}
-					{...createSoftwareSource.fields.imageUrl.as('url')}
-					id="software-source-image-url"
+					{...createSoftwareSource.fields.bannerUrl.as('url')}
+					id="software-source-banner-url"
 					class="input w-full"
 					placeholder="https://example.com/product-image.png"
 				/>
-				{#each createSoftwareSource.fields.imageUrl.issues() ?? [] as issue (issue.message)}
+				{#each createSoftwareSource.fields.bannerUrl.issues() ?? [] as issue (issue.message)}
 					<p class="text-error text-sm">{issue.message}</p>
 				{/each}
 			</fieldset>

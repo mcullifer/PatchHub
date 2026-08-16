@@ -1,15 +1,9 @@
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
-import {
-	internalMutation,
-	mutation,
-	query,
-	type MutationCtx,
-	type QueryCtx
-} from './_generated/server';
+import { mutation, query, type QueryCtx } from './_generated/server';
 import { PROJECT_DESCRIPTION_MAX_LENGTH, PROJECT_NAME_MAX_LENGTH } from './lib/contentLimits';
-import { isValidStoredImage } from './lib/imageUpload';
+import { isValidStoredImage } from '../lib/images/imageValidation';
 import { rateLimiter } from './lib/rateLimits';
 import { requireServerSecret } from './lib/serverSecret';
 import { createSlug, normalizeName } from './lib/strings';
@@ -17,12 +11,10 @@ import { normalizeUsername } from './lib/usernames';
 import { requireActiveUser } from './users';
 
 const OWNER_PROJECT_LIMIT = 100;
-const PROJECT_BANNER_UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_SLUG_ATTEMPTS = 1000;
 
 type ProjectLookupCtx = Pick<QueryCtx, 'db'>;
 type AuthenticatedProjectLookupCtx = Pick<QueryCtx, 'auth' | 'db'>;
-type BannerUploadFailureCode = 'upload_failed' | 'invalid_file' | 'expired';
 
 export type ProjectOwner =
 	| {
@@ -79,38 +71,14 @@ export const getOwnerProfile = query({
 	}
 });
 
-export const getClaimedBannerUpload = query({
-	args: {
-		projectId: v.id('projects'),
-		attemptId: v.string(),
-		storageId: v.id('_storage')
-	},
-	handler: async (ctx, args) => {
-		const { project } = await requireOwnedProject(ctx, args.projectId);
-		if (
-			!isCurrentPendingAttempt(project, args.attemptId) ||
-			project.bannerUpload.storageId !== args.storageId ||
-			!project.bannerUpload.contentType
-		) {
-			return null;
-		}
-
-		const metadata = await getValidBannerStorageMetadata(
-			ctx,
-			args.storageId,
-			project.bannerUpload.contentType
-		);
-		const url = metadata ? await ctx.storage.getUrl(args.storageId) : null;
-		return metadata && url ? { url, contentType: project.bannerUpload.contentType } : null;
-	}
-});
-
 export const create = mutation({
 	args: {
 		name: v.string(),
 		description: v.optional(v.string()),
-		bannerUploadAttemptId: v.optional(v.string())
+		bannerStorageId: v.optional(v.id('_storage')),
+		bannerContentType: v.optional(v.string())
 	},
+	returns: v.object({ id: v.id('projects'), createdBy: v.string(), slug: v.string() }),
 	handler: async (ctx, args) => {
 		const user = await requireActiveUser(ctx);
 		if (!user.username) {
@@ -124,63 +92,24 @@ export const create = mutation({
 
 		const name = normalizeProjectName(args.name);
 		const description = normalizeProjectDescription(args.description);
+		if (args.bannerStorageId) {
+			await requireValidUnusedBanner(ctx, args.bannerStorageId, args.bannerContentType);
+		}
 		const slug = await createUniqueProjectSlug(ctx, user._id, createSlug(name, 'project'));
-		const now = Date.now();
-		const attemptId = args.bannerUploadAttemptId
-			? normalizeBannerUploadAttemptId(args.bannerUploadAttemptId)
-			: undefined;
-		const project: {
-			name: string;
-			normalizedName: string;
-			slug: string;
-			description?: string;
-			bannerUpload?:
-				| { status: 'pending'; attemptId: string; startedAt: number }
-				| {
-						status: 'failed';
-						attemptId: string;
-						failedAt: number;
-						errorCode: 'upload_failed';
-				  };
-			userId: Id<'users'>;
-			updatedAt: number;
-		} = {
+		const id = await ctx.db.insert('projects', {
 			name,
 			normalizedName: normalizeName(name),
 			slug,
+			description,
+			bannerStorageId: args.bannerStorageId,
 			userId: user._id,
-			updatedAt: now
-		};
-
-		if (description !== undefined) {
-			project.description = description;
-		}
-
-		let uploadUrl: string | null = null;
-		if (attemptId) {
-			try {
-				uploadUrl = await ctx.storage.generateUploadUrl();
-				project.bannerUpload = { status: 'pending', attemptId, startedAt: now };
-			} catch {
-				project.bannerUpload = {
-					status: 'failed',
-					attemptId,
-					failedAt: now,
-					errorCode: 'upload_failed'
-				};
-			}
-		}
-
-		const id = await ctx.db.insert('projects', project);
-		if (attemptId && uploadUrl) {
-			await scheduleBannerUploadExpiration(ctx, id, attemptId);
-		}
+			updatedAt: Date.now()
+		});
 
 		return {
 			id,
 			createdBy: user.username,
-			slug,
-			bannerUpload: attemptId && uploadUrl ? { attemptId, uploadUrl } : null
+			slug
 		};
 	}
 });
@@ -189,18 +118,32 @@ export const update = mutation({
 	args: {
 		projectId: v.id('projects'),
 		name: v.string(),
-		description: v.optional(v.string())
+		description: v.optional(v.string()),
+		bannerStorageId: v.optional(v.id('_storage')),
+		bannerContentType: v.optional(v.string())
 	},
+	returns: v.object({ slug: v.string() }),
 	handler: async (ctx, args) => {
 		const { project } = await requireOwnedProject(ctx, args.projectId);
 		const name = normalizeProjectName(args.name);
 		const description = normalizeProjectDescription(args.description);
+		if (args.bannerStorageId) {
+			await requireValidUnusedBanner(ctx, args.bannerStorageId, args.bannerContentType);
+		}
 		await ctx.db.patch(project._id, {
 			name,
 			normalizedName: normalizeName(name),
 			description,
+			bannerStorageId: args.bannerStorageId ?? project.bannerStorageId,
 			updatedAt: Date.now()
 		});
+		if (
+			args.bannerStorageId &&
+			project.bannerStorageId &&
+			project.bannerStorageId !== args.bannerStorageId
+		) {
+			await ctx.storage.delete(project.bannerStorageId);
+		}
 
 		return { slug: project.slug };
 	}
@@ -222,151 +165,6 @@ export const remove = mutation({
 	}
 });
 
-export const beginBannerUpload = mutation({
-	args: {
-		projectId: v.id('projects'),
-		attemptId: v.string()
-	},
-	handler: async (ctx, args) => {
-		const { project } = await requireOwnedProject(ctx, args.projectId);
-		const attemptId = normalizeBannerUploadAttemptId(args.attemptId);
-
-		if (project.bannerUpload?.status === 'pending' && project.bannerUpload.storageId) {
-			await deleteUnattachedStorage(ctx, project.bannerUpload.storageId);
-		}
-
-		const startedAt = Date.now();
-		const uploadUrl = await ctx.storage.generateUploadUrl();
-		await ctx.db.patch(project._id, {
-			bannerUpload: { status: 'pending', attemptId, startedAt }
-		});
-		await scheduleBannerUploadExpiration(ctx, project._id, attemptId);
-
-		return { attemptId, uploadUrl };
-	}
-});
-
-export const claimBannerUpload = mutation({
-	args: {
-		projectId: v.id('projects'),
-		attemptId: v.string(),
-		storageId: v.id('_storage'),
-		contentType: v.string()
-	},
-	handler: async (ctx, args) => {
-		const { project } = await requireOwnedProject(ctx, args.projectId);
-		if (!isCurrentPendingAttempt(project, args.attemptId)) {
-			return { status: 'stale' as const };
-		}
-
-		if (await findProjectUsingBanner(ctx, args.storageId)) {
-			return { status: 'stale' as const };
-		}
-
-		const metadata = await getValidBannerStorageMetadata(ctx, args.storageId, args.contentType);
-		if (!metadata) {
-			await deleteUnattachedStorage(ctx, args.storageId);
-			await markBannerUploadFailed(ctx, project, args.attemptId, 'invalid_file');
-			return { status: 'failed' as const };
-		}
-
-		await ctx.db.patch(project._id, {
-			bannerUpload: {
-				status: 'pending',
-				attemptId: args.attemptId,
-				startedAt: project.bannerUpload.startedAt,
-				storageId: args.storageId,
-				contentType: args.contentType
-			}
-		});
-
-		return {
-			status: 'claimed' as const,
-			contentType: args.contentType
-		};
-	}
-});
-
-export const finishBannerUpload = mutation({
-	args: {
-		projectId: v.id('projects'),
-		attemptId: v.string(),
-		storageId: v.id('_storage'),
-		outcome: v.union(v.literal('ready'), v.literal('invalid_file'), v.literal('upload_failed'))
-	},
-	handler: async (ctx, args) => {
-		const { project } = await requireOwnedProject(ctx, args.projectId);
-		if (
-			!isCurrentPendingAttempt(project, args.attemptId) ||
-			project.bannerUpload.storageId !== args.storageId
-		) {
-			return { status: 'stale' as const };
-		}
-
-		if (args.outcome !== 'ready' || !(await getValidBannerStorageMetadata(ctx, args.storageId))) {
-			await deleteUnattachedStorage(ctx, args.storageId);
-			await markBannerUploadFailed(
-				ctx,
-				project,
-				args.attemptId,
-				args.outcome === 'invalid_file' ? 'invalid_file' : 'upload_failed'
-			);
-			return { status: 'failed' as const };
-		}
-
-		const replacedStorageId = project.bannerStorageId;
-		await ctx.db.patch(project._id, {
-			bannerStorageId: args.storageId,
-			bannerUpload: undefined,
-			updatedAt: Date.now()
-		});
-
-		if (replacedStorageId && replacedStorageId !== args.storageId) {
-			await deleteUnattachedStorage(ctx, replacedStorageId);
-		}
-
-		return { status: 'ready' as const };
-	}
-});
-
-export const failBannerUpload = mutation({
-	args: {
-		projectId: v.id('projects'),
-		attemptId: v.string()
-	},
-	handler: async (ctx, args) => {
-		const { project } = await requireOwnedProject(ctx, args.projectId);
-		if (!isCurrentPendingAttempt(project, args.attemptId)) {
-			return { status: 'stale' as const };
-		}
-
-		if (project.bannerUpload.storageId) {
-			await deleteUnattachedStorage(ctx, project.bannerUpload.storageId);
-		}
-		await markBannerUploadFailed(ctx, project, args.attemptId, 'upload_failed');
-		return { status: 'failed' as const };
-	}
-});
-
-export const expireBannerUpload = internalMutation({
-	args: {
-		projectId: v.id('projects'),
-		attemptId: v.string()
-	},
-	handler: async (ctx, args) => {
-		const project = await ctx.db.get(args.projectId);
-		if (!project || !isCurrentPendingAttempt(project, args.attemptId)) {
-			return null;
-		}
-
-		if (project.bannerUpload.storageId) {
-			await deleteUnattachedStorage(ctx, project.bannerUpload.storageId);
-		}
-		await markBannerUploadFailed(ctx, project, args.attemptId, 'expired');
-		return null;
-	}
-});
-
 export async function requireOwnedProject(
 	ctx: AuthenticatedProjectLookupCtx,
 	projectId: Id<'projects'>
@@ -380,51 +178,18 @@ export async function requireOwnedProject(
 	return { user, project };
 }
 
-function normalizeBannerUploadAttemptId(attemptId: string): string {
-	const normalized = attemptId.trim();
-	if (!normalized) {
-		throw new Error('Banner upload attempt is required');
-	}
-
-	return normalized;
-}
-
-function isCurrentPendingAttempt(
-	project: Doc<'projects'>,
-	attemptId: string
-): project is Doc<'projects'> & {
-	bannerUpload: {
-		status: 'pending';
-		attemptId: string;
-		startedAt: number;
-		storageId?: Id<'_storage'>;
-		contentType?: string;
-	};
-} {
-	return project.bannerUpload?.status === 'pending' && project.bannerUpload.attemptId === attemptId;
-}
-
-async function scheduleBannerUploadExpiration(
-	ctx: Pick<MutationCtx, 'scheduler'>,
-	projectId: Id<'projects'>,
-	attemptId: string
-): Promise<void> {
-	await ctx.scheduler.runAfter(
-		PROJECT_BANNER_UPLOAD_TIMEOUT_MS,
-		internal.projects.expireBannerUpload,
-		{ projectId, attemptId }
-	);
-}
-
-async function getValidBannerStorageMetadata(
+async function requireValidUnusedBanner(
 	ctx: Pick<QueryCtx, 'db'>,
 	storageId: Id<'_storage'>,
 	contentType?: string
-) {
+): Promise<void> {
+	if (await findProjectUsingBanner(ctx, storageId)) {
+		throw new Error('Banner image is already in use');
+	}
 	const metadata = await ctx.db.system.get('_storage', storageId);
-	if (!isValidStoredImage(metadata, contentType)) return null;
-
-	return metadata;
+	if (!contentType || !isValidStoredImage(metadata, contentType)) {
+		throw new Error('Banner image is invalid');
+	}
 }
 
 async function findProjectUsingBanner(
@@ -435,32 +200,6 @@ async function findProjectUsingBanner(
 		.query('projects')
 		.withIndex('by_bannerStorageId', (q) => q.eq('bannerStorageId', storageId))
 		.first();
-}
-
-async function deleteUnattachedStorage(
-	ctx: Pick<MutationCtx, 'db' | 'storage'>,
-	storageId: Id<'_storage'>
-): Promise<void> {
-	if (await findProjectUsingBanner(ctx, storageId)) return;
-	if (await ctx.db.system.get('_storage', storageId)) {
-		await ctx.storage.delete(storageId);
-	}
-}
-
-async function markBannerUploadFailed(
-	ctx: Pick<MutationCtx, 'db'>,
-	project: Doc<'projects'>,
-	attemptId: string,
-	errorCode: BannerUploadFailureCode
-): Promise<void> {
-	await ctx.db.patch(project._id, {
-		bannerUpload: {
-			status: 'failed',
-			attemptId,
-			failedAt: Date.now(),
-			errorCode
-		}
-	});
 }
 
 async function getOwnerProfileData(ctx: Pick<QueryCtx, 'db' | 'storage'>, createdBy: string) {

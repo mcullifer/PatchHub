@@ -71,6 +71,6 @@
 	</svelte:boundary>
 
 	{#if currentUser()?.platformRole === 'admin'}
-		<SoftwareSourceModal bind:this={sourceModal} summariesQuery={softwareSourceSummaries} />
+		<SoftwareSourceModal bind:this={sourceModal} />
 	{/if}
 </section>

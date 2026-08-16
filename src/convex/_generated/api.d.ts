@@ -14,7 +14,6 @@ import type * as crons from "../crons.js";
 import type * as favorites from "../favorites.js";
 import type * as lib_contentLimits from "../lib/contentLimits.js";
 import type * as lib_externalItems from "../lib/externalItems.js";
-import type * as lib_imageUpload from "../lib/imageUpload.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_serverSecret from "../lib/serverSecret.js";
 import type * as lib_steam from "../lib/steam.js";
@@ -23,6 +22,7 @@ import type * as lib_usernames from "../lib/usernames.js";
 import type * as projectPosts from "../projectPosts.js";
 import type * as projects from "../projects.js";
 import type * as steamSync from "../steamSync.js";
+import type * as storage from "../storage.js";
 import type * as users from "../users.js";
 
 import type {
@@ -38,7 +38,6 @@ declare const fullApi: ApiFromModules<{
   favorites: typeof favorites;
   "lib/contentLimits": typeof lib_contentLimits;
   "lib/externalItems": typeof lib_externalItems;
-  "lib/imageUpload": typeof lib_imageUpload;
   "lib/rateLimits": typeof lib_rateLimits;
   "lib/serverSecret": typeof lib_serverSecret;
   "lib/steam": typeof lib_steam;
@@ -47,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   projectPosts: typeof projectPosts;
   projects: typeof projects;
   steamSync: typeof steamSync;
+  storage: typeof storage;
   users: typeof users;
 }>;
 

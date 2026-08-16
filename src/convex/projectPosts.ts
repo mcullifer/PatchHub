@@ -16,18 +16,12 @@ const PROJECT_POST_LIST_LIMIT = 50;
 const MAX_SLUG_ATTEMPTS = 1000;
 const RESERVED_POST_SLUGS = new Set(['new']);
 
-type ProjectBannerDto =
-	| { status: 'none'; url: null }
-	| { status: 'ready'; url: string }
-	| { status: 'pending'; url: string | null }
-	| { status: 'failed'; url: string | null; message: string };
-
 type ProjectPostProjectDto = {
 	id: Id<'projects'>;
 	name: string;
 	slug: string;
 	description: string | null;
-	banner: ProjectBannerDto;
+	bannerUrl: string | null;
 	owner: {
 		id: ProjectOwner['id'];
 		name: string;
@@ -66,7 +60,7 @@ export const listForProject = query({
 		const posts = await listVisibleProjectPosts(ctx, resolvedProject.project._id, canViewDrafts);
 
 		return {
-			project: await toProjectDto(ctx, resolvedProject, canViewDrafts),
+			project: await toProjectDto(ctx, resolvedProject),
 			posts: posts.map(toProjectPostListItemDto)
 		};
 	}
@@ -93,7 +87,7 @@ export const getForProject = query({
 		}
 
 		return {
-			project: await toProjectDto(ctx, resolvedProject, canViewDraft),
+			project: await toProjectDto(ctx, resolvedProject),
 			post: toProjectPostDto(post)
 		};
 	}
@@ -264,8 +258,7 @@ async function findProjectPostByProjectAndSlug(
 
 async function toProjectDto(
 	ctx: QueryCtx,
-	resolvedProject: ResolvedProject,
-	showBannerFailure: boolean
+	resolvedProject: ResolvedProject
 ): Promise<ProjectPostProjectDto> {
 	const bannerUrl = resolvedProject.project.bannerStorageId
 		? await ctx.storage.getUrl(resolvedProject.project.bannerStorageId)
@@ -276,43 +269,12 @@ async function toProjectDto(
 		name: resolvedProject.project.name,
 		slug: resolvedProject.project.slug,
 		description: resolvedProject.project.description ?? null,
-		banner: toProjectBannerDto(resolvedProject.project, bannerUrl, showBannerFailure),
+		bannerUrl,
 		owner: {
 			id: resolvedProject.owner.id,
 			name: resolvedProject.owner.name
 		}
 	};
-}
-
-function toProjectBannerDto(
-	project: Doc<'projects'>,
-	url: string | null,
-	showFailure: boolean
-): ProjectBannerDto {
-	if (project.bannerUpload?.status === 'pending') {
-		return { status: 'pending', url };
-	}
-
-	if (project.bannerUpload?.status === 'failed' && showFailure) {
-		return {
-			status: 'failed',
-			url,
-			message: getBannerUploadErrorMessage(project.bannerUpload.errorCode)
-		};
-	}
-
-	return url ? { status: 'ready', url } : { status: 'none', url: null };
-}
-
-function getBannerUploadErrorMessage(errorCode: 'upload_failed' | 'invalid_file' | 'expired') {
-	switch (errorCode) {
-		case 'invalid_file':
-			return 'The banner image was not valid.';
-		case 'expired':
-			return 'The banner upload expired.';
-		case 'upload_failed':
-			return 'The banner upload failed.';
-	}
 }
 
 function toProjectPostDto(post: Doc<'projectPosts'>): ProjectPostDto {

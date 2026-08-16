@@ -1,4 +1,5 @@
 import { getRequestEvent } from '$app/server';
+import { api } from '$convex/_generated/api';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_CONVEX_URL } from '$env/static/public';
 import { ConvexHttpClient } from 'convex/browser';
@@ -30,4 +31,10 @@ export function getConvexServerSecret(): string {
 	const secret = env.CONVEX_SERVER_SECRET;
 	if (!secret) throw new Error('CONVEX_SERVER_SECRET is not set');
 	return secret;
+}
+
+export async function generateConvexBannerUploadUrl(event: RequestEvent): Promise<string> {
+	return await createConvexClient(event).mutation(api.storage.generateBannerUploadUrl, {
+		secret: getConvexServerSecret()
+	});
 }

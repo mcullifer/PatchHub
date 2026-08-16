@@ -1,7 +1,7 @@
 # Remote Functions
 
 PatchHub uses SvelteKit remote functions for app-internal client/server communication. The required
-`remoteFunctions` and async compiler flags are enabled in `svelte.config.js`.
+`remoteFunctions` and async compiler flags are enabled in `vite.config.ts`.
 
 ## Defaults
 

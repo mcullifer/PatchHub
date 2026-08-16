@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Seo from '$lib/components/Seo.svelte';
-	import ProjectFormModal from '$lib/components/projects/ProjectFormModal.svelte';
+	import EditProjectModal from '$lib/components/projects/EditProjectModal.svelte';
 	import ProjectHero from '$lib/components/projects/ProjectHero.svelte';
 	import ProjectPostFeed from '$lib/components/projects/ProjectPostFeed.svelte';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
@@ -24,30 +24,17 @@
 	title="{project.name} - PatchHub"
 	description={project.description ??
 		`Follow ${project.name} for the latest patch notes and updates on PatchHub.`}
-	image={project.banner.status === 'ready' ? project.banner.url : undefined}
+	image={project.bannerUrl ?? undefined}
 />
 
 <svelte:boundary>
 	<div class="flex flex-col gap-3 sm:gap-4">
-		<ProjectHero
-			{project}
-			createdBy={params.createdBy}
-			projectSlug={params.project}
-			onEditProject={() => editModal?.open()}
-		/>
+		<ProjectHero {project} onEditProject={() => editModal?.open()} />
 		<ProjectPostFeed {project} {posts} createdBy={params.createdBy} />
 	</div>
 
 	{#if isOwner}
-		<ProjectFormModal
-			bind:this={editModal}
-			mode={{
-				kind: 'edit',
-				project,
-				createdBy: params.createdBy,
-				projectSlug: params.project
-			}}
-		/>
+		<EditProjectModal bind:this={editModal} {project} />
 	{/if}
 
 	{#snippet pending()}

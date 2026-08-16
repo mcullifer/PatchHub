@@ -92,7 +92,7 @@
 	title="{post.title} - {project.name}"
 	description={tiptapExcerpt(post.content) ||
 		`${post.title} — an update for ${project.name} on PatchHub.`}
-	image={project.banner.status === 'ready' ? project.banner.url : undefined}
+	image={project.bannerUrl ?? undefined}
 	type="article"
 />
 

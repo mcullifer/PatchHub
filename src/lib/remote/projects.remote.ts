@@ -2,12 +2,11 @@ import { command, form, getRequestEvent, query, requested } from '$app/server';
 import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
 import { PROJECT_DESCRIPTION_MAX_LENGTH, PROJECT_NAME_MAX_LENGTH } from '$convex/lib/contentLimits';
-import { getImageUploadValidationError } from '$convex/lib/imageUpload';
 import { captureServerEvent } from '$lib/server/analytics';
-import { requireAuth } from '$lib/server/auth/authContext';
-import { createConvexClient } from '$lib/server/convex';
+import { getAuthContext, requireAuth } from '$lib/server/auth/authContext';
+import { createConvexClient, generateConvexBannerUploadUrl } from '$lib/server/convex';
 import { loadOwnerProfile } from '$lib/server/projects/ownerProfile';
-import { invalid } from '@sveltejs/kit';
+import { error, invalid } from '@sveltejs/kit';
 import * as v from 'valibot';
 import { getFavorites } from './favorites.remote';
 import { getProjectPosts } from './projectPosts.remote';
@@ -36,29 +35,22 @@ const projectDescriptionSchema = v.optional(
 const createProjectSchema = v.object({
 	name: projectNameSchema,
 	description: projectDescriptionSchema,
-	bannerRequested: v.optional(v.literal('yes'))
+	bannerFile: v.optional(v.file()),
+	bannerStorageId: v.optional(v.string()),
+	bannerContentType: v.optional(v.string())
 });
 
 const updateProjectSchema = v.object({
 	projectId: v.string(),
 	name: projectNameSchema,
-	description: projectDescriptionSchema
+	description: projectDescriptionSchema,
+	bannerFile: v.optional(v.file()),
+	bannerStorageId: v.optional(v.string()),
+	bannerContentType: v.optional(v.string())
 });
 
 const projectIdSchema = v.object({
 	projectId: v.string()
-});
-
-const projectBannerAttemptSchema = v.object({
-	projectId: v.string(),
-	attemptId: v.string()
-});
-
-const completeProjectBannerUploadSchema = v.object({
-	projectId: v.string(),
-	attemptId: v.string(),
-	storageId: v.string(),
-	contentType: v.string()
 });
 
 export const getOwnerProfile = query(ownerSlugSchema, async (createdBy) => {
@@ -67,20 +59,24 @@ export const getOwnerProfile = query(ownerSlugSchema, async (createdBy) => {
 
 export const createProject = form(
 	createProjectSchema,
-	async ({ name, description, bannerRequested }, issue) => {
+	async ({ name, description, bannerFile, bannerStorageId, bannerContentType }, issue) => {
 		const event = getRequestEvent();
 		const user = requireAuth(event);
 		const convex = createConvexClient(event);
+		if (bannerFile?.size) {
+			invalid(issue.bannerFile('Unable to upload the attached banner directly'));
+		}
 
 		try {
 			const project = await convex.mutation(api.projects.create, {
 				name,
 				description: description || undefined,
-				bannerUploadAttemptId: bannerRequested ? crypto.randomUUID() : undefined
+				bannerStorageId: (bannerStorageId || undefined) as Id<'_storage'> | undefined,
+				bannerContentType: bannerContentType || undefined
 			});
 			await captureServerEvent(event, user.id, {
 				name: 'project created',
-				properties: { banner_requested: bannerRequested === 'yes' }
+				properties: { banner_uploaded: Boolean(bannerStorageId) }
 			});
 
 			await requested(getOwnerProfile, 1).refreshAll();
@@ -88,6 +84,9 @@ export const createProject = form(
 		} catch (mutationError) {
 			if (shouldRethrowProjectCreateError(mutationError)) {
 				throw mutationError;
+			}
+			if (getErrorMessage(mutationError).includes('Banner image')) {
+				invalid(issue.bannerFile('Banner image is invalid'));
 			}
 
 			const message = getProjectCreateErrorMessage(mutationError);
@@ -100,18 +99,38 @@ export const createProject = form(
 	}
 );
 
-export const updateProject = command(
+export const updateProject = form(
 	updateProjectSchema,
-	async ({ projectId, name, description }) => {
+	async (
+		{ projectId, name, description, bannerFile, bannerStorageId, bannerContentType },
+		issue
+	) => {
 		const event = getRequestEvent();
 		const user = requireAuth(event);
 		const convex = createConvexClient(event);
-		const project = await convex.mutation(api.projects.update, {
-			projectId: projectId as Id<'projects'>,
-			name,
-			description: description || undefined
+		if (bannerFile?.size) {
+			invalid(issue.bannerFile('Unable to upload the attached banner directly'));
+		}
+
+		let project: { slug: string };
+		try {
+			project = await convex.mutation(api.projects.update, {
+				projectId: projectId as Id<'projects'>,
+				name,
+				description: description || undefined,
+				bannerStorageId: (bannerStorageId || undefined) as Id<'_storage'> | undefined,
+				bannerContentType: bannerContentType || undefined
+			});
+		} catch (mutationError) {
+			if (getErrorMessage(mutationError).includes('Banner image')) {
+				invalid(issue.bannerFile('Banner image is invalid'));
+			}
+			throw mutationError;
+		}
+		await captureServerEvent(event, user.id, {
+			name: 'project updated',
+			properties: { banner_uploaded: Boolean(bannerStorageId) }
 		});
-		await captureServerEvent(event, user.id, { name: 'project updated' });
 
 		await Promise.all([
 			requested(getOwnerProfile, 1).refreshAll(),
@@ -141,97 +160,14 @@ export const deleteProject = command(projectIdSchema, async ({ projectId }) => {
 	return null;
 });
 
-export const beginProjectBannerUpload = command(projectIdSchema, async ({ projectId }) => {
+export const generateProjectBannerUploadUrl = command(async () => {
 	const event = getRequestEvent();
 	requireAuth(event);
-	const convex = createConvexClient(event);
-	const result = await convex.mutation(api.projects.beginBannerUpload, {
-		projectId: projectId as Id<'projects'>,
-		attemptId: crypto.randomUUID()
-	});
-	await requested(getProjectPosts, 1).refreshAll();
-	return result;
+	const { user } = await getAuthContext(event);
+	if (!user?.username) error(403, 'Account setup is required');
+
+	return await generateConvexBannerUploadUrl(event);
 });
-
-export const completeProjectBannerUpload = command(
-	completeProjectBannerUploadSchema,
-	async ({ projectId, attemptId, storageId, contentType }) => {
-		const event = getRequestEvent();
-		const user = requireAuth(event);
-		const convex = createConvexClient(event);
-		const typedProjectId = projectId as Id<'projects'>;
-		const typedStorageId = storageId as Id<'_storage'>;
-		const upload = {
-			projectId: typedProjectId,
-			attemptId
-		};
-		const claim = await convex.mutation(api.projects.claimBannerUpload, {
-			...upload,
-			storageId: typedStorageId,
-			contentType
-		});
-
-		if (claim.status !== 'claimed') {
-			await requested(getProjectPosts, 1).refreshAll();
-			return { status: claim.status };
-		}
-
-		const claimedUpload = await convex.query(api.projects.getClaimedBannerUpload, {
-			...upload,
-			storageId: typedStorageId
-		});
-		let outcome: 'ready' | 'invalid_file' | 'upload_failed';
-		try {
-			const response = claimedUpload ? await fetch(claimedUpload.url) : null;
-			if (!response?.ok || !claimedUpload) {
-				outcome = 'upload_failed';
-			} else {
-				const blob = new Blob([await response.arrayBuffer()], {
-					type: claimedUpload.contentType
-				});
-				outcome = (await getImageUploadValidationError(blob, 'Banner image'))
-					? 'invalid_file'
-					: 'ready';
-			}
-		} catch {
-			outcome = 'upload_failed';
-		}
-
-		const result = await convex.mutation(api.projects.finishBannerUpload, {
-			...upload,
-			storageId: typedStorageId,
-			outcome
-		});
-		if (outcome === 'ready') {
-			await captureServerEvent(event, user.id, {
-				name: 'project banner uploaded'
-			});
-			await Promise.all([
-				requested(getFavorites, 1).refreshAll(),
-				requested(getProjectPosts, 1).refreshAll()
-			]);
-			return result;
-		}
-
-		await requested(getProjectPosts, 1).refreshAll();
-		return result;
-	}
-);
-
-export const failProjectBannerUpload = command(
-	projectBannerAttemptSchema,
-	async ({ projectId, attemptId }) => {
-		const event = getRequestEvent();
-		requireAuth(event);
-		const convex = createConvexClient(event);
-		const result = await convex.mutation(api.projects.failBannerUpload, {
-			projectId: projectId as Id<'projects'>,
-			attemptId
-		});
-		await requested(getProjectPosts, 1).refreshAll();
-		return result;
-	}
-);
 
 function shouldRethrowProjectCreateError(error: unknown): boolean {
 	const message = getErrorMessage(error);

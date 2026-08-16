@@ -679,7 +679,7 @@ describe('catalog', () => {
 		const admin = asUser(t, 'workos_admin');
 		const member = asUser(t, 'workos_member');
 
-		const imageStorageId = await t.run(async (ctx) => {
+		const bannerStorageId = await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
 				authProviderId: 'workos_admin',
 				username: 'admin',
@@ -707,21 +707,16 @@ describe('catalog', () => {
 				name: 'GitHub Changelog',
 				slug: 'github-changelog',
 				metadataJson: SOFTWARE_METADATA,
-				imageStorageId,
-				imageContentType: 'image/png'
-			})
-		).rejects.toThrow('Admin access required');
-		await expect(
-			member.mutation(api.catalog.generateSoftwareSourceImageUploadUrl, {
-				slug: 'github-changelog'
+				bannerStorageId,
+				bannerContentType: 'image/png'
 			})
 		).rejects.toThrow('Admin access required');
 		const source = await admin.mutation(api.catalog.createSoftwareSource, {
 			name: 'GitHub Changelog',
 			slug: 'github-changelog',
 			metadataJson: SOFTWARE_METADATA,
-			imageStorageId,
-			imageContentType: 'image/png'
+			bannerStorageId,
+			bannerContentType: 'image/png'
 		});
 		await expect(
 			admin.mutation(api.favorites.setExternalItem, {
@@ -1155,7 +1150,7 @@ describe('projects.remove', () => {
 });
 
 describe('projects project banners', () => {
-	it('returns a resolved ready banner without exposing storage state', async () => {
+	it('returns a resolved banner URL without exposing its storage ID', async () => {
 		const t = createTest();
 
 		await t.run(async (ctx) => {
@@ -1183,13 +1178,22 @@ describe('projects project banners', () => {
 			projectSlug: 'patchhub'
 		});
 
-		expect(result?.project.banner).toMatchObject({ status: 'ready' });
-		expect(result?.project.banner.url).toContain('/api/storage/');
+		expect(result?.project.bannerUrl).toContain('/api/storage/');
 		expect(result?.project).not.toHaveProperty('bannerStorageId');
-		expect(result?.project).not.toHaveProperty('bannerUpload');
 	});
 
-	it('creates the project immediately with a pending upload attempt', async () => {
+	it('only generates banner upload URLs for server-secret calls', async () => {
+		const t = createTest();
+
+		await expect(
+			t.mutation(api.storage.generateBannerUploadUrl, { secret: SECRET })
+		).resolves.toContain('/api/storage/upload');
+		await expect(
+			t.mutation(api.storage.generateBannerUploadUrl, { secret: 'wrong-secret' })
+		).rejects.toThrow('Unauthorized');
+	});
+
+	it('validates and attaches a directly uploaded banner when creating a project', async () => {
 		const t = createTest();
 
 		await t.run(async (ctx) => {
@@ -1200,201 +1204,48 @@ describe('projects project banners', () => {
 				updatedAt: 1000
 			});
 		});
+		const bannerStorageId = await t.run(async (ctx) => {
+			return await ctx.storage.store(new Blob(['image'], { type: 'image/jpeg' }));
+		});
 
 		const created = await asUser(t, 'workos_owner').mutation(api.projects.create, {
 			name: 'PatchHub',
-			bannerUploadAttemptId: 'attempt-1'
+			bannerStorageId,
+			bannerContentType: 'image/jpeg'
 		});
 		const project = await t.run(async (ctx) => await ctx.db.get(created.id));
-		const result = await t.query(api.projectPosts.listForProject, {
-			createdBy: 'owneruser',
-			projectSlug: 'patchhub'
-		});
 
-		expect(created.bannerUpload).toMatchObject({ attemptId: 'attempt-1' });
-		expect(created.bannerUpload?.uploadUrl).toContain('/api/storage/upload');
-		expect(project?.bannerUpload).toMatchObject({
-			status: 'pending',
-			attemptId: 'attempt-1'
-		});
-		expect(result?.project.banner).toEqual({ status: 'pending', url: null });
+		expect(project?.bannerStorageId).toBe(bannerStorageId);
 	});
 
-	it('only lets the owner begin an upload attempt', async () => {
+	it('rejects an invalid uploaded banner', async () => {
 		const t = createTest();
 
-		const projectId = await t.run(async (ctx) => {
-			const ownerId = await ctx.db.insert('users', {
-				authProviderId: 'workos_owner',
-				username: 'owneruser',
-				platformRole: 'member',
-				updatedAt: 1000
-			});
+		await t.run(async (ctx) => {
 			await ctx.db.insert('users', {
-				authProviderId: 'workos_other',
-				username: 'otheruser',
-				platformRole: 'member',
-				updatedAt: 1000
-			});
-			return await ctx.db.insert('projects', {
-				name: 'PatchHub',
-				normalizedName: 'PATCHHUB',
-				slug: 'patchhub',
-				userId: ownerId,
-				updatedAt: 1000
-			});
-		});
-
-		await expect(
-			asUser(t, 'workos_other').mutation(api.projects.beginBannerUpload, {
-				projectId,
-				attemptId: 'attempt-1'
-			})
-		).rejects.toThrow('Not authorized');
-
-		await expect(
-			asUser(t, 'workos_owner').mutation(api.projects.beginBannerUpload, {
-				projectId,
-				attemptId: 'attempt-1'
-			})
-		).resolves.toMatchObject({ attemptId: 'attempt-1' });
-	});
-
-	it('claims and attaches a valid upload while stale failures remain no-ops', async () => {
-		const t = createTest();
-
-		const { projectId, storageId } = await t.run(async (ctx) => {
-			const userId = await ctx.db.insert('users', {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
 				platformRole: 'member',
 				updatedAt: 1000
 			});
-			const projectId = await ctx.db.insert('projects', {
-				name: 'PatchHub',
-				normalizedName: 'PATCHHUB',
-				slug: 'patchhub',
-				bannerUpload: { status: 'pending', attemptId: 'attempt-1', startedAt: 1000 },
-				userId,
-				updatedAt: 1000
-			});
-			const storageId = await ctx.storage.store(
-				new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })
-			);
-			return { projectId, storageId };
 		});
-		const upload = {
-			projectId,
-			attemptId: 'attempt-1'
-		};
-		const owner = asUser(t, 'workos_owner');
+		const bannerStorageId = await t.run(async (ctx) => {
+			return await ctx.storage.store(new Blob(['not an image'], { type: 'text/plain' }));
+		});
 
-		const claim = await owner.mutation(api.projects.claimBannerUpload, {
-			...upload,
-			storageId,
-			contentType: 'image/jpeg'
-		});
-		expect(claim).toMatchObject({ status: 'claimed', contentType: 'image/jpeg' });
 		await expect(
-			owner.mutation(api.projects.finishBannerUpload, {
-				...upload,
-				storageId,
-				outcome: 'ready'
+			asUser(t, 'workos_owner').mutation(api.projects.create, {
+				name: 'PatchHub',
+				bannerStorageId,
+				bannerContentType: 'text/plain'
 			})
-		).resolves.toEqual({ status: 'ready' });
-		await expect(owner.mutation(api.projects.failBannerUpload, upload)).resolves.toEqual({
-			status: 'stale'
-		});
-
-		const project = await t.run(async (ctx) => await ctx.db.get(projectId));
-		expect(project?.bannerStorageId).toBe(storageId);
-		expect(project?.bannerUpload).toBeUndefined();
+		).rejects.toThrow('Banner image is invalid');
 	});
 
-	it('rejects invalid storage and exposes failure only to the owner', async () => {
+	it('replaces an owned project banner and deletes the previous image', async () => {
 		const t = createTest();
 
-		const { projectId, storageId } = await t.run(async (ctx) => {
-			const userId = await ctx.db.insert('users', {
-				authProviderId: 'workos_owner',
-				username: 'owneruser',
-				platformRole: 'member',
-				updatedAt: 1000
-			});
-			const projectId = await ctx.db.insert('projects', {
-				name: 'PatchHub',
-				normalizedName: 'PATCHHUB',
-				slug: 'patchhub',
-				bannerUpload: { status: 'pending', attemptId: 'attempt-1', startedAt: 1000 },
-				userId,
-				updatedAt: 1000
-			});
-			const storageId = await ctx.storage.store(new Blob(['nope'], { type: 'text/plain' }));
-			return { projectId, storageId };
-		});
-
-		await expect(
-			asUser(t, 'workos_owner').mutation(api.projects.claimBannerUpload, {
-				projectId,
-				attemptId: 'attempt-1',
-				storageId,
-				contentType: 'text/plain'
-			})
-		).resolves.toEqual({ status: 'failed' });
-
-		const visitorResult = await t.query(api.projectPosts.listForProject, {
-			createdBy: 'owneruser',
-			projectSlug: 'patchhub'
-		});
-		const ownerResult = await asUser(t, 'workos_owner').query(api.projectPosts.listForProject, {
-			createdBy: 'owneruser',
-			projectSlug: 'patchhub'
-		});
-		const stored = await t.run(async (ctx) => await ctx.db.system.get('_storage', storageId));
-
-		expect(visitorResult?.project.banner).toEqual({ status: 'none', url: null });
-		expect(ownerResult?.project.banner).toMatchObject({ status: 'failed' });
-		expect(stored).toBeNull();
-	});
-
-	it('does not let an older attempt overwrite a retry', async () => {
-		const t = createTest();
-
-		const projectId = await t.run(async (ctx) => {
-			const userId = await ctx.db.insert('users', {
-				authProviderId: 'workos_owner',
-				username: 'owneruser',
-				platformRole: 'member',
-				updatedAt: 1000
-			});
-			return await ctx.db.insert('projects', {
-				name: 'PatchHub',
-				normalizedName: 'PATCHHUB',
-				slug: 'patchhub',
-				userId,
-				updatedAt: 1000
-			});
-		});
-		const base = { projectId };
-		const owner = asUser(t, 'workos_owner');
-
-		await owner.mutation(api.projects.beginBannerUpload, { ...base, attemptId: 'attempt-1' });
-		await owner.mutation(api.projects.beginBannerUpload, { ...base, attemptId: 'attempt-2' });
-		await expect(
-			owner.mutation(api.projects.failBannerUpload, { ...base, attemptId: 'attempt-1' })
-		).resolves.toEqual({ status: 'stale' });
-
-		const project = await t.run(async (ctx) => await ctx.db.get(projectId));
-		expect(project?.bannerUpload).toMatchObject({
-			status: 'pending',
-			attemptId: 'attempt-2'
-		});
-	});
-
-	it('attaches a replacement before deleting the previous banner', async () => {
-		const t = createTest();
-
-		const { projectId, previousStorageId, storageId } = await t.run(async (ctx) => {
+		const { projectId, previousStorageId, bannerStorageId } = await t.run(async (ctx) => {
 			const userId = await ctx.db.insert('users', {
 				authProviderId: 'workos_owner',
 				username: 'owneruser',
@@ -1402,99 +1253,35 @@ describe('projects project banners', () => {
 				updatedAt: 1000
 			});
 			const previousStorageId = await ctx.storage.store(
-				new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })
+				new Blob(['old image'], { type: 'image/jpeg' })
 			);
-			const storageId = await ctx.storage.store(
-				new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], {
-					type: 'image/png'
-				})
+			const bannerStorageId = await ctx.storage.store(
+				new Blob(['new image'], { type: 'image/png' })
 			);
 			const projectId = await ctx.db.insert('projects', {
 				name: 'PatchHub',
 				normalizedName: 'PATCHHUB',
 				slug: 'patchhub',
 				bannerStorageId: previousStorageId,
-				bannerUpload: { status: 'pending', attemptId: 'attempt-1', startedAt: 1000 },
 				userId,
 				updatedAt: 1000
 			});
-			return { projectId, previousStorageId, storageId };
+			return { projectId, previousStorageId, bannerStorageId };
 		});
-		const upload = {
-			projectId,
-			attemptId: 'attempt-1'
-		};
-		const owner = asUser(t, 'workos_owner');
 
-		await owner.mutation(api.projects.claimBannerUpload, {
-			...upload,
-			storageId,
-			contentType: 'image/png'
-		});
-		await owner.mutation(api.projects.finishBannerUpload, {
-			...upload,
-			storageId,
-			outcome: 'ready'
+		await asUser(t, 'workos_owner').mutation(api.projects.update, {
+			projectId,
+			name: 'PatchHub',
+			bannerStorageId,
+			bannerContentType: 'image/png'
 		});
 		const state = await t.run(async (ctx) => ({
 			project: await ctx.db.get(projectId),
-			previous: await ctx.db.system.get('_storage', previousStorageId),
-			current: await ctx.db.system.get('_storage', storageId)
+			previous: await ctx.db.system.get('_storage', previousStorageId)
 		}));
 
-		expect(state.project?.bannerStorageId).toBe(storageId);
+		expect(state.project?.bannerStorageId).toBe(bannerStorageId);
 		expect(state.previous).toBeNull();
-		expect(state.current).not.toBeNull();
-	});
-
-	it('expires only the matching pending attempt and cleans its claimed upload', async () => {
-		const t = createTest();
-
-		const { projectId, storageId } = await t.run(async (ctx) => {
-			const userId = await ctx.db.insert('users', {
-				authProviderId: 'workos_owner',
-				username: 'owneruser',
-				platformRole: 'member',
-				updatedAt: 1000
-			});
-			const storageId = await ctx.storage.store(
-				new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })
-			);
-			const projectId = await ctx.db.insert('projects', {
-				name: 'PatchHub',
-				normalizedName: 'PATCHHUB',
-				slug: 'patchhub',
-				bannerUpload: {
-					status: 'pending',
-					attemptId: 'attempt-2',
-					startedAt: 1000,
-					storageId
-				},
-				userId,
-				updatedAt: 1000
-			});
-			return { projectId, storageId };
-		});
-
-		await t.mutation(internal.projects.expireBannerUpload, {
-			projectId,
-			attemptId: 'attempt-1'
-		});
-		await t.mutation(internal.projects.expireBannerUpload, {
-			projectId,
-			attemptId: 'attempt-2'
-		});
-		const state = await t.run(async (ctx) => ({
-			project: await ctx.db.get(projectId),
-			storage: await ctx.db.system.get('_storage', storageId)
-		}));
-
-		expect(state.project?.bannerUpload).toMatchObject({
-			status: 'failed',
-			attemptId: 'attempt-2',
-			errorCode: 'expired'
-		});
-		expect(state.storage).toBeNull();
 	});
 });
 

@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { mutation, query, type MutationCtx } from './_generated/server';
 import { parseSoftwareSourceMetadata, resolveSoftwareSourceImageUrl } from './lib/externalItems';
-import { isValidStoredImage } from './lib/imageUpload';
+import { isValidStoredImage } from '../lib/images/imageValidation';
 import { STEAM_SOURCE } from './lib/steam';
 import { requireActiveUser } from './users';
 
@@ -97,27 +97,19 @@ export const listSoftwareSources = query({
 	}
 });
 
-export const generateSoftwareSourceImageUploadUrl = mutation({
-	args: { slug: v.string() },
-	handler: async (ctx, args) => {
-		await requireAdmin(ctx);
-		await requireUnusedSoftwareSourceSlug(ctx, args.slug);
-		return await ctx.storage.generateUploadUrl();
-	}
-});
-
 export const createSoftwareSource = mutation({
 	args: {
 		name: v.string(),
 		slug: v.string(),
 		metadataJson: v.string(),
-		imageStorageId: v.id('_storage'),
-		imageContentType: v.string()
+		bannerStorageId: v.id('_storage'),
+		bannerContentType: v.string()
 	},
+	returns: v.object({ id: v.id('externalItems'), slug: v.string() }),
 	handler: async (ctx, args) => {
 		await requireAdmin(ctx);
 		await requireUnusedSoftwareSourceSlug(ctx, args.slug);
-		await requireSoftwareSourceImage(ctx, args.imageStorageId, args.imageContentType);
+		await requireSoftwareBanner(ctx, args.bannerStorageId, args.bannerContentType);
 
 		const id = await ctx.db.insert('externalItems', {
 			name: args.name,
@@ -126,7 +118,7 @@ export const createSoftwareSource = mutation({
 			slug: args.slug,
 			metadataJson: JSON.stringify({
 				...parseSoftwareSourceMetadata(args.metadataJson),
-				imageStorageId: args.imageStorageId
+				imageStorageId: args.bannerStorageId
 			}),
 			updatedAt: Date.now()
 		});
@@ -155,14 +147,14 @@ async function requireUnusedSoftwareSourceSlug(
 	}
 }
 
-async function requireSoftwareSourceImage(
+async function requireSoftwareBanner(
 	ctx: Pick<MutationCtx, 'db'>,
 	storageId: Id<'_storage'>,
 	contentType: string
 ): Promise<void> {
 	const metadata = await ctx.db.system.get('_storage', storageId);
 	if (!isValidStoredImage(metadata, contentType)) {
-		throw new Error('Software source image is invalid');
+		throw new Error('Software banner is invalid');
 	}
 }
 

@@ -2,8 +2,8 @@
 	import Seo from '$lib/components/Seo.svelte';
 	import { EmptyState, Icon } from '$lib/components/common-ui';
 	import HeroDots from '$lib/components/layout/HeroDots.svelte';
+	import CreateProjectModal from '$lib/components/projects/CreateProjectModal.svelte';
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
-	import ProjectFormModal from '$lib/components/projects/ProjectFormModal.svelte';
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { getOwnerProfile } from '$lib/remote/projects.remote';
 	import type { PageProps } from './$types';
@@ -147,8 +147,5 @@
 </svelte:boundary>
 
 {#if isOwner}
-	<ProjectFormModal
-		bind:this={createModal}
-		mode={{ kind: 'create', createdBy: params.createdBy }}
-	/>
+	<CreateProjectModal bind:this={createModal} />
 {/if}

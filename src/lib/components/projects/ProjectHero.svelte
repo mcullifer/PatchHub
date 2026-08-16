@@ -5,49 +5,30 @@
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { useFavorites } from '$lib/contexts/favorites.svelte';
 	import { getProjectPosts } from '$lib/remote/projectPosts.remote';
-	import { Time } from '$lib/util/time';
 
 	type Project = Awaited<ReturnType<typeof getProjectPosts>>['project'];
 
 	let {
 		project,
-		createdBy,
-		projectSlug,
 		onEditProject
 	}: {
 		project: Project;
-		createdBy: string;
-		projectSlug: string;
 		onEditProject?: () => void;
 	} = $props();
 
 	const favorites = useFavorites();
 	const favorited = $derived(favorites.isProjectFavorited(project.id));
 
-	const projectQuery = $derived(getProjectPosts({ createdBy, projectSlug }));
-	const bannerUrl = $derived(project.banner.url);
-	const isBannerPending = $derived(project.banner.status === 'pending');
 	const currentUser = getCurrentUser();
 	const isOwner = $derived(currentUser()?.id === project.owner.id);
 	const description = $derived(project.description ?? `Posts from ${project.owner.name}.`);
-
-	// Keep the pending banner display fresh for every viewer until it resolves.
-	$effect(() => {
-		if (!isBannerPending) return;
-
-		const timer = setInterval(() => {
-			projectQuery.refresh();
-		}, Time.SECOND * 5);
-		return () => clearInterval(timer);
-	});
 </script>
 
 <UpdateFeedHero
 	title={project.name}
 	{description}
-	imageUrl={bannerUrl}
-	imageAlt={bannerUrl ? `${project.name} banner` : ''}
-	imagePending={isBannerPending}
+	imageUrl={project.bannerUrl}
+	imageAlt={project.bannerUrl ? `${project.name} banner` : ''}
 >
 	{#snippet fallbackIcon()}
 		<Icon icon="image" size="xl" class="text-base-content/30" />
