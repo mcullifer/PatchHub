@@ -28,7 +28,7 @@ export class MemoryCache implements ICache {
 
 	async getOrCreate<T>(
 		key: string,
-		create: () => Promise<T>,
+		create: (cachedValue: T | undefined) => Promise<T>,
 		opts: { ttlMs: number }
 	): Promise<{ value: T; servedStale: boolean }> {
 		const cached = await this.get<T>(key);
@@ -37,7 +37,8 @@ export class MemoryCache implements ICache {
 		}
 
 		try {
-			const value = await this.getOrStartRefresh(key, create, opts);
+			const cachedValue = cached.status === 'miss' ? undefined : cached.value;
+			const value = await this.getOrStartRefresh(key, () => create(cachedValue), opts);
 			return { value, servedStale: false };
 		} catch (error) {
 			if (cached.status === 'stale') {

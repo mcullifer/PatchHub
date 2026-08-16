@@ -9,6 +9,7 @@ export type CurrentUser = {
 	lastName: string | null;
 	profilePictureUrl: string | null;
 	username: string | null;
+	platformRole: 'member' | 'admin';
 };
 
 // $app/state's page.data is unreliable inside async-boundary content on first

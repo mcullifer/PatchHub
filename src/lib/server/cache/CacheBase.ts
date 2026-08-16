@@ -12,8 +12,13 @@ type CacheOptions = {
 export abstract class CacheBase implements ICache {
 	protected abstract claimRefetch(key: string, claimWindowMs: number): Promise<boolean>;
 
-	private async refresh<T>(key: string, create: () => Promise<T>, opts: CacheOptions): Promise<T> {
-		const value = await create();
+	private async refresh<T>(
+		key: string,
+		create: (cachedValue: T | undefined) => Promise<T>,
+		cachedValue: T | undefined,
+		opts: CacheOptions
+	): Promise<T> {
+		const value = await create(cachedValue);
 		await this.set(key, value, { ttlMs: opts.ttlMs });
 		return value;
 	}
@@ -38,7 +43,7 @@ export abstract class CacheBase implements ICache {
 
 	async getOrCreate<T>(
 		key: string,
-		create: () => Promise<T>,
+		create: (cachedValue: T | undefined) => Promise<T>,
 		opts: CacheOptions
 	): Promise<{ value: T; servedStale: boolean } | null> {
 		const cached = await this.get<T>(key);
@@ -49,7 +54,8 @@ export abstract class CacheBase implements ICache {
 		const claimed = await this.claimRefetch(key, refetchClaimWindowMs);
 		if (claimed) {
 			try {
-				const value = await this.refresh(key, create, opts);
+				const cachedValue = cached.status === 'miss' ? undefined : cached.value;
+				const value = await this.refresh(key, create, cachedValue, opts);
 				return { value, servedStale: false };
 			} catch (error) {
 				if (cached.status === 'stale') {

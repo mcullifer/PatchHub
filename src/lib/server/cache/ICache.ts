@@ -8,7 +8,7 @@ export interface ICache {
 	/** Full flow: fresh hit, or single-flight upstream fetch with stale fallback. */
 	getOrCreate<T>(
 		key: string,
-		create: () => Promise<T>,
+		create: (cachedValue: T | undefined) => Promise<T>,
 		opts: { ttlMs: number }
 	): Promise<{ value: T; servedStale: boolean } | null>;
 }

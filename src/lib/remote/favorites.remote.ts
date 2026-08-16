@@ -4,7 +4,6 @@ import type { Id } from '$convex/_generated/dataModel';
 import { captureServerEvent } from '$lib/server/analytics';
 import { requireAuth } from '$lib/server/auth/authContext';
 import { createConvexClient } from '$lib/server/convex';
-import { getSoftwareSource } from '$lib/server/software/sources';
 import { getDefaultSteamHeaderImageUrl } from '$lib/util/SteamAssets';
 import * as v from 'valibot';
 
@@ -55,6 +54,7 @@ type ExternalItemData = {
 	type: string;
 	externalId: string | null;
 	slug: string;
+	imageUrl: string | null;
 };
 
 type ProjectData = {
@@ -153,17 +153,14 @@ function toExternalItem(item: ExternalItemData): FavoriteItem | null {
 
 	if (item.type !== 'software') return null;
 
-	const source = getSoftwareSource(item.externalId ?? item.slug);
-	if (!source) return null;
-
 	return {
 		kind: 'software',
 		id: item.id,
 		favoritedAt: item.favoritedAt,
-		name: source.name,
-		slug: source.slug,
-		imageUrl: source.imageUrl,
-		imageAlt: source.imageAlt
+		name: item.name,
+		slug: item.slug,
+		imageUrl: item.imageUrl,
+		imageAlt: `${item.name} logo`
 	};
 }
 

@@ -38,9 +38,7 @@
 			onclick={() => selectItem(item.id)}
 		>
 			<time class="text-base-content/50 text-xs">{item.dateLabel}</time>
-			<span class={['text-sm', item.isSelected ? 'font-semibold' : 'font-medium']}>
-				{item.title}
-			</span>
+			<span class="text-sm font-medium">{item.title}</span>
 			{#if item.badgeLabel}
 				<span class="badge badge-soft badge-info badge-xs">{item.badgeLabel}</span>
 			{/if}

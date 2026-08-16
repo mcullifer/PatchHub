@@ -1,5 +1,5 @@
 import type { Doc } from '../_generated/dataModel';
-import type { MutationCtx } from '../_generated/server';
+import type { MutationCtx, QueryCtx } from '../_generated/server';
 
 export type ExternalItemValues = {
 	name: string;
@@ -38,6 +38,35 @@ export async function upsertExternalItem(
 
 	await ctx.db.insert('externalItems', values);
 	return true;
+}
+
+export function parseSoftwareSourceMetadata(metadataJson: string): Record<string, unknown> {
+	const metadata: unknown = JSON.parse(metadataJson);
+	if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+		throw new Error('Software source metadata is invalid');
+	}
+
+	return metadata as Record<string, unknown>;
+}
+
+export async function resolveSoftwareSourceImageUrl(
+	ctx: Pick<QueryCtx, 'db' | 'storage'>,
+	metadataJson?: string
+): Promise<string | null> {
+	if (!metadataJson) return null;
+
+	try {
+		const metadata = parseSoftwareSourceMetadata(metadataJson);
+		const storageId = metadata.imageStorageId;
+		if (typeof storageId === 'string') {
+			const normalizedId = ctx.db.system.normalizeId('_storage', storageId);
+			if (normalizedId) return await ctx.storage.getUrl(normalizedId);
+		}
+
+		return typeof metadata.imageUrl === 'string' ? metadata.imageUrl : null;
+	} catch {
+		return null;
+	}
 }
 
 function hasExternalItemChanges(existing: Doc<'externalItems'>, values: ExternalItemValues) {

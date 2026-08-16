@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import { internalMutation, mutation, query, type QueryCtx } from './_generated/server';
+import { resolveSoftwareSourceImageUrl } from './lib/externalItems';
 import { requireActiveUser } from './users';
 
 const PROJECT_FAVORITE_CLEANUP_BATCH_SIZE = 100;
@@ -82,7 +83,7 @@ export const setExternalItem = mutation({
 			externalItemId: args.externalItemId
 		});
 		const favorite = await ctx.db.get(favoriteId);
-		return favorite ? toExternalItem(favorite, item) : null;
+		return favorite ? await toExternalItem(ctx, favorite, item) : null;
 	}
 });
 
@@ -123,17 +124,23 @@ async function getExternalItem(ctx: QueryCtx, favorite: Doc<'externalItemFavorit
 	const item = await ctx.db.get(favorite.externalItemId);
 	if (!item) return null;
 
-	return toExternalItem(favorite, item);
+	return await toExternalItem(ctx, favorite, item);
 }
 
-function toExternalItem(favorite: Doc<'externalItemFavorites'>, item: Doc<'externalItems'>) {
+async function toExternalItem(
+	ctx: QueryCtx,
+	favorite: Doc<'externalItemFavorites'>,
+	item: Doc<'externalItems'>
+) {
 	return {
 		id: item._id,
 		favoritedAt: favorite._creationTime,
 		name: item.name,
 		type: item.type,
 		externalId: item.externalId ?? null,
-		slug: item.slug
+		slug: item.slug,
+		imageUrl:
+			item.type === 'software' ? await resolveSoftwareSourceImageUrl(ctx, item.metadataJson) : null
 	};
 }
 

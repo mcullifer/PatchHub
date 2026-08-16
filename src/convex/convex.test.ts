@@ -13,6 +13,17 @@ const TIPTAP_DOC = JSON.stringify({
 	type: 'doc',
 	content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Fixed a bug.' }] }]
 });
+const SOFTWARE_METADATA = JSON.stringify({
+	vendor: 'GitHub',
+	provider: 'GitHub Changelog',
+	sourceType: 'RSS feed',
+	imageUrl: '/github-changelog.png',
+	adapter: 'atom-feed',
+	feedUrl: 'https://github.blog/changelog/feed/',
+	searchUrl: null,
+	supportUrl: null,
+	releaseInfoUrl: null
+});
 
 function createTest() {
 	const t = convexTest(schema, modules);
@@ -663,21 +674,70 @@ describe('steamSync.runScheduled', () => {
 });
 
 describe('catalog', () => {
-	it('searches Steam and software items by name and finds Steam apps by app id', async () => {
+	it('manages software sources and searches catalog items', async () => {
 		const t = createTest();
+		const admin = asUser(t, 'workos_admin');
+		const member = asUser(t, 'workos_member');
 
+		const imageStorageId = await t.run(async (ctx) => {
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_admin',
+				username: 'admin',
+				platformRole: 'admin',
+				updatedAt: 1000
+			});
+			await ctx.db.insert('users', {
+				authProviderId: 'workos_member',
+				username: 'member',
+				platformRole: 'member',
+				updatedAt: 1000
+			});
+			return await ctx.storage.store(
+				new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' })
+			);
+		});
 		await t.mutation(internal.steamSync.importBatch, {
 			apps: [
 				{ appid: 10, name: 'Counter-Strike' },
 				{ appid: 440, name: 'Team Fortress 2' }
 			]
 		});
-		await t.mutation(api.catalog.upsertSoftwareSource, {
-			secret: SECRET,
+		await expect(
+			member.mutation(api.catalog.createSoftwareSource, {
+				name: 'GitHub Changelog',
+				slug: 'github-changelog',
+				metadataJson: SOFTWARE_METADATA,
+				imageStorageId,
+				imageContentType: 'image/png'
+			})
+		).rejects.toThrow('Admin access required');
+		await expect(
+			member.mutation(api.catalog.generateSoftwareSourceImageUploadUrl, {
+				slug: 'github-changelog'
+			})
+		).rejects.toThrow('Admin access required');
+		const source = await admin.mutation(api.catalog.createSoftwareSource, {
 			name: 'GitHub Changelog',
-			externalId: 'github-changelog',
 			slug: 'github-changelog',
-			metadataJson: JSON.stringify({ vendor: 'GitHub' })
+			metadataJson: SOFTWARE_METADATA,
+			imageStorageId,
+			imageContentType: 'image/png'
+		});
+		await expect(
+			admin.mutation(api.favorites.setExternalItem, {
+				externalItemId: source.id,
+				favorited: true
+			})
+		).resolves.toEqual(expect.objectContaining({ imageUrl: expect.any(String) }));
+		await expect(
+			member.mutation(api.catalog.updateSoftwareSourceRendering, {
+				slug: 'github-changelog',
+				rendering: 'full'
+			})
+		).rejects.toThrow('Admin access required');
+		await admin.mutation(api.catalog.updateSoftwareSourceRendering, {
+			slug: 'github-changelog',
+			rendering: 'excerpt'
 		});
 
 		const steamResults = await t.query(api.catalog.searchExternalItems, {
@@ -702,6 +762,17 @@ describe('catalog', () => {
 		expect(names).toEqual({
 			'10': { id: expect.any(String), name: 'Counter-Strike', slug: 'counter-strike' }
 		});
+
+		const sources = await t.query(api.catalog.listSoftwareSources, {});
+		expect(sources).toEqual([
+			expect.objectContaining({
+				name: 'GitHub Changelog',
+				externalId: 'github-changelog',
+				slug: 'github-changelog',
+				metadataJson: expect.stringContaining('"rendering":"excerpt"'),
+				resolvedImageUrl: expect.any(String)
+			})
+		]);
 	});
 });
 

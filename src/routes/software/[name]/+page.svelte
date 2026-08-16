@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import Seo from '$lib/components/Seo.svelte';
 	import { FavoriteHeart, Icon } from '$lib/components/common-ui';
 	import { Tooltip } from '$lib/components/common-ui/floating';
@@ -17,19 +18,24 @@
 	import { getCurrentUser } from '$lib/contexts/currentUser';
 	import { useFavorites } from '$lib/contexts/favorites.svelte';
 	import type { SoftwareUpdateEntry } from '$lib/models/Software';
+	import { updateSoftwareSourceRendering } from '$lib/remote/software.remote';
 	import { formatFeedDate } from '$lib/util/time';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let selectedId = $state<string | null>(null);
+	let rendering = $derived(data.detail.source.rendering ?? '');
+	let renderingError = $state<string | null>(null);
+	let savingRendering = $state(false);
 
 	const articleSectionId = 'software-update-article';
 	const currentUser = getCurrentUser();
 	const favorites = useFavorites();
 	const externalItemId = $derived(data.detail.externalItemId);
+	const renderingChanged = $derived(rendering !== (data.detail.source.rendering ?? ''));
 	const selectedUpdate = $derived(getSelectedUpdate(data.detail.entries));
-	const isExcerptSource = $derived(data.detail.source.rendering === 'excerpt');
+	const isExcerptSource = $derived(data.detail.source.rendering !== 'full');
 	const articleBadges = $derived<UpdateFeedBadge[]>(
 		isExcerptSource ? [{ label: data.detail.source.provider, tone: 'info' }] : []
 	);
@@ -63,6 +69,26 @@
 		selectedId = id;
 		await scrollArticleIntoView(articleSectionId);
 	}
+
+	async function saveRendering(): Promise<void> {
+		if (!renderingChanged || savingRendering || (rendering !== 'excerpt' && rendering !== 'full')) {
+			return;
+		}
+
+		renderingError = null;
+		savingRendering = true;
+		try {
+			await updateSoftwareSourceRendering({
+				slug: data.detail.source.slug,
+				rendering
+			});
+			await invalidateAll();
+		} catch (error) {
+			renderingError = error instanceof Error ? error.message : 'Unable to update feed content';
+		} finally {
+			savingRendering = false;
+		}
+	}
 </script>
 
 <Seo
@@ -94,12 +120,51 @@
 		{/if}
 	{/snippet}
 
+	{#snippet actions()}
+		{#if currentUser()?.platformRole === 'admin'}
+			<fieldset class="fieldset w-full max-w-xs">
+				<label class="label" for="software-source-rendering">Feed content</label>
+				<div class="flex items-center gap-2">
+					<select
+						id="software-source-rendering"
+						class="select select-sm w-44"
+						bind:value={rendering}
+						disabled={savingRendering}
+					>
+						<option value="" disabled hidden>Not selected</option>
+						<option value="excerpt">Excerpt</option>
+						<option value="full">Full</option>
+					</select>
+					{#if renderingChanged || savingRendering}
+						<button
+							type="button"
+							class="btn btn-primary btn-sm"
+							disabled={savingRendering}
+							onclick={saveRendering}
+						>
+							{#if savingRendering}
+								<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+								Saving
+							{:else}
+								Save
+							{/if}
+						</button>
+					{/if}
+				</div>
+				{#if renderingError}
+					<span class="text-error text-sm" role="alert">{renderingError}</span>
+				{/if}
+			</fieldset>
+		{/if}
+	{/snippet}
+
 	<UpdateFeedHero
 		title={data.detail.source.name}
 		description={data.detail.source.description}
 		imageUrl={data.detail.source.imageUrl}
 		imageAlt={data.detail.source.imageAlt}
 		{fallbackIcon}
+		{actions}
 		{overlay}
 	/>
 
@@ -146,7 +211,10 @@
 							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						</div>
 					{:else if selectedUpdate.contentHtml}
-						<UpdateFeedContent html={selectedUpdate.contentHtml} />
+						<UpdateFeedContent
+							html={selectedUpdate.contentHtml}
+							baseUrl={selectedUpdate.sourceUrl}
+						/>
 					{:else}
 						<div class="alert alert-info alert-soft">
 							<Icon icon="info" />

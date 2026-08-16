@@ -2,7 +2,7 @@ import { command, form, getRequestEvent, query, requested } from '$app/server';
 import { api } from '$convex/_generated/api';
 import type { Id } from '$convex/_generated/dataModel';
 import { PROJECT_DESCRIPTION_MAX_LENGTH, PROJECT_NAME_MAX_LENGTH } from '$convex/lib/contentLimits';
-import { getProjectBannerValidationError } from '$lib/projects/projectBanner';
+import { getImageUploadValidationError } from '$convex/lib/imageUpload';
 import { captureServerEvent } from '$lib/server/analytics';
 import { requireAuth } from '$lib/server/auth/authContext';
 import { createConvexClient } from '$lib/server/convex';
@@ -189,7 +189,9 @@ export const completeProjectBannerUpload = command(
 				const blob = new Blob([await response.arrayBuffer()], {
 					type: claimedUpload.contentType
 				});
-				outcome = (await getProjectBannerValidationError(blob)) ? 'invalid_file' : 'ready';
+				outcome = (await getImageUploadValidationError(blob, 'Banner image'))
+					? 'invalid_file'
+					: 'ready';
 			}
 		} catch {
 			outcome = 'upload_failed';

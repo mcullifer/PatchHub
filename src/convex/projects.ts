@@ -9,6 +9,7 @@ import {
 	type QueryCtx
 } from './_generated/server';
 import { PROJECT_DESCRIPTION_MAX_LENGTH, PROJECT_NAME_MAX_LENGTH } from './lib/contentLimits';
+import { isValidStoredImage } from './lib/imageUpload';
 import { rateLimiter } from './lib/rateLimits';
 import { requireServerSecret } from './lib/serverSecret';
 import { createSlug, normalizeName } from './lib/strings';
@@ -16,16 +17,8 @@ import { normalizeUsername } from './lib/usernames';
 import { requireActiveUser } from './users';
 
 const OWNER_PROJECT_LIMIT = 100;
-const PROJECT_BANNER_MAX_BYTES = 5 * 1024 * 1024;
 const PROJECT_BANNER_UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_SLUG_ATTEMPTS = 1000;
-const PROJECT_BANNER_MIME_TYPES = new Set([
-	'image/jpeg',
-	'image/png',
-	'image/webp',
-	'image/gif',
-	'image/avif'
-]);
 
 type ProjectLookupCtx = Pick<QueryCtx, 'db'>;
 type AuthenticatedProjectLookupCtx = Pick<QueryCtx, 'auth' | 'db'>;
@@ -429,17 +422,7 @@ async function getValidBannerStorageMetadata(
 	contentType?: string
 ) {
 	const metadata = await ctx.db.system.get('_storage', storageId);
-	if (!metadata || metadata.size === 0 || metadata.size > PROJECT_BANNER_MAX_BYTES) {
-		return null;
-	}
-
-	if (
-		contentType !== undefined &&
-		(!PROJECT_BANNER_MIME_TYPES.has(contentType) ||
-			(metadata.contentType !== undefined && metadata.contentType !== contentType))
-	) {
-		return null;
-	}
+	if (!isValidStoredImage(metadata, contentType)) return null;
 
 	return metadata;
 }

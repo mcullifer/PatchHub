@@ -53,7 +53,8 @@ describe('MemoryCache', () => {
 		const cache = new MemoryCache();
 		await cache.set('key', 'cached', { ttlMs: Time.MINUTE * 5 });
 		vi.advanceTimersByTime(Time.MINUTE * 5);
-		const create = vi.fn(async () => {
+		const create = vi.fn(async (cachedValue: string | undefined) => {
+			expect(cachedValue).toBe('cached');
 			throw new Error('upstream failed');
 		});
 

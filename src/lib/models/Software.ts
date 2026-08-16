@@ -3,6 +3,8 @@ export type SoftwareSourceHealth = {
 	error: string | null;
 };
 
+export type SoftwareFeedRendering = 'excerpt' | 'full';
+
 export type SoftwareSource = {
 	id: string;
 	name: string;
@@ -19,7 +21,7 @@ export type SoftwareSource = {
 	supportUrl: string;
 	releaseInfoUrl: string | null;
 	cacheTtlMs: number;
-	rendering: 'excerpt' | 'full';
+	rendering: SoftwareFeedRendering | null;
 };
 
 export type SoftwareUpdateMetadata = {

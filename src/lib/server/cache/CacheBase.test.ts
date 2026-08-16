@@ -81,13 +81,13 @@ describe('CacheBase.getOrCreate', () => {
 
 	it('replaces stale data when the claim winner creates successfully', async () => {
 		const cache = new FakeCache({ status: 'stale', value: 'cached' }, true);
+		const create = vi.fn(async () => 'upstream');
 
-		await expect(
-			cache.getOrCreate('key', async () => 'upstream', { ttlMs: Time.MINUTE })
-		).resolves.toEqual({
+		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toEqual({
 			value: 'upstream',
 			servedStale: false
 		});
+		expect(create).toHaveBeenCalledWith('cached');
 		expect(cache.claimWindowMs).toBe(Time.SECOND * 30);
 		expect(cache.setCalls).toBe(1);
 		expect(cache.setTtlMs).toBe(Time.MINUTE);
@@ -210,13 +210,13 @@ describe('CacheBase.getOrCreate', () => {
 
 	it('creates and caches a value on a claimed miss', async () => {
 		const cache = new FakeCache({ status: 'miss' }, true);
+		const create = vi.fn(async () => 'upstream');
 
-		await expect(
-			cache.getOrCreate('key', async () => 'upstream', { ttlMs: Time.MINUTE })
-		).resolves.toEqual({
+		await expect(cache.getOrCreate('key', create, { ttlMs: Time.MINUTE })).resolves.toEqual({
 			value: 'upstream',
 			servedStale: false
 		});
+		expect(create).toHaveBeenCalledWith(undefined);
 		expect(cache.setCalls).toBe(1);
 	});
 

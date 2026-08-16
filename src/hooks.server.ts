@@ -32,7 +32,6 @@ const remoteQueryCacheTtlSeconds = new Map<string, number>([
 	['getMostPopularGames', 60],
 	['getGameNews', 60],
 	['searchCatalog', 60],
-	['getSoftwareSourceSummaries', 60],
 	['getSteamHeaderImage', 3600]
 ]);
 

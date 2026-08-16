@@ -44,6 +44,33 @@ describe('feed normalization', () => {
 		expect(entry.contentHtml).toBeNull();
 	});
 
+	it('uses an RSS description as the complete body when no encoded content is provided', () => {
+		const entry = normalizeSoftwareFeedItem(
+			{
+				title: 'Product update',
+				description: '<h2>New features</h2><p>The complete release notes.</p>'
+			},
+			'full-source',
+			'full'
+		);
+
+		expect(entry.contentHtml).toBe('<h2>New features</h2><p>The complete release notes.</p>');
+	});
+
+	it('uses an Atom updated timestamp when published is absent', () => {
+		const entry = normalizeSoftwareFeedItem(
+			{
+				title: 'Product update',
+				updated: '2026-08-05T10:43:44Z'
+			},
+			'atom-source',
+			'full'
+		);
+
+		expect(entry.publishedAt).toBe('2026-08-05T10:43:44.000Z');
+		expect(entry.updatedAt).toBe('2026-08-05T10:43:44.000Z');
+	});
+
 	it('derives a bounded plain-text summary when an excerpt feed has no description', () => {
 		const entry = normalizeSoftwareFeedItem(
 			{

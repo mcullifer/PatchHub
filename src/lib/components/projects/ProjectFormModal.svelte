@@ -13,10 +13,10 @@
 	import { resolve } from '$app/paths';
 	import { Icon } from '$lib/components/common-ui';
 	import {
-		PROJECT_BANNER_ACCEPT,
-		PROJECT_BANNER_MAX_SIZE_LABEL,
-		getProjectBannerValidationError
-	} from '$lib/projects/projectBanner';
+		IMAGE_UPLOAD_ACCEPT,
+		IMAGE_UPLOAD_MAX_SIZE_LABEL,
+		getImageUploadValidationError
+	} from '$convex/lib/imageUpload';
 	import {
 		getRememberedProjectBannerFile,
 		runProjectBannerUpload
@@ -44,16 +44,18 @@
 	let isCreatingProject = $state(false);
 	const isSubmittingProject = $derived(createProject.pending > 0 || isCreatingProject);
 
-	function selectBanner(event: Event): void {
+	async function selectBanner(event: Event): Promise<void> {
 		selectedBanner = (event.currentTarget as HTMLInputElement).files?.[0] ?? null;
-		createBannerIssue = null;
+		createBannerIssue = selectedBanner
+			? await getImageUploadValidationError(selectedBanner, 'Banner image')
+			: null;
 	}
 
 	const createEnhance = createProject.enhance(async (form) => {
 		if (mode.kind !== 'create') return;
 		const { createdBy } = mode;
 		const banner = selectedBanner;
-		createBannerIssue = banner ? await getProjectBannerValidationError(banner) : null;
+		createBannerIssue = banner ? await getImageUploadValidationError(banner, 'Banner image') : null;
 		if (createBannerIssue) return;
 
 		isCreatingProject = true;
@@ -155,7 +157,7 @@
 		});
 		const file = bannerInput?.files?.[0] ?? getRememberedProjectBannerFile(projectId) ?? null;
 		editBannerIssue = file
-			? await getProjectBannerValidationError(file)
+			? await getImageUploadValidationError(file, 'Banner image')
 			: 'Choose an image to upload';
 		if (!file || editBannerIssue) return;
 
@@ -182,6 +184,12 @@
 		} finally {
 			isUploadingBanner = false;
 		}
+	}
+
+	async function validateEditBanner(event: Event): Promise<void> {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0] ?? null;
+		editBannerIssue = file ? await getImageUploadValidationError(file, 'Banner image') : null;
 	}
 
 	const busy = $derived(mode.kind === 'create' ? isSubmittingProject : isSavingProject);
@@ -244,14 +252,14 @@
 					<input
 						type="file"
 						class="file-input w-full"
-						accept={PROJECT_BANNER_ACCEPT}
+						accept={IMAGE_UPLOAD_ACCEPT}
 						onchange={selectBanner}
 					/>
 					{#if selectedBanner}
 						<input {...createProject.fields.bannerRequested.as('hidden', 'yes')} />
 					{/if}
 					<p class="label">
-						Optional. JPEG, PNG, WebP, GIF, or AVIF up to {PROJECT_BANNER_MAX_SIZE_LABEL}.
+						Optional. JPEG, PNG, WebP, GIF, or AVIF up to {IMAGE_UPLOAD_MAX_SIZE_LABEL}.
 					</p>
 					{#if createBannerIssue}
 						<p class="text-error text-sm">{createBannerIssue}</p>
@@ -317,10 +325,10 @@
 								bind:this={bannerInput}
 								type="file"
 								class="file-input file-input-sm w-full"
-								accept={PROJECT_BANNER_ACCEPT}
+								accept={IMAGE_UPLOAD_ACCEPT}
 								aria-label="Project banner image"
 								disabled={isBannerBusy}
-								onchange={() => (editBannerIssue = null)}
+								onchange={validateEditBanner}
 							/>
 							<button type="submit" class="btn btn-soft btn-sm" disabled={isBannerBusy}>
 								{#if isBannerBusy}
@@ -330,7 +338,7 @@
 							</button>
 						</div>
 						<p class="label">
-							JPEG, PNG, WebP, GIF, or AVIF up to {PROJECT_BANNER_MAX_SIZE_LABEL}.
+							JPEG, PNG, WebP, GIF, or AVIF up to {IMAGE_UPLOAD_MAX_SIZE_LABEL}.
 						</p>
 						{#if editBannerIssue}
 							<p class="text-error text-sm">{editBannerIssue}</p>

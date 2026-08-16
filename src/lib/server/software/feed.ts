@@ -1,4 +1,4 @@
-import type { SoftwareSource, SoftwareUpdateEntry } from '$lib/models/Software';
+import type { SoftwareFeedRendering, SoftwareUpdateEntry } from '$lib/models/Software';
 import { createSlug } from '$convex/lib/strings';
 
 export type FeedItemLike = {
@@ -16,12 +16,12 @@ export type FeedItemLike = {
 export function normalizeSoftwareFeedItem(
 	item: FeedItemLike,
 	sourceSlug: string,
-	rendering: SoftwareSource['rendering']
+	rendering: SoftwareFeedRendering
 ): SoftwareUpdateEntry {
 	const title = item.title?.trim() || 'Untitled update';
 	const sourceUrl = item.url?.trim() || '';
-	const publishedAt = normalizeDate(item.published);
 	const updatedAt = normalizeDate(item.updated);
+	const publishedAt = normalizeDate(item.published) ?? updatedAt;
 	const fallbackId = createSlug(title, sourceSlug);
 	const id = item.id?.trim() || sourceUrl || `${sourceSlug}-${fallbackId}`;
 	const feedSummary = item.summary?.trim() || item.description?.trim() || null;
@@ -31,12 +31,13 @@ export function normalizeSoftwareFeedItem(
 			: (item.summary ?? item.content ?? item.description ?? '');
 	const maxSummaryLength = rendering === 'excerpt' && !feedSummary ? 200 : 220;
 	const summary = getSummary(summarySource, maxSummaryLength, rendering === 'excerpt');
+	const contentHtml = item.content ?? item.description ?? item.summary ?? null;
 
 	return {
 		id,
 		title,
 		summary,
-		contentHtml: rendering === 'full' ? (item.content ?? null) : null,
+		contentHtml: rendering === 'full' ? contentHtml : null,
 		sourceUrl,
 		publishedAt,
 		updatedAt,

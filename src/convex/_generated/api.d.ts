@@ -14,6 +14,7 @@ import type * as crons from "../crons.js";
 import type * as favorites from "../favorites.js";
 import type * as lib_contentLimits from "../lib/contentLimits.js";
 import type * as lib_externalItems from "../lib/externalItems.js";
+import type * as lib_imageUpload from "../lib/imageUpload.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_serverSecret from "../lib/serverSecret.js";
 import type * as lib_steam from "../lib/steam.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   favorites: typeof favorites;
   "lib/contentLimits": typeof lib_contentLimits;
   "lib/externalItems": typeof lib_externalItems;
+  "lib/imageUpload": typeof lib_imageUpload;
   "lib/rateLimits": typeof lib_rateLimits;
   "lib/serverSecret": typeof lib_serverSecret;
   "lib/steam": typeof lib_steam;

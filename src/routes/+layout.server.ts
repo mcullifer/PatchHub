@@ -28,7 +28,8 @@ export const load: LayoutServerLoad = async (event) => {
 		firstName: workosUser.firstName,
 		lastName: workosUser.lastName,
 		profilePictureUrl: workosUser.profilePictureUrl,
-		username: patchHubUser?.username ?? null
+		username: patchHubUser?.username ?? null,
+		platformRole: patchHubUser?.platformRole ?? 'member'
 	};
 
 	return { analyticsConsent, analyticsConsentRequired, user };

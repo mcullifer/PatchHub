@@ -1,9 +1,10 @@
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
-import { upsertExternalItem } from './lib/externalItems';
-import { requireServerSecret } from './lib/serverSecret';
+import { mutation, query, type MutationCtx } from './_generated/server';
+import { parseSoftwareSourceMetadata, resolveSoftwareSourceImageUrl } from './lib/externalItems';
+import { isValidStoredImage } from './lib/imageUpload';
 import { STEAM_SOURCE } from './lib/steam';
+import { requireActiveUser } from './users';
 
 const SEARCH_RESULT_LIMIT = 20;
 const MAX_APP_ID_LOOKUPS = 200;
@@ -79,42 +80,115 @@ export const getSteamAppByAppId = query({
 	}
 });
 
-export const getItemIdByTypeAndExternalId = query({
-	args: {
-		type: v.union(v.literal('steam'), v.literal('software')),
-		externalId: v.string()
-	},
-	handler: async (ctx, args) => {
-		const item = await ctx.db
+export const listSoftwareSources = query({
+	args: {},
+	handler: async (ctx) => {
+		const sources = await ctx.db
 			.query('externalItems')
-			.withIndex('by_type_and_externalId', (q) =>
-				q.eq('type', args.type).eq('externalId', args.externalId)
-			)
-			.unique();
+			.withIndex('by_type_and_externalId', (q) => q.eq('type', 'software'))
+			.take(100);
 
-		return item?._id ?? null;
+		return await Promise.all(
+			sources.map(async (source) => ({
+				...source,
+				resolvedImageUrl: await resolveSoftwareSourceImageUrl(ctx, source.metadataJson)
+			}))
+		);
 	}
 });
 
-export const upsertSoftwareSource = mutation({
+export const generateSoftwareSourceImageUploadUrl = mutation({
+	args: { slug: v.string() },
+	handler: async (ctx, args) => {
+		await requireAdmin(ctx);
+		await requireUnusedSoftwareSourceSlug(ctx, args.slug);
+		return await ctx.storage.generateUploadUrl();
+	}
+});
+
+export const createSoftwareSource = mutation({
 	args: {
-		secret: v.string(),
 		name: v.string(),
-		externalId: v.string(),
 		slug: v.string(),
-		metadataJson: v.optional(v.string())
+		metadataJson: v.string(),
+		imageStorageId: v.id('_storage'),
+		imageContentType: v.string()
 	},
 	handler: async (ctx, args) => {
-		requireServerSecret(args.secret);
+		await requireAdmin(ctx);
+		await requireUnusedSoftwareSourceSlug(ctx, args.slug);
+		await requireSoftwareSourceImage(ctx, args.imageStorageId, args.imageContentType);
 
-		await upsertExternalItem(ctx, {
+		const id = await ctx.db.insert('externalItems', {
 			name: args.name,
 			type: 'software',
-			externalId: args.externalId,
+			externalId: args.slug,
 			slug: args.slug,
-			metadataJson: args.metadataJson,
+			metadataJson: JSON.stringify({
+				...parseSoftwareSourceMetadata(args.metadataJson),
+				imageStorageId: args.imageStorageId
+			}),
 			updatedAt: Date.now()
 		});
-		return null;
+
+		return { id, slug: args.slug };
+	}
+});
+
+async function requireAdmin(ctx: Pick<MutationCtx, 'auth' | 'db'>): Promise<void> {
+	const user = await requireActiveUser(ctx);
+	if (user.platformRole !== 'admin') {
+		throw new Error('Admin access required');
+	}
+}
+
+async function requireUnusedSoftwareSourceSlug(
+	ctx: Pick<MutationCtx, 'db'>,
+	slug: string
+): Promise<void> {
+	const existing = await ctx.db
+		.query('externalItems')
+		.withIndex('by_type_and_externalId', (q) => q.eq('type', 'software').eq('externalId', slug))
+		.unique();
+	if (existing) {
+		throw new Error('A software source with this name already exists');
+	}
+}
+
+async function requireSoftwareSourceImage(
+	ctx: Pick<MutationCtx, 'db'>,
+	storageId: Id<'_storage'>,
+	contentType: string
+): Promise<void> {
+	const metadata = await ctx.db.system.get('_storage', storageId);
+	if (!isValidStoredImage(metadata, contentType)) {
+		throw new Error('Software source image is invalid');
+	}
+}
+
+export const updateSoftwareSourceRendering = mutation({
+	args: {
+		slug: v.string(),
+		rendering: v.union(v.literal('excerpt'), v.literal('full'))
+	},
+	handler: async (ctx, args) => {
+		await requireAdmin(ctx);
+
+		const source = await ctx.db
+			.query('externalItems')
+			.withIndex('by_type_and_externalId', (q) =>
+				q.eq('type', 'software').eq('externalId', args.slug)
+			)
+			.unique();
+		if (!source?.metadataJson) {
+			throw new Error('Software source not found');
+		}
+
+		const metadata = parseSoftwareSourceMetadata(source.metadataJson);
+
+		await ctx.db.patch('externalItems', source._id, {
+			metadataJson: JSON.stringify({ ...metadata, rendering: args.rendering }),
+			updatedAt: Date.now()
+		});
 	}
 });

@@ -9,14 +9,14 @@ export const UPSTREAM_FETCH_OPTIONS = {
 export async function boundedFetch(
 	fetchFn: typeof fetch,
 	url: string,
-	opts: { timeoutMs: number; maxBytes: number; userAgent?: string }
+	opts: { timeoutMs: number; maxBytes: number; userAgent?: string; headers?: HeadersInit }
 ): Promise<Response> {
 	const controller = new AbortController();
 	const timeoutError = new Error(`Request timed out after ${opts.timeoutMs}ms`);
 	const timeout = setTimeout(() => controller.abort(timeoutError), opts.timeoutMs);
 
 	try {
-		const headers = new Headers();
+		const headers = new Headers(opts.headers);
 		if (opts.userAgent) headers.set('user-agent', opts.userAgent);
 
 		const response = await fetchFn(url, { headers, signal: controller.signal });

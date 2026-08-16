@@ -3,6 +3,35 @@ import { UPSTREAM_FETCH_OPTIONS } from '$lib/server/http/boundedFetch';
 import { getSourceDetail } from '$lib/server/software/updates';
 import { describe, expect, it, vi } from 'vitest';
 
+const { storedSources } = vi.hoisted(() => ({
+	storedSources: [
+		createStoredSource(
+			'google-chrome',
+			'Google Chrome Releases',
+			'https://chromereleases.googleblog.com/feeds/posts/default/-/Stable%20updates'
+		),
+		createStoredSource(
+			'github-changelog',
+			'GitHub Changelog',
+			'https://github.blog/changelog/feed/'
+		)
+	]
+}));
+
+function createStoredSource(slug: string, provider: string, upstreamUrl: string) {
+	return {
+		externalItemId: `${slug}-id`,
+		source: {
+			slug,
+			provider,
+			adapter: 'atom-feed' as const,
+			upstreamUrl,
+			cacheTtlMs: 300_000,
+			rendering: 'excerpt' as const
+		}
+	};
+}
+
 vi.mock('$lib/server/cache/MemoryCache', () => ({
 	MemoryCache: class {
 		async getOrCreate<T>(
@@ -14,7 +43,10 @@ vi.mock('$lib/server/cache/MemoryCache', () => ({
 }));
 
 vi.mock('$lib/server/software/catalog', () => ({
-	ensureExternalItemId: vi.fn(async () => null)
+	getSoftwareSource: vi.fn(async (slug: string) =>
+		storedSources.find(({ source }) => source.slug === slug)
+	),
+	getSoftwareSources: vi.fn(async () => storedSources)
 }));
 
 const chromeFixture = readFileSync(
