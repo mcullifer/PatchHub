@@ -9,7 +9,6 @@
 		UpdateFeedEmptyState,
 		UpdateFeedHero,
 		UpdateFeedPostList,
-		type UpdateFeedBadge,
 		type UpdateFeedMetaItem,
 		type UpdateFeedPostListItem
 	} from '$lib/components/update-feed';
@@ -36,9 +35,6 @@
 	const renderingChanged = $derived(rendering !== (data.detail.source.rendering ?? ''));
 	const selectedUpdate = $derived(getSelectedUpdate(data.detail.entries));
 	const isExcerptSource = $derived(data.detail.source.rendering !== 'full');
-	const articleBadges = $derived<UpdateFeedBadge[]>(
-		isExcerptSource ? [{ label: data.detail.source.provider, tone: 'info' }] : []
-	);
 	const navItems = $derived<UpdateFeedPostListItem[]>(
 		data.detail.entries.map((entry, index) => ({
 			id: entry.id,
@@ -190,7 +186,6 @@
 					title={selectedUpdate.title}
 					sourceLabel="Source"
 					sourceUrl={selectedUpdate.sourceUrl}
-					badges={articleBadges}
 					meta={getArticleMeta(selectedUpdate)}
 				>
 					{#if isExcerptSource}
